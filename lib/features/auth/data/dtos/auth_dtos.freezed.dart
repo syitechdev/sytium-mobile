@@ -26,6 +26,12 @@ mixin _$LoginRequestDto {
   @JsonKey(name: 'device_name')
   String get deviceName => throw _privateConstructorUsedError;
 
+  /// Identifiant d'installation. Le backend ne délivre une session sans
+  /// expiration que si ce champ accompagne `device_name`, car c'est lui qui
+  /// rend la session révocable depuis la gestion des appareils.
+  @JsonKey(name: 'device_id')
+  String get deviceId => throw _privateConstructorUsedError;
+
   /// Serializes this LoginRequestDto to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
 
@@ -47,6 +53,7 @@ abstract class $LoginRequestDtoCopyWith<$Res> {
     String email,
     String password,
     @JsonKey(name: 'device_name') String deviceName,
+    @JsonKey(name: 'device_id') String deviceId,
   });
 }
 
@@ -68,6 +75,7 @@ class _$LoginRequestDtoCopyWithImpl<$Res, $Val extends LoginRequestDto>
     Object? email = null,
     Object? password = null,
     Object? deviceName = null,
+    Object? deviceId = null,
   }) {
     return _then(
       _value.copyWith(
@@ -82,6 +90,10 @@ class _$LoginRequestDtoCopyWithImpl<$Res, $Val extends LoginRequestDto>
             deviceName: null == deviceName
                 ? _value.deviceName
                 : deviceName // ignore: cast_nullable_to_non_nullable
+                      as String,
+            deviceId: null == deviceId
+                ? _value.deviceId
+                : deviceId // ignore: cast_nullable_to_non_nullable
                       as String,
           )
           as $Val,
@@ -102,6 +114,7 @@ abstract class _$$LoginRequestDtoImplCopyWith<$Res>
     String email,
     String password,
     @JsonKey(name: 'device_name') String deviceName,
+    @JsonKey(name: 'device_id') String deviceId,
   });
 }
 
@@ -122,6 +135,7 @@ class __$$LoginRequestDtoImplCopyWithImpl<$Res>
     Object? email = null,
     Object? password = null,
     Object? deviceName = null,
+    Object? deviceId = null,
   }) {
     return _then(
       _$LoginRequestDtoImpl(
@@ -137,6 +151,10 @@ class __$$LoginRequestDtoImplCopyWithImpl<$Res>
             ? _value.deviceName
             : deviceName // ignore: cast_nullable_to_non_nullable
                   as String,
+        deviceId: null == deviceId
+            ? _value.deviceId
+            : deviceId // ignore: cast_nullable_to_non_nullable
+                  as String,
       ),
     );
   }
@@ -149,6 +167,7 @@ class _$LoginRequestDtoImpl implements _LoginRequestDto {
     required this.email,
     required this.password,
     @JsonKey(name: 'device_name') required this.deviceName,
+    @JsonKey(name: 'device_id') required this.deviceId,
   });
 
   factory _$LoginRequestDtoImpl.fromJson(Map<String, dynamic> json) =>
@@ -162,9 +181,16 @@ class _$LoginRequestDtoImpl implements _LoginRequestDto {
   @JsonKey(name: 'device_name')
   final String deviceName;
 
+  /// Identifiant d'installation. Le backend ne délivre une session sans
+  /// expiration que si ce champ accompagne `device_name`, car c'est lui qui
+  /// rend la session révocable depuis la gestion des appareils.
+  @override
+  @JsonKey(name: 'device_id')
+  final String deviceId;
+
   @override
   String toString() {
-    return 'LoginRequestDto(email: $email, password: $password, deviceName: $deviceName)';
+    return 'LoginRequestDto(email: $email, password: $password, deviceName: $deviceName, deviceId: $deviceId)';
   }
 
   @override
@@ -176,12 +202,15 @@ class _$LoginRequestDtoImpl implements _LoginRequestDto {
             (identical(other.password, password) ||
                 other.password == password) &&
             (identical(other.deviceName, deviceName) ||
-                other.deviceName == deviceName));
+                other.deviceName == deviceName) &&
+            (identical(other.deviceId, deviceId) ||
+                other.deviceId == deviceId));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode => Object.hash(runtimeType, email, password, deviceName);
+  int get hashCode =>
+      Object.hash(runtimeType, email, password, deviceName, deviceId);
 
   /// Create a copy of LoginRequestDto
   /// with the given fields replaced by the non-null parameter values.
@@ -205,6 +234,7 @@ abstract class _LoginRequestDto implements LoginRequestDto {
     required final String email,
     required final String password,
     @JsonKey(name: 'device_name') required final String deviceName,
+    @JsonKey(name: 'device_id') required final String deviceId,
   }) = _$LoginRequestDtoImpl;
 
   factory _LoginRequestDto.fromJson(Map<String, dynamic> json) =
@@ -217,6 +247,13 @@ abstract class _LoginRequestDto implements LoginRequestDto {
   @override
   @JsonKey(name: 'device_name')
   String get deviceName;
+
+  /// Identifiant d'installation. Le backend ne délivre une session sans
+  /// expiration que si ce champ accompagne `device_name`, car c'est lui qui
+  /// rend la session révocable depuis la gestion des appareils.
+  @override
+  @JsonKey(name: 'device_id')
+  String get deviceId;
 
   /// Create a copy of LoginRequestDto
   /// with the given fields replaced by the non-null parameter values.
@@ -242,6 +279,10 @@ mixin _$LoginResponseDto {
   @JsonKey(name: 'idle_timeout_minutes')
   int? get idleTimeoutMinutes => throw _privateConstructorUsedError;
 
+  /// 'mobile' (sans expiration) ou 'web' (fenêtre d'inactivité glissante).
+  @JsonKey(name: 'client_type')
+  String? get clientType => throw _privateConstructorUsedError;
+
   /// Serializes this LoginResponseDto to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
 
@@ -265,6 +306,7 @@ abstract class $LoginResponseDtoCopyWith<$Res> {
     ApiUserDto user,
     @JsonKey(name: 'expires_at') String? expiresAt,
     @JsonKey(name: 'idle_timeout_minutes') int? idleTimeoutMinutes,
+    @JsonKey(name: 'client_type') String? clientType,
   });
 
   $ApiUserDtoCopyWith<$Res> get user;
@@ -290,6 +332,7 @@ class _$LoginResponseDtoCopyWithImpl<$Res, $Val extends LoginResponseDto>
     Object? user = null,
     Object? expiresAt = freezed,
     Object? idleTimeoutMinutes = freezed,
+    Object? clientType = freezed,
   }) {
     return _then(
       _value.copyWith(
@@ -313,6 +356,10 @@ class _$LoginResponseDtoCopyWithImpl<$Res, $Val extends LoginResponseDto>
                 ? _value.idleTimeoutMinutes
                 : idleTimeoutMinutes // ignore: cast_nullable_to_non_nullable
                       as int?,
+            clientType: freezed == clientType
+                ? _value.clientType
+                : clientType // ignore: cast_nullable_to_non_nullable
+                      as String?,
           )
           as $Val,
     );
@@ -344,6 +391,7 @@ abstract class _$$LoginResponseDtoImplCopyWith<$Res>
     ApiUserDto user,
     @JsonKey(name: 'expires_at') String? expiresAt,
     @JsonKey(name: 'idle_timeout_minutes') int? idleTimeoutMinutes,
+    @JsonKey(name: 'client_type') String? clientType,
   });
 
   @override
@@ -369,6 +417,7 @@ class __$$LoginResponseDtoImplCopyWithImpl<$Res>
     Object? user = null,
     Object? expiresAt = freezed,
     Object? idleTimeoutMinutes = freezed,
+    Object? clientType = freezed,
   }) {
     return _then(
       _$LoginResponseDtoImpl(
@@ -392,6 +441,10 @@ class __$$LoginResponseDtoImplCopyWithImpl<$Res>
             ? _value.idleTimeoutMinutes
             : idleTimeoutMinutes // ignore: cast_nullable_to_non_nullable
                   as int?,
+        clientType: freezed == clientType
+            ? _value.clientType
+            : clientType // ignore: cast_nullable_to_non_nullable
+                  as String?,
       ),
     );
   }
@@ -406,6 +459,7 @@ class _$LoginResponseDtoImpl implements _LoginResponseDto {
     required this.user,
     @JsonKey(name: 'expires_at') this.expiresAt,
     @JsonKey(name: 'idle_timeout_minutes') this.idleTimeoutMinutes,
+    @JsonKey(name: 'client_type') this.clientType,
   });
 
   factory _$LoginResponseDtoImpl.fromJson(Map<String, dynamic> json) =>
@@ -426,9 +480,14 @@ class _$LoginResponseDtoImpl implements _LoginResponseDto {
   @JsonKey(name: 'idle_timeout_minutes')
   final int? idleTimeoutMinutes;
 
+  /// 'mobile' (sans expiration) ou 'web' (fenêtre d'inactivité glissante).
+  @override
+  @JsonKey(name: 'client_type')
+  final String? clientType;
+
   @override
   String toString() {
-    return 'LoginResponseDto(tokenType: $tokenType, accessToken: $accessToken, user: $user, expiresAt: $expiresAt, idleTimeoutMinutes: $idleTimeoutMinutes)';
+    return 'LoginResponseDto(tokenType: $tokenType, accessToken: $accessToken, user: $user, expiresAt: $expiresAt, idleTimeoutMinutes: $idleTimeoutMinutes, clientType: $clientType)';
   }
 
   @override
@@ -444,7 +503,9 @@ class _$LoginResponseDtoImpl implements _LoginResponseDto {
             (identical(other.expiresAt, expiresAt) ||
                 other.expiresAt == expiresAt) &&
             (identical(other.idleTimeoutMinutes, idleTimeoutMinutes) ||
-                other.idleTimeoutMinutes == idleTimeoutMinutes));
+                other.idleTimeoutMinutes == idleTimeoutMinutes) &&
+            (identical(other.clientType, clientType) ||
+                other.clientType == clientType));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
@@ -456,6 +517,7 @@ class _$LoginResponseDtoImpl implements _LoginResponseDto {
     user,
     expiresAt,
     idleTimeoutMinutes,
+    clientType,
   );
 
   /// Create a copy of LoginResponseDto
@@ -482,6 +544,7 @@ abstract class _LoginResponseDto implements LoginResponseDto {
     required final ApiUserDto user,
     @JsonKey(name: 'expires_at') final String? expiresAt,
     @JsonKey(name: 'idle_timeout_minutes') final int? idleTimeoutMinutes,
+    @JsonKey(name: 'client_type') final String? clientType,
   }) = _$LoginResponseDtoImpl;
 
   factory _LoginResponseDto.fromJson(Map<String, dynamic> json) =
@@ -501,6 +564,11 @@ abstract class _LoginResponseDto implements LoginResponseDto {
   @override
   @JsonKey(name: 'idle_timeout_minutes')
   int? get idleTimeoutMinutes;
+
+  /// 'mobile' (sans expiration) ou 'web' (fenêtre d'inactivité glissante).
+  @override
+  @JsonKey(name: 'client_type')
+  String? get clientType;
 
   /// Create a copy of LoginResponseDto
   /// with the given fields replaced by the non-null parameter values.

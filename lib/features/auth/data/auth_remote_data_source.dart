@@ -11,6 +11,7 @@ class AuthRemoteDataSource {
   Future<LoginResponseDto> login({
     required String email,
     required String password,
+    required String deviceId,
   }) async {
     final res = await _dio.post<Map<String, dynamic>>(
       '/auth/login',
@@ -18,6 +19,7 @@ class AuthRemoteDataSource {
         email: email,
         password: password,
         deviceName: AppConfig.deviceName,
+        deviceId: deviceId,
       ).toJson(),
     );
     return LoginResponseDto.fromJson(res.data!['data'] as Map<String, dynamic>);

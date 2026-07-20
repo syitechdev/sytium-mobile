@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:sytium_mobile/core/error/failure.dart';
 import 'package:sytium_mobile/core/network/error_mapper.dart';
+import 'package:sytium_mobile/core/notifications/device_identity.dart';
 import 'package:sytium_mobile/core/result/result.dart';
 import 'package:sytium_mobile/core/storage/secure_token_store.dart';
 import 'package:sytium_mobile/core/utils/asset_url.dart';
@@ -14,10 +15,15 @@ import 'package:sytium_mobile/features/auth/domain/mobile_capabilities.dart';
 import 'package:sytium_mobile/features/auth/domain/mobile_module.dart';
 
 class AuthRepositoryImpl implements AuthRepository {
-  AuthRepositoryImpl({required this.remote, required this.tokenStore});
+  AuthRepositoryImpl({
+    required this.remote,
+    required this.tokenStore,
+    required this.resolveDeviceId,
+  });
 
   final AuthRemoteDataSource remote;
   final TokenStore tokenStore;
+  final DeviceIdProvider resolveDeviceId;
 
   @override
   Future<Result<AuthSession>> login({
@@ -25,7 +31,15 @@ class AuthRepositoryImpl implements AuthRepository {
     required String password,
   }) async {
     try {
-      final login = await remote.login(email: email, password: password);
+      // Lie la session à cette installation : le backend n'accorde une session
+      // sans expiration qu'à ce prix, et c'est ce qui permet de la révoquer
+      // depuis la gestion des appareils si le téléphone est perdu.
+      final deviceId = await resolveDeviceId();
+      final login = await remote.login(
+        email: email,
+        password: password,
+        deviceId: deviceId,
+      );
       await tokenStore.save(
         token: login.accessToken,
         expiresAt: login.expiresAt == null

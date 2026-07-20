@@ -11,6 +11,10 @@ class LoginRequestDto with _$LoginRequestDto {
     required String email,
     required String password,
     @JsonKey(name: 'device_name') required String deviceName,
+    /// Identifiant d'installation. Le backend ne délivre une session sans
+    /// expiration que si ce champ accompagne `device_name`, car c'est lui qui
+    /// rend la session révocable depuis la gestion des appareils.
+    @JsonKey(name: 'device_id') required String deviceId,
   }) = _LoginRequestDto;
 
   factory LoginRequestDto.fromJson(Map<String, dynamic> json) =>
@@ -25,6 +29,8 @@ class LoginResponseDto with _$LoginResponseDto {
     required ApiUserDto user,
     @JsonKey(name: 'expires_at') String? expiresAt,
     @JsonKey(name: 'idle_timeout_minutes') int? idleTimeoutMinutes,
+    /// 'mobile' (sans expiration) ou 'web' (fenêtre d'inactivité glissante).
+    @JsonKey(name: 'client_type') String? clientType,
   }) = _LoginResponseDto;
 
   factory LoginResponseDto.fromJson(Map<String, dynamic> json) =>

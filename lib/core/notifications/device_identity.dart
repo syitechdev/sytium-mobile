@@ -2,9 +2,18 @@ import 'dart:math';
 
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
+/// Résout l'identifiant d'installation. Alias de fonction plutôt qu'interface :
+/// un seul membre, et cela donne un double trivial en test — l'implémentation
+/// réelle touche le keychain, indisponible hors appareil.
+typedef DeviceIdProvider = Future<String> Function();
+
 /// A stable per-install identifier, persisted in the keychain/keystore so it
 /// survives app restarts (but not reinstalls). The backend keys a mobile_device
 /// row on it, so FCM/VoIP tokens can rotate without creating duplicate rows.
+///
+/// Sert aussi à lier la session : le login envoie cet id, et le backend ne
+/// délivre une session sans expiration que si elle est rattachée à une
+/// installation identifiable, donc révocable.
 class DeviceIdentity {
   DeviceIdentity([FlutterSecureStorage? storage])
     : _storage =

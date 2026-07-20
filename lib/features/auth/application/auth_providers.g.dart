@@ -23,7 +23,7 @@ final tokenStoreProvider = Provider<TokenStore>.internal(
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef TokenStoreRef = ProviderRef<TokenStore>;
-String _$authDioHash() => r'5d15a5ad07b6484c7dccdd76e643e0b97cad0585';
+String _$authDioHash() => r'6685bfa9259e60def6d29d235fc910ba55c223d9';
 
 /// See also [authDio].
 @ProviderFor(authDio)
@@ -40,7 +40,7 @@ final authDioProvider = Provider<Dio>.internal(
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef AuthDioRef = ProviderRef<Dio>;
-String _$authRepositoryHash() => r'97ebd4506e99a13a2f2187128e64e8f89c6d2746';
+String _$authRepositoryHash() => r'4bc61f771f079d0ed8bf105b8ac84bb91157596b';
 
 /// See also [authRepository].
 @ProviderFor(authRepository)
@@ -57,5 +57,28 @@ final authRepositoryProvider = Provider<AuthRepository>.internal(
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef AuthRepositoryRef = ProviderRef<AuthRepository>;
+String _$sessionRevokedHash() => r'dbbc4bfd4ab1e81b00c03d9c261287ea3df8b930';
+
+/// Émis quand le serveur rejette le token (401). Les sessions mobiles n'expirant
+/// plus, un 401 signifie désormais une révocation réelle : appareil retiré,
+/// mot de passe changé, compte désactivé.
+///
+/// Ce signal est volontairement découplé de [AuthController] : le contrôleur
+/// dépend du dépôt, qui dépend de [authDioProvider] — lire le contrôleur depuis
+/// l'intercepteur fermerait un cycle de dépendances Riverpod.
+///
+/// Copied from [SessionRevoked].
+@ProviderFor(SessionRevoked)
+final sessionRevokedProvider = NotifierProvider<SessionRevoked, int>.internal(
+  SessionRevoked.new,
+  name: r'sessionRevokedProvider',
+  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+      ? null
+      : _$sessionRevokedHash,
+  dependencies: null,
+  allTransitiveDependencies: null,
+);
+
+typedef _$SessionRevoked = Notifier<int>;
 // ignore_for_file: type=lint
 // ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package

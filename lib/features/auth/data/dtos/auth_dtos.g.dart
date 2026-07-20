@@ -12,6 +12,7 @@ _$LoginRequestDtoImpl _$$LoginRequestDtoImplFromJson(
   email: json['email'] as String,
   password: json['password'] as String,
   deviceName: json['device_name'] as String,
+  deviceId: json['device_id'] as String,
 );
 
 Map<String, dynamic> _$$LoginRequestDtoImplToJson(
@@ -20,6 +21,7 @@ Map<String, dynamic> _$$LoginRequestDtoImplToJson(
   'email': instance.email,
   'password': instance.password,
   'device_name': instance.deviceName,
+  'device_id': instance.deviceId,
 };
 
 _$LoginResponseDtoImpl _$$LoginResponseDtoImplFromJson(
@@ -30,6 +32,7 @@ _$LoginResponseDtoImpl _$$LoginResponseDtoImplFromJson(
   user: ApiUserDto.fromJson(json['user'] as Map<String, dynamic>),
   expiresAt: json['expires_at'] as String?,
   idleTimeoutMinutes: (json['idle_timeout_minutes'] as num?)?.toInt(),
+  clientType: json['client_type'] as String?,
 );
 
 Map<String, dynamic> _$$LoginResponseDtoImplToJson(
@@ -40,6 +43,7 @@ Map<String, dynamic> _$$LoginResponseDtoImplToJson(
   'user': instance.user,
   'expires_at': instance.expiresAt,
   'idle_timeout_minutes': instance.idleTimeoutMinutes,
+  'client_type': instance.clientType,
 };
 
 _$ApiUserDtoImpl _$$ApiUserDtoImplFromJson(Map<String, dynamic> json) =>
