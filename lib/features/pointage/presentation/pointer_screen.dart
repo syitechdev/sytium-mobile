@@ -165,6 +165,17 @@ class _PointerScreenState extends ConsumerState<PointerScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // L'écran est désormais poussé comme route à part entière (il n'est plus un
+    // onglet du shell) : il porte donc son propre Scaffold et son app bar. Sans
+    // ce Scaffold, il n'y avait ni bouton retour ni ancêtre Material — les
+    // textes s'affichaient en rouge souligné de jaune (rendu de secours Flutter).
+    return Scaffold(
+      appBar: AppBar(title: const Text('Pointer')),
+      body: _buildBody(context),
+    );
+  }
+
+  Widget _buildBody(BuildContext context) {
     if (_checkingGuard) {
       return const Center(child: CircularProgressIndicator());
     }

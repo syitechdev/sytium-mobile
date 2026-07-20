@@ -110,7 +110,10 @@ class _QuickActionsSheet extends StatelessWidget {
           icon: Icons.qr_code_scanner,
           label: 'Pointer',
           subtitle: 'Scanner le QR de présence',
-          tint: (c) => c.navy,
+          // Pas navy : #0A1730 se fond dans les surfaces sombres, l'icône
+          // devenait invisible en mode sombre. Info reste lisible dans les deux
+          // thèmes et rappelle le bleu du cadre de scan.
+          tint: (c) => c.info,
           visible: true,
         ),
       ]),
