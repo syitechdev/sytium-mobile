@@ -7,6 +7,7 @@ import 'package:sytium_mobile/features/explorer/presentation/explorer_screen.dar
 import 'package:sytium_mobile/features/home/presentation/home_screen.dart';
 import 'package:sytium_mobile/features/notifications/presentation/widgets/notification_bell.dart';
 import 'package:sytium_mobile/features/pointage/presentation/pointer_screen.dart';
+import 'package:sytium_mobile/features/shell/presentation/quick_actions_sheet.dart';
 import 'package:sytium_mobile/features/stats/presentation/stats_screen.dart';
 import 'package:sytium_mobile/features/workspace/application/workspace_providers.dart';
 import 'package:sytium_mobile/features/workspace/presentation/workspace_screen.dart';
@@ -36,16 +37,14 @@ class _HomeShellState extends ConsumerState<HomeShell> {
   /// stay as a cheap placeholder so the Pointer guard/GPS don't run at launch.
   final Set<int> _visited = {0};
 
+  // Quatre onglets encadrant le bouton d'action central. « Pointer » a quitté
+  // la barre : c'est désormais une action du bouton central (openQuickActions),
+  // car ce n'est pas une destination mais une tâche ponctuelle.
   static const _items = [
     AppBottomNavItem(
       icon: Icons.home_outlined,
       activeIcon: Icons.home_rounded,
       label: 'Accueil',
-    ),
-    AppBottomNavItem(
-      icon: Icons.qr_code_scanner,
-      activeIcon: Icons.qr_code_scanner,
-      label: 'Pointer',
     ),
     AppBottomNavItem(
       icon: Icons.chat_bubble_outline,
@@ -68,25 +67,27 @@ class _HomeShellState extends ConsumerState<HomeShell> {
     0 => HomeScreen(
       user: user,
       capabilities: caps,
-      onPointer: () => setState(() {
-        _index = 1;
-        _visited.add(1);
-      }),
+      onPointer: _openPointer,
       onStats: () => setState(() {
+        _index = 2;
+        _visited.add(2);
+      }),
+      onExplorer: () => setState(() {
         _index = 3;
         _visited.add(3);
       }),
-      onExplorer: () => setState(() {
-        _index = 4;
-        _visited.add(4);
-      }),
     ),
-    1 => const PointerScreen(),
-    2 => const WorkspaceScreen(),
-    3 => const StatsScreen(),
-    4 => const ExplorerScreen(),
+    1 => const WorkspaceScreen(),
+    2 => const StatsScreen(),
+    3 => const ExplorerScreen(),
     _ => _PlaceholderTab(label: _items[i].label),
   };
+
+  void _openPointer() {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(builder: (_) => const PointerScreen()),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -98,8 +99,9 @@ class _HomeShellState extends ConsumerState<HomeShell> {
     final onHome = _index == 0;
     final hasUnread = ref.watch(workspaceUnreadProvider) > 0;
     final navItems = [
+      // La messagerie est l'onglet 1 : c'est lui qui porte la pastille non-lus.
       for (var i = 0; i < _items.length; i++)
-        i == 2 ? _withBadge(_items[i], hasUnread) : _items[i],
+        i == 1 ? _withBadge(_items[i], hasUnread) : _items[i],
     ];
 
     return Scaffold(
@@ -133,6 +135,7 @@ class _HomeShellState extends ConsumerState<HomeShell> {
           _index = i;
           _visited.add(i);
         }),
+        onCenterTap: () => openQuickActions(context, capabilities: caps),
       ),
     );
   }
@@ -167,6 +170,10 @@ class _HomeAppBar extends StatelessWidget implements PreferredSizeWidget {
   }
 }
 
+/// Hauteur du logo dans l'app bar. Légèrement au-dessus de l'ancienne (28) tout
+/// en tenant dans la hauteur standard de la barre.
+const double _kLogoHeight = 34;
+
 /// Organization logo with a Sytium fallback (theme-aware) when absent/failed.
 class _OrgLogo extends StatelessWidget {
   const _OrgLogo({this.url});
@@ -175,11 +182,11 @@ class _OrgLogo extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final fallback = Image.asset(context.colors.logo, height: 28);
+    final fallback = Image.asset(context.colors.logo, height: _kLogoHeight);
     if (url == null || url!.isEmpty) return fallback;
     return Image.network(
       url!,
-      height: 28,
+      height: _kLogoHeight,
       errorBuilder: (_, __, ___) => fallback,
     );
   }

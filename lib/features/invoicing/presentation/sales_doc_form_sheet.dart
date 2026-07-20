@@ -18,10 +18,17 @@ import 'package:sytium_mobile/theme/sytium_colors.dart';
 import 'package:sytium_mobile/theme/tokens.dart';
 
 /// Opens « Émission de pièce commerciale ». Resolves to `true` on success.
-Future<bool?> showSalesDocSheet(BuildContext context) {
+///
+/// [initialKind] présélectionne le type de pièce (proforma ou comptant). Le
+/// mode comptant reste conditionné à l'habilitation financeWrite : demandé sans
+/// ce droit, la feuille retombe sur proforma.
+Future<bool?> showSalesDocSheet(
+  BuildContext context, {
+  SalesDocKind initialKind = SalesDocKind.proforma,
+}) {
   return showAppSheet<bool>(
     context,
-    builder: (_) => const _SalesDocFormSheet(),
+    builder: (_) => _SalesDocFormSheet(initialKind: initialKind),
   );
 }
 
@@ -60,7 +67,9 @@ class _Line {
 }
 
 class _SalesDocFormSheet extends ConsumerStatefulWidget {
-  const _SalesDocFormSheet();
+  const _SalesDocFormSheet({required this.initialKind});
+
+  final SalesDocKind initialKind;
 
   @override
   ConsumerState<_SalesDocFormSheet> createState() => _SalesDocFormSheetState();
@@ -71,7 +80,7 @@ class _SalesDocFormSheetState extends ConsumerState<_SalesDocFormSheet> {
   final _objet = TextEditingController();
   final _lines = <_Line>[];
 
-  SalesDocKind _kind = SalesDocKind.proforma;
+  late SalesDocKind _kind = widget.initialKind;
   num _taux = 18;
   num _remise = 0;
   CashAccount? _account;
@@ -86,6 +95,12 @@ class _SalesDocFormSheetState extends ConsumerState<_SalesDocFormSheet> {
   @override
   void initState() {
     super.initState();
+    // Garde-fou : un comptant demandé sans habilitation retombe sur proforma,
+    // sinon le sélecteur de mode serait masqué et la pièce partirait en
+    // comptant sans compte de règlement.
+    if (_kind == SalesDocKind.comptant && !_canComptant) {
+      _kind = SalesDocKind.proforma;
+    }
     _addLine();
   }
 

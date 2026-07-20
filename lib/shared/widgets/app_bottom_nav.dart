@@ -26,17 +26,25 @@ class AppBottomNavItem {
 /// Premium custom bottom navigation. Emphasis comes from a filled brand icon,
 /// brand label and a subtle scale — no heavy selection pill. Tracks the global
 /// theme via tokens (works in light and dark).
+///
+/// Quand [onCenterTap] est fourni, un bouton d'action circulaire est inséré au
+/// milieu de la barre : les [items] se répartissent alors en deux moitiés de
+/// part et d'autre. Le nombre d'items doit être pair dans ce cas.
 class AppBottomNav extends StatelessWidget {
   const AppBottomNav({
     required this.items,
     required this.currentIndex,
     required this.onTap,
+    this.onCenterTap,
     super.key,
   });
 
   final List<AppBottomNavItem> items;
   final int currentIndex;
   final ValueChanged<int> onTap;
+
+  /// Action du bouton central. Sans lui, la barre est une simple rangée d'items.
+  final VoidCallback? onCenterTap;
 
   @override
   Widget build(BuildContext context) {
@@ -49,22 +57,85 @@ class AppBottomNav extends StatelessWidget {
         ),
         child: SafeArea(
           top: false,
+          // Le bouton central déborde vers le haut : sans marge, son ombre
+          // serait rognée par le bord de la barre.
           child: SizedBox(
             height: 62,
-            child: Row(
-              children: [
-                for (var i = 0; i < items.length; i++)
-                  Expanded(
-                    child: _NavItem(
-                      item: items[i],
-                      selected: i == currentIndex,
-                      onTap: () {
-                        HapticFeedback.selectionClick();
-                        onTap(i);
-                      },
-                    ),
+            child: onCenterTap == null
+                ? _row(context, 0, items.length)
+                : Row(
+                    children: [
+                      Expanded(child: _row(context, 0, items.length ~/ 2)),
+                      _CenterButton(onTap: onCenterTap!),
+                      Expanded(
+                        child: _row(
+                          context,
+                          items.length ~/ 2,
+                          items.length,
+                        ),
+                      ),
+                    ],
                   ),
-              ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Rangée d'items pour l'intervalle [start, end).
+  Widget _row(BuildContext context, int start, int end) => Row(
+    children: [
+      for (var i = start; i < end; i++)
+        Expanded(
+          child: _NavItem(
+            item: items[i],
+            selected: i == currentIndex,
+            onTap: () {
+              HapticFeedback.selectionClick();
+              onTap(i);
+            },
+          ),
+        ),
+    ],
+  );
+}
+
+/// Bouton d'action central : disque plein en couleur de marque, icône « + ».
+class _CenterButton extends StatelessWidget {
+  const _CenterButton({required this.onTap});
+
+  final VoidCallback onTap;
+
+  static const _diameter = 56.0;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: Tokens.space8),
+      // Remonte le disque pour qu'il chevauche le bord supérieur de la barre.
+      child: Transform.translate(
+        offset: const Offset(0, -10),
+        child: Semantics(
+          button: true,
+          label: 'Actions rapides',
+          child: Material(
+            color: colors.brand,
+            shape: const CircleBorder(),
+            elevation: 4,
+            shadowColor: colors.brand.withValues(alpha: 0.4),
+            child: InkWell(
+              customBorder: const CircleBorder(),
+              onTap: () {
+                HapticFeedback.mediumImpact();
+                onTap();
+              },
+              child: SizedBox(
+                width: _diameter,
+                height: _diameter,
+                child: Icon(Icons.add, color: colors.onBrand, size: 30),
+              ),
             ),
           ),
         ),
