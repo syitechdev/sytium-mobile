@@ -112,6 +112,54 @@ void main() {
     expect(find.text('iPhone'), findsOneWidget);
   });
 
+  testWidgets('une session web apparaît avec son icône propre', (tester) async {
+    await tester.pumpWidget(
+      _screen(
+        _FakeRepo(
+          items: [
+            _session(isCurrent: true),
+            DeviceSession(
+              id: 's2',
+              label: 'Navigateur web',
+              isCurrent: false,
+              clientType: 'web',
+              lastUsedAt: DateTime(2026, 7, 20),
+            ),
+          ],
+        ),
+      ),
+    );
+    await tester.pump(const Duration(milliseconds: 100));
+
+    expect(find.text('Navigateur web'), findsOneWidget);
+    // Une session web n'a pas de plateforme : elle ne doit pas retomber sur
+    // l'icône « appareil inconnu » du mobile.
+    expect(find.byIcon(Icons.computer_outlined), findsOneWidget);
+    expect(find.byIcon(Icons.devices_other), findsNothing);
+  });
+
+  testWidgets('une session web est révocable depuis le mobile', (tester) async {
+    final repo = _FakeRepo(
+      items: [
+        const DeviceSession(
+          id: 'web1',
+          label: 'Navigateur web',
+          isCurrent: false,
+          clientType: 'web',
+        ),
+      ],
+    );
+    await tester.pumpWidget(_screen(repo));
+    await tester.pump(const Duration(milliseconds: 100));
+
+    await tester.tap(find.byType(IconButton));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Révoquer').last);
+    await tester.pumpAndSettle();
+
+    expect(repo.revoked, ['web1']);
+  });
+
   testWidgets('la session courante est marquée et non révocable', (
     tester,
   ) async {

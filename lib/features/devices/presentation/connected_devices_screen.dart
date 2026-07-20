@@ -116,8 +116,8 @@ class ConnectedDevicesScreen extends ConsumerWidget {
   }
 }
 
-/// Rappelle pourquoi cet écran existe : les sessions mobiles n'expirent pas,
-/// donc la révocation est le seul moyen de couper l'accès d'un appareil.
+/// Rappelle pourquoi cet écran existe, et que les deux types de session n'ont
+/// pas la même politique d'expiration : le mobile ne se referme jamais seul.
 class _SessionsNotice extends StatelessWidget {
   const _SessionsNotice();
 
@@ -140,7 +140,8 @@ class _SessionsNotice extends StatelessWidget {
           Expanded(
             child: Text(
               'Une session mobile reste ouverte tant que vous ne la révoquez '
-              'pas. Révoquez tout appareil que vous n’utilisez plus.',
+              'pas. Une session web se ferme seule après une heure '
+              'd’inactivité. Révoquez tout accès que vous ne reconnaissez pas.',
               style: Theme.of(
                 context,
               ).textTheme.bodySmall?.copyWith(color: colors.textMuted),
@@ -158,11 +159,14 @@ class _SessionTile extends StatelessWidget {
   final DeviceSession session;
   final VoidCallback? onRevoke;
 
-  IconData get _icon => switch (session.platform) {
-    'ios' => Icons.phone_iphone,
-    'android' => Icons.phone_android,
-    _ => Icons.devices_other,
-  };
+  IconData get _icon {
+    if (session.isWeb) return Icons.computer_outlined;
+    return switch (session.platform) {
+      'ios' => Icons.phone_iphone,
+      'android' => Icons.phone_android,
+      _ => Icons.devices_other,
+    };
+  }
 
   String get _subtitle {
     final parts = <String>[

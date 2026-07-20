@@ -11,6 +11,7 @@ _$DeviceSessionDtoImpl _$$DeviceSessionDtoImplFromJson(
 ) => _$DeviceSessionDtoImpl(
   id: json['id'] as String,
   label: json['label'] as String? ?? 'Appareil mobile',
+  clientType: json['client_type'] as String? ?? 'mobile',
   platform: json['platform'] as String?,
   appVersion: json['app_version'] as String?,
   lastUsedAt: json['last_used_at'] as String?,
@@ -23,6 +24,7 @@ Map<String, dynamic> _$$DeviceSessionDtoImplToJson(
 ) => <String, dynamic>{
   'id': instance.id,
   'label': instance.label,
+  'client_type': instance.clientType,
   'platform': instance.platform,
   'app_version': instance.appVersion,
   'last_used_at': instance.lastUsedAt,

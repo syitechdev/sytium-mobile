@@ -23,6 +23,10 @@ DeviceSessionDto _$DeviceSessionDtoFromJson(Map<String, dynamic> json) {
 mixin _$DeviceSessionDto {
   String get id => throw _privateConstructorUsedError;
   String get label => throw _privateConstructorUsedError;
+
+  /// 'mobile' (sans expiration) ou 'web' (expire après inactivité).
+  @JsonKey(name: 'client_type')
+  String get clientType => throw _privateConstructorUsedError;
   String? get platform => throw _privateConstructorUsedError;
   @JsonKey(name: 'app_version')
   String? get appVersion => throw _privateConstructorUsedError;
@@ -53,6 +57,7 @@ abstract class $DeviceSessionDtoCopyWith<$Res> {
   $Res call({
     String id,
     String label,
+    @JsonKey(name: 'client_type') String clientType,
     String? platform,
     @JsonKey(name: 'app_version') String? appVersion,
     @JsonKey(name: 'last_used_at') String? lastUsedAt,
@@ -78,6 +83,7 @@ class _$DeviceSessionDtoCopyWithImpl<$Res, $Val extends DeviceSessionDto>
   $Res call({
     Object? id = null,
     Object? label = null,
+    Object? clientType = null,
     Object? platform = freezed,
     Object? appVersion = freezed,
     Object? lastUsedAt = freezed,
@@ -93,6 +99,10 @@ class _$DeviceSessionDtoCopyWithImpl<$Res, $Val extends DeviceSessionDto>
             label: null == label
                 ? _value.label
                 : label // ignore: cast_nullable_to_non_nullable
+                      as String,
+            clientType: null == clientType
+                ? _value.clientType
+                : clientType // ignore: cast_nullable_to_non_nullable
                       as String,
             platform: freezed == platform
                 ? _value.platform
@@ -132,6 +142,7 @@ abstract class _$$DeviceSessionDtoImplCopyWith<$Res>
   $Res call({
     String id,
     String label,
+    @JsonKey(name: 'client_type') String clientType,
     String? platform,
     @JsonKey(name: 'app_version') String? appVersion,
     @JsonKey(name: 'last_used_at') String? lastUsedAt,
@@ -156,6 +167,7 @@ class __$$DeviceSessionDtoImplCopyWithImpl<$Res>
   $Res call({
     Object? id = null,
     Object? label = null,
+    Object? clientType = null,
     Object? platform = freezed,
     Object? appVersion = freezed,
     Object? lastUsedAt = freezed,
@@ -171,6 +183,10 @@ class __$$DeviceSessionDtoImplCopyWithImpl<$Res>
         label: null == label
             ? _value.label
             : label // ignore: cast_nullable_to_non_nullable
+                  as String,
+        clientType: null == clientType
+            ? _value.clientType
+            : clientType // ignore: cast_nullable_to_non_nullable
                   as String,
         platform: freezed == platform
             ? _value.platform
@@ -203,6 +219,7 @@ class _$DeviceSessionDtoImpl implements _DeviceSessionDto {
   const _$DeviceSessionDtoImpl({
     required this.id,
     this.label = 'Appareil mobile',
+    @JsonKey(name: 'client_type') this.clientType = 'mobile',
     this.platform,
     @JsonKey(name: 'app_version') this.appVersion,
     @JsonKey(name: 'last_used_at') this.lastUsedAt,
@@ -218,6 +235,11 @@ class _$DeviceSessionDtoImpl implements _DeviceSessionDto {
   @override
   @JsonKey()
   final String label;
+
+  /// 'mobile' (sans expiration) ou 'web' (expire après inactivité).
+  @override
+  @JsonKey(name: 'client_type')
+  final String clientType;
   @override
   final String? platform;
   @override
@@ -235,7 +257,7 @@ class _$DeviceSessionDtoImpl implements _DeviceSessionDto {
 
   @override
   String toString() {
-    return 'DeviceSessionDto(id: $id, label: $label, platform: $platform, appVersion: $appVersion, lastUsedAt: $lastUsedAt, createdAt: $createdAt, isCurrent: $isCurrent)';
+    return 'DeviceSessionDto(id: $id, label: $label, clientType: $clientType, platform: $platform, appVersion: $appVersion, lastUsedAt: $lastUsedAt, createdAt: $createdAt, isCurrent: $isCurrent)';
   }
 
   @override
@@ -245,6 +267,8 @@ class _$DeviceSessionDtoImpl implements _DeviceSessionDto {
             other is _$DeviceSessionDtoImpl &&
             (identical(other.id, id) || other.id == id) &&
             (identical(other.label, label) || other.label == label) &&
+            (identical(other.clientType, clientType) ||
+                other.clientType == clientType) &&
             (identical(other.platform, platform) ||
                 other.platform == platform) &&
             (identical(other.appVersion, appVersion) ||
@@ -263,6 +287,7 @@ class _$DeviceSessionDtoImpl implements _DeviceSessionDto {
     runtimeType,
     id,
     label,
+    clientType,
     platform,
     appVersion,
     lastUsedAt,
@@ -291,6 +316,7 @@ abstract class _DeviceSessionDto implements DeviceSessionDto {
   const factory _DeviceSessionDto({
     required final String id,
     final String label,
+    @JsonKey(name: 'client_type') final String clientType,
     final String? platform,
     @JsonKey(name: 'app_version') final String? appVersion,
     @JsonKey(name: 'last_used_at') final String? lastUsedAt,
@@ -305,6 +331,11 @@ abstract class _DeviceSessionDto implements DeviceSessionDto {
   String get id;
   @override
   String get label;
+
+  /// 'mobile' (sans expiration) ou 'web' (expire après inactivité).
+  @override
+  @JsonKey(name: 'client_type')
+  String get clientType;
   @override
   String? get platform;
   @override

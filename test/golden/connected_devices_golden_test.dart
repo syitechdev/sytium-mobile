@@ -30,6 +30,13 @@ class _Repo implements SessionsRepository {
     ),
     DeviceSession(
       id: 's3',
+      label: 'Navigateur web',
+      isCurrent: false,
+      clientType: 'web',
+      lastUsedAt: DateTime(2026, 7, 19),
+    ),
+    DeviceSession(
+      id: 's4',
       label: 'Appareil mobile',
       isCurrent: false,
       createdAt: DateTime(2026, 6, 2),

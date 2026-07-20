@@ -10,6 +10,8 @@ class DeviceSessionDto with _$DeviceSessionDto {
   const factory DeviceSessionDto({
     required String id,
     @Default('Appareil mobile') String label,
+    /// 'mobile' (sans expiration) ou 'web' (expire après inactivité).
+    @JsonKey(name: 'client_type') @Default('mobile') String clientType,
     String? platform,
     @JsonKey(name: 'app_version') String? appVersion,
     @JsonKey(name: 'last_used_at') String? lastUsedAt,
