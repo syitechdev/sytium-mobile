@@ -30,7 +30,12 @@ void main() {
         child: const App(),
       ),
     );
+    // L'app ouvre sur le splash : on laisse jouer l'animation puis la pause
+    // qui la suit avant que la route ne bascule.
     await tester.pumpAndSettle();
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.pumpAndSettle();
+
     expect(find.text('Se connecter'), findsOneWidget);
   });
 }
