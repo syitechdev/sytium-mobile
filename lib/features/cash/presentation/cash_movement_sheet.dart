@@ -8,6 +8,7 @@ import 'package:sytium_mobile/features/cash/application/cash_providers.dart';
 import 'package:sytium_mobile/features/cash/domain/cash_models.dart';
 import 'package:sytium_mobile/features/finance/application/finance_providers.dart';
 import 'package:sytium_mobile/shared/widgets/app_primary_button.dart';
+import 'package:sytium_mobile/shared/widgets/app_sheet.dart';
 import 'package:sytium_mobile/shared/widgets/app_text_field.dart';
 import 'package:sytium_mobile/shared/widgets/error_state.dart';
 import 'package:sytium_mobile/theme/sytium_colors.dart';
@@ -16,10 +17,8 @@ import 'package:sytium_mobile/theme/tokens.dart';
 /// Opens the « Nouveau mouvement de caisse » sheet. Resolves to `true` when a
 /// movement was recorded, so the caller can refresh treasury data.
 Future<bool?> showCashMovementSheet(BuildContext context) {
-  return showModalBottomSheet<bool>(
-    context: context,
-    isScrollControlled: true,
-    useSafeArea: true,
+  return showAppSheet<bool>(
+    context,
     builder: (_) => const _CashMovementSheet(),
   );
 }
@@ -55,7 +54,9 @@ class _CashMovementSheetState extends ConsumerState<_CashMovementSheet> {
   /// Parses the amount field (accepts spaces/thousands separators) into a
   /// positive number, or null if invalid.
   num? _parsedMontant() {
-    final raw = _montant.text.replaceAll(RegExp(r'[\s ]'), '').replaceAll(',', '.');
+    final raw = _montant.text
+        .replaceAll(RegExp(r'[\s ]'), '')
+        .replaceAll(',', '.');
     final v = num.tryParse(raw);
     return (v != null && v > 0) ? v : null;
   }
@@ -72,7 +73,9 @@ class _CashMovementSheetState extends ConsumerState<_CashMovementSheet> {
     if (_account == null || montant == null || libelle.isEmpty) return;
 
     setState(() => _submitting = true);
-    final result = await ref.read(cashRepositoryProvider).createMovement(
+    final result = await ref
+        .read(cashRepositoryProvider)
+        .createMovement(
           CashMovementInput(
             accountId: _account!.id,
             type: _type,
@@ -122,17 +125,6 @@ class _CashMovementSheetState extends ConsumerState<_CashMovementSheet> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Center(
-              child: Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: colors.border,
-                  borderRadius: BorderRadius.circular(Tokens.radiusPill),
-                ),
-              ),
-            ),
-            const SizedBox(height: Tokens.space16),
             Text('Nouveau mouvement', style: theme.titleLarge),
             const SizedBox(height: Tokens.space4),
             Text(
@@ -181,7 +173,9 @@ class _CashMovementSheetState extends ConsumerState<_CashMovementSheet> {
               controller: _montant,
               label: 'Montant (FCFA)',
               hint: 'Ex : 250 000',
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
               prefixIcon: Icons.payments_outlined,
               errorText: _montantError,
             ),
@@ -231,10 +225,9 @@ class _AccountDropdown extends StatelessWidget {
     if (accounts.isEmpty) {
       return Text(
         'Aucun compte disponible.',
-        style: Theme.of(context)
-            .textTheme
-            .bodySmall
-            ?.copyWith(color: context.colors.textMuted),
+        style: Theme.of(
+          context,
+        ).textTheme.bodySmall?.copyWith(color: context.colors.textMuted),
       );
     }
     return DropdownButtonFormField<CashAccount>(

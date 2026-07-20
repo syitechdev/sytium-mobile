@@ -5,6 +5,7 @@ import 'package:sytium_mobile/core/error/failure.dart';
 import 'package:sytium_mobile/features/requests/application/requests_providers.dart';
 import 'package:sytium_mobile/features/requests/domain/request_models.dart';
 import 'package:sytium_mobile/shared/widgets/app_primary_button.dart';
+import 'package:sytium_mobile/shared/widgets/app_sheet.dart';
 import 'package:sytium_mobile/shared/widgets/app_text_field.dart';
 import 'package:sytium_mobile/theme/sytium_colors.dart';
 import 'package:sytium_mobile/theme/tokens.dart';
@@ -14,15 +15,7 @@ const _kLastYearOffset = 2;
 
 /// Opens the leave-deposit modal. Returns `true` if a leave was created.
 Future<bool?> showLeaveFormSheet(BuildContext context) {
-  return showModalBottomSheet<bool>(
-    context: context,
-    isScrollControlled: true,
-    backgroundColor: context.colors.card,
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(Tokens.radiusLg)),
-    ),
-    builder: (_) => const _LeaveFormSheet(),
-  );
+  return showAppSheet<bool>(context, builder: (_) => const _LeaveFormSheet());
 }
 
 class _LeaveFormSheet extends ConsumerStatefulWidget {
@@ -92,14 +85,16 @@ class _LeaveFormSheetState extends ConsumerState<_LeaveFormSheet> {
       _error = null;
     });
 
-    final result = await ref.read(requestsRepositoryProvider).createLeave(
-      LeaveDraft(
-        type: _type,
-        dateDebut: _ymd(_debut),
-        dateFin: _ymd(_fin),
-        motif: _motif.text.trim().isEmpty ? null : _motif.text.trim(),
-      ),
-    );
+    final result = await ref
+        .read(requestsRepositoryProvider)
+        .createLeave(
+          LeaveDraft(
+            type: _type,
+            dateDebut: _ymd(_debut),
+            dateFin: _ymd(_fin),
+            motif: _motif.text.trim().isEmpty ? null : _motif.text.trim(),
+          ),
+        );
 
     if (!mounted) return;
     result.fold(
@@ -157,17 +152,9 @@ class _LeaveFormSheetState extends ConsumerState<_LeaveFormSheet> {
                     onChanged: (t) => setState(() => _type = t ?? _type),
                   ),
                   const SizedBox(height: Tokens.space12),
-                  _DateRow(
-                    label: 'Du',
-                    value: _ymd(_debut),
-                    onTap: _pickDebut,
-                  ),
+                  _DateRow(label: 'Du', value: _ymd(_debut), onTap: _pickDebut),
                   const SizedBox(height: Tokens.space12),
-                  _DateRow(
-                    label: 'Au',
-                    value: _ymd(_fin),
-                    onTap: _pickFin,
-                  ),
+                  _DateRow(label: 'Au', value: _ymd(_fin), onTap: _pickFin),
                   const SizedBox(height: Tokens.space12),
                   AppTextField(
                     controller: _motif,
@@ -228,8 +215,11 @@ class _DateRow extends StatelessWidget {
             ),
             child: Row(
               children: [
-                Icon(Icons.calendar_today_outlined,
-                    size: 18, color: colors.textMuted),
+                Icon(
+                  Icons.calendar_today_outlined,
+                  size: 18,
+                  color: colors.textMuted,
+                ),
                 const SizedBox(width: Tokens.space12),
                 Text(value),
               ],

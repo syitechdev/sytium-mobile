@@ -11,6 +11,7 @@ import 'package:sytium_mobile/features/workspace/presentation/chat_thread_screen
 import 'package:sytium_mobile/features/workspace/presentation/create_channel_sheet.dart';
 import 'package:sytium_mobile/features/workspace/presentation/new_dm_sheet.dart';
 import 'package:sytium_mobile/shared/widgets/app_avatar.dart';
+import 'package:sytium_mobile/shared/widgets/app_sheet.dart';
 import 'package:sytium_mobile/shared/widgets/error_state.dart';
 import 'package:sytium_mobile/theme/sytium_colors.dart';
 import 'package:sytium_mobile/theme/tokens.dart';
@@ -72,9 +73,8 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
   }
 
   Future<void> _startDm() async {
-    await showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
+    await showAppSheet<void>(
+      context,
       builder: (_) => const NewDmSheet(),
     );
   }
@@ -96,8 +96,8 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
   }
 
   void _showCreateMenu() {
-    showModalBottomSheet<void>(
-      context: context,
+    showAppSheet<void>(
+      context,
       builder: (_) => SafeArea(
         child: Column(
           mainAxisSize: MainAxisSize.min,

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:sytium_mobile/shared/widgets/app_sheet.dart';
 import 'package:sytium_mobile/theme/sytium_colors.dart';
 import 'package:sytium_mobile/theme/tokens.dart';
 
@@ -11,14 +12,12 @@ const _motifs = [
 
 /// Bottom sheet to pick the punch motif. Only [nextType] is selectable
 /// (the state machine forbids the others); returns the chosen type or null.
-Future<String?> showMotifSheet(BuildContext context, {required String? nextType}) {
-  return showModalBottomSheet<String>(
-    context: context,
-    isScrollControlled: true,
-    backgroundColor: context.colors.card,
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(Tokens.radiusLg)),
-    ),
+Future<String?> showMotifSheet(
+  BuildContext context, {
+  required String? nextType,
+}) {
+  return showAppSheet<String>(
+    context,
     builder: (_) => _MotifSheet(nextType: nextType),
   );
 }
@@ -104,7 +103,9 @@ class _MotifCard extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.all(Tokens.space16),
           decoration: BoxDecoration(
-            color: selected ? colors.brand.withValues(alpha: 0.08) : colors.card,
+            color: selected
+                ? colors.brand.withValues(alpha: 0.08)
+                : colors.card,
             borderRadius: BorderRadius.circular(Tokens.radiusMd),
             border: Border.all(color: borderColor, width: selected ? 1.5 : 1),
           ),
@@ -113,7 +114,10 @@ class _MotifCard extends StatelessWidget {
               Icon(icon, color: selected ? colors.brand : colors.textMuted),
               const SizedBox(width: Tokens.space12),
               Expanded(
-                child: Text(label, style: Theme.of(context).textTheme.titleSmall),
+                child: Text(
+                  label,
+                  style: Theme.of(context).textTheme.titleSmall,
+                ),
               ),
               if (selected) Icon(Icons.check_circle, color: colors.brand),
             ],

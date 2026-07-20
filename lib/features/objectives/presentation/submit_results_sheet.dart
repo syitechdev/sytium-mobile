@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sytium_mobile/core/error/failure.dart';
 import 'package:sytium_mobile/features/objectives/application/objectives_providers.dart';
 import 'package:sytium_mobile/features/objectives/domain/objective_models.dart';
+import 'package:sytium_mobile/shared/widgets/app_sheet.dart';
 import 'package:sytium_mobile/shared/widgets/app_text_field.dart';
 import 'package:sytium_mobile/theme/sytium_colors.dart';
 import 'package:sytium_mobile/theme/tokens.dart';
@@ -16,17 +17,7 @@ Future<bool?> showSubmitResultsSheet(
   BuildContext context, {
   required WeeklyObjective week,
 }) {
-  return showModalBottomSheet<bool>(
-    context: context,
-    isScrollControlled: true,
-    backgroundColor: context.colors.card,
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(
-        top: Radius.circular(Tokens.radiusLg),
-      ),
-    ),
-    builder: (_) => _ResultsSheet(week: week),
-  );
+  return showAppSheet<bool>(context, builder: (_) => _ResultsSheet(week: week));
 }
 
 class _ResultsSheet extends ConsumerStatefulWidget {
@@ -87,16 +78,15 @@ class _ResultsSheetState extends ConsumerState<_ResultsSheet> {
       tauxRealisation: _taux,
       freins: _freins.text.trim().isEmpty ? null : _freins.text.trim(),
       soutienRequis: _soutien.text.trim().isEmpty ? null : _soutien.text.trim(),
-      focusSemaineSuivante:
-          _focus.text.trim().isEmpty ? null : _focus.text.trim(),
+      focusSemaineSuivante: _focus.text.trim().isEmpty
+          ? null
+          : _focus.text.trim(),
       autoNote: _autoNote,
     );
 
-    final result =
-        await ref.read(objectivesRepositoryProvider).submitResults(
-              widget.week.id,
-              draft,
-            );
+    final result = await ref
+        .read(objectivesRepositoryProvider)
+        .submitResults(widget.week.id, draft);
 
     if (!mounted) return;
 
@@ -157,15 +147,12 @@ class _ResultsSheetState extends ConsumerState<_ResultsSheet> {
                   if (objectifs.isEmpty)
                     Text(
                       'Aucun objectif à évaluer pour cette semaine.',
-                      style: theme.bodySmall?.copyWith(
-                        color: colors.textMuted,
-                      ),
+                      style: theme.bodySmall?.copyWith(color: colors.textMuted),
                     )
                   else
                     for (var i = 0; i < objectifs.length; i++)
                       Padding(
-                        padding:
-                            const EdgeInsets.only(bottom: Tokens.space12),
+                        padding: const EdgeInsets.only(bottom: Tokens.space12),
                         child: Row(
                           children: [
                             Expanded(
@@ -229,16 +216,12 @@ class _ResultsSheetState extends ConsumerState<_ResultsSheet> {
                     children: [
                       for (var n = 1; n <= _kMaxAutoNote; n++)
                         Padding(
-                          padding:
-                              const EdgeInsets.only(right: Tokens.space8),
+                          padding: const EdgeInsets.only(right: Tokens.space8),
                           child: ChoiceChip(
                             label: Text('$n'),
                             selected: _autoNote == n,
-                            selectedColor: colors.brand.withValues(
-                              alpha: 0.16,
-                            ),
-                            onSelected: (_) =>
-                                setState(() => _autoNote = n),
+                            selectedColor: colors.brand.withValues(alpha: 0.16),
+                            onSelected: (_) => setState(() => _autoNote = n),
                           ),
                         ),
                     ],

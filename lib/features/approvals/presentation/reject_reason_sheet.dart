@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:sytium_mobile/shared/widgets/app_primary_button.dart';
+import 'package:sytium_mobile/shared/widgets/app_sheet.dart';
 import 'package:sytium_mobile/shared/widgets/app_text_field.dart';
 import 'package:sytium_mobile/theme/sytium_colors.dart';
 import 'package:sytium_mobile/theme/tokens.dart';
@@ -11,15 +12,8 @@ Future<String?> showRejectReasonSheet(
   BuildContext context, {
   required bool reasonRequired,
 }) {
-  return showModalBottomSheet<String>(
-    context: context,
-    isScrollControlled: true,
-    backgroundColor: context.colors.card,
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(
-        top: Radius.circular(Tokens.radiusLg),
-      ),
-    ),
+  return showAppSheet<String>(
+    context,
     builder: (_) => _RejectReasonSheet(reasonRequired: reasonRequired),
   );
 }
@@ -91,10 +85,7 @@ class _RejectReasonSheetState extends State<_RejectReasonSheet> {
             const SizedBox(height: Tokens.space8),
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: Text(
-                'Annuler',
-                style: TextStyle(color: colors.textMuted),
-              ),
+              child: Text('Annuler', style: TextStyle(color: colors.textMuted)),
             ),
           ],
         ),

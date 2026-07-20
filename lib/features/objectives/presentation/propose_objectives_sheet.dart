@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sytium_mobile/core/error/failure.dart';
 import 'package:sytium_mobile/features/objectives/application/objectives_providers.dart';
 import 'package:sytium_mobile/features/objectives/domain/objective_models.dart';
+import 'package:sytium_mobile/shared/widgets/app_sheet.dart';
 import 'package:sytium_mobile/shared/widgets/app_text_field.dart';
 import 'package:sytium_mobile/theme/sytium_colors.dart';
 import 'package:sytium_mobile/theme/tokens.dart';
@@ -16,17 +17,7 @@ Future<bool?> showProposeObjectivesSheet(
   BuildContext context, {
   required WeeklyObjective week,
 }) {
-  return showModalBottomSheet<bool>(
-    context: context,
-    isScrollControlled: true,
-    backgroundColor: context.colors.card,
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(
-        top: Radius.circular(Tokens.radiusLg),
-      ),
-    ),
-    builder: (_) => _ProposeSheet(week: week),
-  );
+  return showAppSheet<bool>(context, builder: (_) => _ProposeSheet(week: week));
 }
 
 class _ProposeSheet extends ConsumerStatefulWidget {
@@ -50,12 +41,9 @@ class _ProposeSheetState extends ConsumerState<_ProposeSheet> {
     final existing = widget.week.objectifs;
     _lines = existing.isEmpty
         ? [TextEditingController()]
-        : existing
-            .map((o) => TextEditingController(text: o.activite))
-            .toList();
+        : existing.map((o) => TextEditingController(text: o.activite)).toList();
     _contexte = TextEditingController(text: widget.week.contexte ?? '');
-    _remarque =
-        TextEditingController(text: widget.week.remarqueSemaine ?? '');
+    _remarque = TextEditingController(text: widget.week.remarqueSemaine ?? '');
   }
 
   @override
@@ -105,8 +93,9 @@ class _ProposeSheetState extends ConsumerState<_ProposeSheet> {
       dateFin: widget.week.dateFin ?? '',
       objectifs: objectifs,
       contexte: _contexte.text.trim().isEmpty ? null : _contexte.text.trim(),
-      remarqueSemaine:
-          _remarque.text.trim().isEmpty ? null : _remarque.text.trim(),
+      remarqueSemaine: _remarque.text.trim().isEmpty
+          ? null
+          : _remarque.text.trim(),
     );
 
     // No id → create (POST); existing id → update (PATCH).
@@ -250,9 +239,11 @@ class _ProposeSheetState extends ConsumerState<_ProposeSheet> {
                         color: colors.onBrand,
                       ),
                     )
-                  : Text(widget.week.objectifs.isEmpty
-                      ? 'Proposer'
-                      : 'Enregistrer'),
+                  : Text(
+                      widget.week.objectifs.isEmpty
+                          ? 'Proposer'
+                          : 'Enregistrer',
+                    ),
             ),
           ],
         ),

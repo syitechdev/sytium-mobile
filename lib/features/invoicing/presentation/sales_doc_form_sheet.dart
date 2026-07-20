@@ -12,16 +12,15 @@ import 'package:sytium_mobile/features/finance/application/finance_providers.dar
 import 'package:sytium_mobile/features/invoicing/application/invoicing_providers.dart';
 import 'package:sytium_mobile/features/invoicing/domain/invoicing_models.dart';
 import 'package:sytium_mobile/shared/widgets/app_primary_button.dart';
+import 'package:sytium_mobile/shared/widgets/app_sheet.dart';
 import 'package:sytium_mobile/shared/widgets/app_text_field.dart';
 import 'package:sytium_mobile/theme/sytium_colors.dart';
 import 'package:sytium_mobile/theme/tokens.dart';
 
 /// Opens « Émission de pièce commerciale ». Resolves to `true` on success.
 Future<bool?> showSalesDocSheet(BuildContext context) {
-  return showModalBottomSheet<bool>(
-    context: context,
-    isScrollControlled: true,
-    useSafeArea: true,
+  return showAppSheet<bool>(
+    context,
     builder: (_) => const _SalesDocFormSheet(),
   );
 }
@@ -40,15 +39,18 @@ class _Line {
 
   num get qte => num.tryParse(quantite.text.trim().replaceAll(',', '.')) ?? 0;
   num get pu =>
-      num.tryParse(prix.text.trim().replaceAll(RegExp('[  ]'), '').replaceAll(',', '.')) ?? 0;
+      num.tryParse(
+        prix.text.trim().replaceAll(RegExp('[  ]'), '').replaceAll(',', '.'),
+      ) ??
+      0;
   num get total => qte * pu;
   bool get isValid => description.text.trim().isNotEmpty && qte > 0 && pu >= 0;
 
   ProformaLineInput toInput() => ProformaLineInput(
-        description: description.text.trim(),
-        quantite: qte,
-        prixUnitaire: pu,
-      );
+    description: description.text.trim(),
+    quantite: qte,
+    prixUnitaire: pu,
+  );
 
   void dispose() {
     description.dispose();
@@ -131,9 +133,12 @@ class _SalesDocFormSheetState extends ConsumerState<_SalesDocFormSheet> {
     final needAccount = _kind == SalesDocKind.comptant;
     setState(() {
       _clientError = client.isEmpty ? 'Nom du client requis.' : null;
-      _itemsError = validLines.isEmpty ? 'Ajoutez au moins une ligne valide.' : null;
-      _accountError =
-          needAccount && _account == null ? 'Choisissez le compte encaisseur.' : null;
+      _itemsError = validLines.isEmpty
+          ? 'Ajoutez au moins une ligne valide.'
+          : null;
+      _accountError = needAccount && _account == null
+          ? 'Choisissez le compte encaisseur.'
+          : null;
       _banner = null;
     });
     if (client.isEmpty ||
@@ -143,7 +148,9 @@ class _SalesDocFormSheetState extends ConsumerState<_SalesDocFormSheet> {
     }
 
     setState(() => _submitting = true);
-    final result = await ref.read(invoicingRepositoryProvider).createDocument(
+    final result = await ref
+        .read(invoicingRepositoryProvider)
+        .createDocument(
           SalesDocInput(
             kind: _kind,
             clientNom: client,
@@ -166,12 +173,12 @@ class _SalesDocFormSheetState extends ConsumerState<_SalesDocFormSheet> {
           ..invalidate(cashAccountsProvider)
           ..invalidate(financeDashboardProvider);
         Navigator.of(context).pop(true);
-        final label =
-            ok.kind == SalesDocKind.comptant ? 'Facture' : 'Proforma';
+        final label = ok.kind == SalesDocKind.comptant ? 'Facture' : 'Proforma';
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content:
-                Text('$label ${ok.numero} créée · ${Money.fcfa(ok.totalTtc)}'),
+            content: Text(
+              '$label ${ok.numero} créée · ${Money.fcfa(ok.totalTtc)}',
+            ),
           ),
         );
       },
@@ -196,17 +203,6 @@ class _SalesDocFormSheetState extends ConsumerState<_SalesDocFormSheet> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Center(
-              child: Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: colors.border,
-                  borderRadius: BorderRadius.circular(Tokens.radiusPill),
-                ),
-              ),
-            ),
-            const SizedBox(height: Tokens.space16),
             Text('Émission de pièce commerciale', style: theme.titleLarge),
             const SizedBox(height: Tokens.space4),
             Text(
@@ -284,7 +280,9 @@ class _SalesDocFormSheetState extends ConsumerState<_SalesDocFormSheet> {
                   child: _Dropdown<num>(
                     label: 'Remise',
                     value: _remise,
-                    items: {for (final r in _remiseOptions) r: '${r.toInt()} %'},
+                    items: {
+                      for (final r in _remiseOptions) r: '${r.toInt()} %',
+                    },
                     onChanged: (v) => setState(() => _remise = v),
                   ),
                 ),
@@ -469,18 +467,22 @@ class _LineEditor extends StatelessWidget {
                 width: 72,
                 child: TextField(
                   controller: line.quantite,
-                  keyboardType:
-                      const TextInputType.numberWithOptions(decimal: true),
-                  decoration:
-                      const InputDecoration(isDense: true, labelText: 'Qté'),
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
+                  decoration: const InputDecoration(
+                    isDense: true,
+                    labelText: 'Qté',
+                  ),
                 ),
               ),
               const SizedBox(width: Tokens.space12),
               Expanded(
                 child: TextField(
                   controller: line.prix,
-                  keyboardType:
-                      const TextInputType.numberWithOptions(decimal: true),
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
                   decoration: const InputDecoration(
                     isDense: true,
                     labelText: 'Prix unitaire (FCFA)',
@@ -495,9 +497,9 @@ class _LineEditor extends StatelessWidget {
             child: Text(
               Money.fcfa(line.total),
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: colors.textMuted,
-                    fontFeatures: const [FontFeature.tabularFigures()],
-                  ),
+                color: colors.textMuted,
+                fontFeatures: const [FontFeature.tabularFigures()],
+              ),
             ),
           ),
         ],
@@ -548,15 +550,24 @@ class _TotalsCard extends StatelessWidget {
           const SizedBox(height: Tokens.space8),
           _row(context, 'TVA (${tvaPct.toInt()} %)', Money.fcfa(tva)),
           const Divider(height: Tokens.space24),
-          _row(context, 'Total net à payer (TTC)', Money.fcfa(ttc),
-              emphasize: true),
+          _row(
+            context,
+            'Total net à payer (TTC)',
+            Money.fcfa(ttc),
+            emphasize: true,
+          ),
         ],
       ),
     );
   }
 
-  Widget _row(BuildContext context, String label, String value,
-      {bool emphasize = false, Color? color}) {
+  Widget _row(
+    BuildContext context,
+    String label,
+    String value, {
+    bool emphasize = false,
+    Color? color,
+  }) {
     final theme = Theme.of(context).textTheme;
     final colors = context.colors;
     final style = emphasize

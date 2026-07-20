@@ -3,16 +3,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sytium_mobile/features/workspace/application/workspace_providers.dart';
 import 'package:sytium_mobile/features/workspace/domain/workspace_models.dart';
 import 'package:sytium_mobile/shared/widgets/app_primary_button.dart';
+import 'package:sytium_mobile/shared/widgets/app_sheet.dart';
 import 'package:sytium_mobile/shared/widgets/app_text_field.dart';
 import 'package:sytium_mobile/theme/sytium_colors.dart';
 import 'package:sytium_mobile/theme/tokens.dart';
 
 /// Opens the « Nouveau canal » sheet; resolves to the created [Conversation].
 Future<Conversation?> showCreateChannelSheet(BuildContext context) {
-  return showModalBottomSheet<Conversation>(
-    context: context,
-    isScrollControlled: true,
-    useSafeArea: true,
+  return showAppSheet<Conversation>(
+    context,
     builder: (_) => const _CreateChannelSheet(),
   );
 }
@@ -23,7 +22,8 @@ class _CreateChannelSheet extends ConsumerStatefulWidget {
   const _CreateChannelSheet();
 
   @override
-  ConsumerState<_CreateChannelSheet> createState() => _CreateChannelSheetState();
+  ConsumerState<_CreateChannelSheet> createState() =>
+      _CreateChannelSheetState();
 }
 
 class _CreateChannelSheetState extends ConsumerState<_CreateChannelSheet> {
@@ -50,7 +50,9 @@ class _CreateChannelSheetState extends ConsumerState<_CreateChannelSheet> {
     if (name.isEmpty) return;
 
     setState(() => _submitting = true);
-    final result = await ref.read(workspaceRepositoryProvider).createChannel(
+    final result = await ref
+        .read(workspaceRepositoryProvider)
+        .createChannel(
           name: name,
           type: _kind == _ChannelKind.public ? 'public' : 'private',
           description: _description.text.trim(),
@@ -79,17 +81,6 @@ class _CreateChannelSheetState extends ConsumerState<_CreateChannelSheet> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Center(
-              child: Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: colors.border,
-                  borderRadius: BorderRadius.circular(Tokens.radiusPill),
-                ),
-              ),
-            ),
-            const SizedBox(height: Tokens.space16),
             Text('Nouveau canal', style: theme.titleLarge),
             const SizedBox(height: Tokens.space24),
             if (_banner != null) ...[
@@ -98,7 +89,9 @@ class _CreateChannelSheetState extends ConsumerState<_CreateChannelSheet> {
                 decoration: BoxDecoration(
                   color: colors.danger.withValues(alpha: 0.08),
                   borderRadius: BorderRadius.circular(Tokens.radiusSm),
-                  border: Border.all(color: colors.danger.withValues(alpha: 0.4)),
+                  border: Border.all(
+                    color: colors.danger.withValues(alpha: 0.4),
+                  ),
                 ),
                 child: Row(
                   children: [

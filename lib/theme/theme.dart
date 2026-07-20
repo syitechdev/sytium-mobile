@@ -85,6 +85,20 @@ abstract final class AppTheme {
         ),
       ),
       dividerTheme: DividerThemeData(color: c.border, thickness: 1, space: 1),
+      // Filet de sécurité pour toute feuille modale, y compris celles qui
+      // n'utiliseraient pas showAppSheet : coins arrondis en haut et fond de
+      // carte. Sans ce thème, une feuille sans `shape` s'affichait à angles
+      // droits et se lisait comme une page plein écran sans issue.
+      bottomSheetTheme: BottomSheetThemeData(
+        backgroundColor: c.card,
+        surfaceTintColor: Colors.transparent,
+        clipBehavior: Clip.antiAlias,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(
+            top: Radius.circular(Tokens.radiusLg),
+          ),
+        ),
+      ),
     );
   }
 

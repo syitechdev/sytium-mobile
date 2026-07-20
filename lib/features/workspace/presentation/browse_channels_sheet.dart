@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sytium_mobile/features/workspace/application/workspace_providers.dart';
 import 'package:sytium_mobile/features/workspace/domain/workspace_models.dart';
+import 'package:sytium_mobile/shared/widgets/app_sheet.dart';
 import 'package:sytium_mobile/shared/widgets/error_state.dart';
 import 'package:sytium_mobile/theme/sytium_colors.dart';
 import 'package:sytium_mobile/theme/tokens.dart';
@@ -9,10 +10,8 @@ import 'package:sytium_mobile/theme/tokens.dart';
 /// Opens the « Parcourir les canaux » sheet. Resolves to the [Conversation] the
 /// user joined (so the caller can open its thread), or null if dismissed.
 Future<Conversation?> showBrowseChannelsSheet(BuildContext context) {
-  return showModalBottomSheet<Conversation>(
-    context: context,
-    isScrollControlled: true,
-    useSafeArea: true,
+  return showAppSheet<Conversation>(
+    context,
     builder: (_) => const _BrowseChannelsSheet(),
   );
 }
@@ -53,8 +52,9 @@ class _BrowseChannelsSheetState extends ConsumerState<_BrowseChannelsSheet> {
       _joiningId = channel.id;
       _banner = null;
     });
-    final result =
-        await ref.read(workspaceRepositoryProvider).joinChannel(channel.id);
+    final result = await ref
+        .read(workspaceRepositoryProvider)
+        .joinChannel(channel.id);
     if (!mounted) return;
     setState(() => _joiningId = null);
     result.fold(
@@ -73,98 +73,82 @@ class _BrowseChannelsSheetState extends ConsumerState<_BrowseChannelsSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final colors = context.colors;
     final theme = Theme.of(context).textTheme;
     final async = ref.watch(joinablePublicChannelsProvider);
 
-    return DraggableScrollableSheet(
-      initialChildSize: 0.7,
-      minChildSize: 0.4,
-      maxChildSize: 0.95,
-      expand: false,
-      builder: (context, scrollController) => Column(
-        children: [
-          const SizedBox(height: Tokens.space12),
-          Center(
-            child: Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: colors.border,
-                borderRadius: BorderRadius.circular(Tokens.radiusPill),
+    // Pas de DraggableScrollableSheet ici : imbriqué dans une feuille modale,
+    // il captait le glissement vers le bas et s'arrêtait à sa taille minimale,
+    // si bien que le geste de fermeture de la feuille ne partait jamais. La
+    // hauteur est désormais plafonnée par showAppSheet.
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(
+            Tokens.space24,
+            Tokens.space16,
+            Tokens.space24,
+            Tokens.space8,
+          ),
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: Text('Parcourir les canaux', style: theme.titleLarge),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: Tokens.space16),
+          child: TextField(
+            controller: _search,
+            decoration: InputDecoration(
+              hintText: 'Rechercher un canal public…',
+              prefixIcon: const Icon(Icons.search),
+              isDense: true,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(Tokens.radiusMd),
               ),
             ),
           ),
+        ),
+        if (_banner != null)
           Padding(
             padding: const EdgeInsets.fromLTRB(
-              Tokens.space24,
               Tokens.space16,
-              Tokens.space24,
-              Tokens.space8,
+              Tokens.space12,
+              Tokens.space16,
+              0,
             ),
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: Text('Parcourir les canaux', style: theme.titleLarge),
-            ),
+            child: _Banner(message: _banner!),
           ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: Tokens.space16),
-            child: TextField(
-              controller: _search,
-              decoration: InputDecoration(
-                hintText: 'Rechercher un canal public…',
-                prefixIcon: const Icon(Icons.search),
-                isDense: true,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(Tokens.radiusMd),
-                ),
-              ),
+        const SizedBox(height: Tokens.space8),
+        Expanded(
+          child: async.when(
+            loading: () => const Center(child: CircularProgressIndicator()),
+            error: (_, __) => ErrorState(
+              message: 'Impossible de charger les canaux.',
+              onRetry: () => ref.invalidate(joinablePublicChannelsProvider),
             ),
-          ),
-          if (_banner != null)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(
-                Tokens.space16,
-                Tokens.space12,
-                Tokens.space16,
-                0,
-              ),
-              child: _Banner(message: _banner!),
-            ),
-          const SizedBox(height: Tokens.space8),
-          Expanded(
-            child: async.when(
-              loading: () => const Center(child: CircularProgressIndicator()),
-              error: (_, __) => ErrorState(
-                message: 'Impossible de charger les canaux.',
-                onRetry: () =>
-                    ref.invalidate(joinablePublicChannelsProvider),
-              ),
-              data: (channels) {
-                final filtered = _query.isEmpty
-                    ? channels
-                    : channels
+            data: (channels) {
+              final filtered = _query.isEmpty
+                  ? channels
+                  : channels
                         .where((c) => c.title.toLowerCase().contains(_query))
                         .toList();
-                if (filtered.isEmpty) {
-                  return _EmptyState(hasQuery: _query.isNotEmpty);
-                }
-                return ListView.builder(
-                  controller: scrollController,
-                  padding: const EdgeInsets.only(bottom: Tokens.space24),
-                  itemCount: filtered.length,
-                  itemBuilder: (_, i) => _ChannelTile(
-                    channel: filtered[i],
-                    joining: _joiningId == filtered[i].id,
-                    disabled: _joiningId != null,
-                    onJoin: () => _join(filtered[i]),
-                  ),
-                );
-              },
-            ),
+              if (filtered.isEmpty) {
+                return _EmptyState(hasQuery: _query.isNotEmpty);
+              }
+              return ListView.builder(
+                padding: const EdgeInsets.only(bottom: Tokens.space24),
+                itemCount: filtered.length,
+                itemBuilder: (_, i) => _ChannelTile(
+                  channel: filtered[i],
+                  joining: _joiningId == filtered[i].id,
+                  disabled: _joiningId != null,
+                  onJoin: () => _join(filtered[i]),
+                ),
+              );
+            },
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }

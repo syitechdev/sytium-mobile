@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:sytium_mobile/shared/widgets/app_primary_button.dart';
+import 'package:sytium_mobile/shared/widgets/app_sheet.dart';
 import 'package:sytium_mobile/theme/sytium_colors.dart';
 import 'package:sytium_mobile/theme/tokens.dart';
 
@@ -10,13 +11,8 @@ import 'package:sytium_mobile/theme/tokens.dart';
 /// Même sémantique et mêmes libellés que le dialogue Visa du web
 /// (`sytium/src/pages/rh/PermissionsMissions.tsx`) : défaut « Payée ».
 Future<bool?> showPermissionPaySheet(BuildContext context) {
-  return showModalBottomSheet<bool>(
-    context: context,
-    isScrollControlled: true,
-    backgroundColor: context.colors.card,
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(Tokens.radiusLg)),
-    ),
+  return showAppSheet<bool>(
+    context,
     builder: (_) => const _PermissionPaySheet(),
   );
 }

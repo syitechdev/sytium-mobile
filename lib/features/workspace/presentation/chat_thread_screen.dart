@@ -15,6 +15,7 @@ import 'package:sytium_mobile/features/workspace/presentation/attachment_preview
 import 'package:sytium_mobile/features/workspace/realtime/workspace_realtime.dart';
 import 'package:sytium_mobile/features/workspace/realtime/workspace_realtime_provider.dart';
 import 'package:sytium_mobile/shared/widgets/app_avatar.dart';
+import 'package:sytium_mobile/shared/widgets/app_sheet.dart';
 import 'package:sytium_mobile/shared/widgets/error_state.dart';
 import 'package:sytium_mobile/theme/sytium_colors.dart';
 import 'package:sytium_mobile/theme/tokens.dart';
@@ -208,8 +209,8 @@ class ChatThreadScreenState extends ConsumerState<ChatThreadScreen> {
   }
 
   void _showAttachMenu() {
-    showModalBottomSheet<void>(
-      context: context,
+    showAppSheet<void>(
+      context,
       builder: (sheetContext) => SafeArea(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -272,8 +273,8 @@ class ChatThreadScreenState extends ConsumerState<ChatThreadScreen> {
   // ---- Message actions -----------------------------------------------------
 
   void _showActions(Message message, bool isMine) {
-    showModalBottomSheet<void>(
-      context: context,
+    showAppSheet<void>(
+      context,
       builder: (sheetContext) => SafeArea(
         child: Column(
           mainAxisSize: MainAxisSize.min,

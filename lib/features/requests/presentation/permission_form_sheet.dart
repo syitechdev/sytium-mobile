@@ -5,6 +5,7 @@ import 'package:sytium_mobile/core/error/failure.dart';
 import 'package:sytium_mobile/features/requests/application/requests_providers.dart';
 import 'package:sytium_mobile/features/requests/domain/request_models.dart';
 import 'package:sytium_mobile/shared/widgets/app_primary_button.dart';
+import 'package:sytium_mobile/shared/widgets/app_sheet.dart';
 import 'package:sytium_mobile/shared/widgets/app_text_field.dart';
 import 'package:sytium_mobile/theme/sytium_colors.dart';
 import 'package:sytium_mobile/theme/tokens.dart';
@@ -15,13 +16,8 @@ const _kLastYearOffset = 2;
 /// Opens the permission/mission modal. Creates a draft then submits it in one
 /// flow (Assumption 2). Returns `true` once submitted (statut en_attente_n1).
 Future<bool?> showPermissionFormSheet(BuildContext context) {
-  return showModalBottomSheet<bool>(
-    context: context,
-    isScrollControlled: true,
-    backgroundColor: context.colors.card,
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(Tokens.radiusLg)),
-    ),
+  return showAppSheet<bool>(
+    context,
     builder: (_) => const _PermissionFormSheet(),
   );
 }
@@ -92,7 +88,8 @@ class _PermissionFormSheetState extends ConsumerState<_PermissionFormSheet> {
     final picked = await showTimePicker(
       context: context,
       initialTime:
-          (isStart ? _heureDebut : _heureFin) ?? const TimeOfDay(hour: 8, minute: 0),
+          (isStart ? _heureDebut : _heureFin) ??
+          const TimeOfDay(hour: 8, minute: 0),
     );
     if (!mounted) return;
     if (picked == null) return;
@@ -125,9 +122,7 @@ class _PermissionFormSheetState extends ConsumerState<_PermissionFormSheet> {
       return;
     }
     if (hasDebut && hasFin && !_isAfter(_heureFin!, _heureDebut!)) {
-      setState(
-        () => _error = "L'heure de fin doit suivre l'heure de début.",
-      );
+      setState(() => _error = "L'heure de fin doit suivre l'heure de début.");
       return;
     }
 
@@ -143,12 +138,14 @@ class _PermissionFormSheetState extends ConsumerState<_PermissionFormSheet> {
         motif: motif,
         dateDebut: _ymd(_debut),
         dateFin: _ymd(_fin),
-        destination:
-            _destination.text.trim().isEmpty ? null : _destination.text.trim(),
+        destination: _destination.text.trim().isEmpty
+            ? null
+            : _destination.text.trim(),
         heureDebut: hasDebut ? _hm(_heureDebut!) : null,
         heureFin: hasFin ? _hm(_heureFin!) : null,
-        moyenTransport:
-            _transport.text.trim().isEmpty ? null : _transport.text.trim(),
+        moyenTransport: _transport.text.trim().isEmpty
+            ? null
+            : _transport.text.trim(),
         budgetEstime: double.tryParse(_budget.text.trim().replaceAll(' ', '')),
       ),
     );
@@ -222,15 +219,10 @@ class _PermissionFormSheetState extends ConsumerState<_PermissionFormSheet> {
                         ButtonSegment(value: t, label: Text(t.label)),
                     ],
                     selected: {_type},
-                    onSelectionChanged: (s) =>
-                        setState(() => _type = s.first),
+                    onSelectionChanged: (s) => setState(() => _type = s.first),
                   ),
                   const SizedBox(height: Tokens.space12),
-                  AppTextField(
-                    controller: _motif,
-                    label: 'Motif',
-                    maxLines: 3,
-                  ),
+                  AppTextField(controller: _motif, label: 'Motif', maxLines: 3),
                   const SizedBox(height: Tokens.space12),
                   AppTextField(
                     controller: _destination,
