@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sytium_mobile/features/auth/application/auth_controller.dart';
 import 'package:sytium_mobile/features/auth/domain/mobile_module.dart';
+import 'package:sytium_mobile/features/devices/presentation/connected_devices_screen.dart';
 import 'package:sytium_mobile/features/explorer/presentation/module_navigation.dart';
 import 'package:sytium_mobile/features/explorer/presentation/widgets/module_tile.dart';
 import 'package:sytium_mobile/shared/widgets/confirm_dialog.dart';
@@ -68,6 +69,16 @@ class ExplorerScreen extends ConsumerWidget {
           ),
         const SizedBox(height: Tokens.space32),
         Text('Paramètres', style: theme.titleSmall),
+        const SizedBox(height: Tokens.space12),
+        OutlinedButton.icon(
+          onPressed: () => Navigator.of(context).push(
+            MaterialPageRoute<void>(
+              builder: (_) => const ConnectedDevicesScreen(),
+            ),
+          ),
+          icon: const Icon(Icons.devices_outlined),
+          label: const Text('Appareils connectés'),
+        ),
         const SizedBox(height: Tokens.space12),
         OutlinedButton.icon(
           onPressed: () => _confirmLogout(context, ref),

@@ -40,7 +40,7 @@ final authDioProvider = Provider<Dio>.internal(
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef AuthDioRef = ProviderRef<Dio>;
-String _$authRepositoryHash() => r'4bc61f771f079d0ed8bf105b8ac84bb91157596b';
+String _$authRepositoryHash() => r'1652121afe9889fe79571b81a2c60b4041f48e8f';
 
 /// See also [authRepository].
 @ProviderFor(authRepository)
@@ -63,7 +63,7 @@ String _$sessionRevokedHash() => r'dbbc4bfd4ab1e81b00c03d9c261287ea3df8b930';
 /// plus, un 401 signifie désormais une révocation réelle : appareil retiré,
 /// mot de passe changé, compte désactivé.
 ///
-/// Ce signal est volontairement découplé de [AuthController] : le contrôleur
+/// Ce signal est volontairement découplé du contrôleur d'auth : le contrôleur
 /// dépend du dépôt, qui dépend de [authDioProvider] — lire le contrôleur depuis
 /// l'intercepteur fermerait un cycle de dépendances Riverpod.
 ///

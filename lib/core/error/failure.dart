@@ -70,6 +70,15 @@ class RequestFailure extends Failure {
   final String code;
 }
 
+/// A session action rejected by the server with a domain code
+/// (CANNOT_REVOKE_CURRENT_SESSION — terminer sa propre session relève de la
+/// déconnexion, qui purge aussi le trousseau local).
+class SessionFailure extends Failure {
+  const SessionFailure({required this.code, super.message});
+
+  final String code;
+}
+
 /// An approval action rejected by the server with a domain code:
 /// STALE (409 — item already actioned/advanced) or MISSION_PROOF_REQUIRED
 /// (422 — direction-palier mission needs a proof the mobile v1 cannot upload).
