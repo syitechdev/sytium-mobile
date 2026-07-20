@@ -15,6 +15,7 @@ import 'package:sytium_mobile/features/auth/domain/mobile_capabilities.dart';
 import 'package:sytium_mobile/features/home/application/team_pulse_providers.dart';
 import 'package:sytium_mobile/features/home/domain/team_pulse.dart';
 import 'package:sytium_mobile/features/home/presentation/home_screen.dart';
+import 'package:sytium_mobile/features/home/presentation/widgets/profile_header_card.dart';
 import 'package:sytium_mobile/features/pointage/application/pointage_providers.dart';
 import 'package:sytium_mobile/features/pointage/domain/pointage_models.dart';
 import 'package:sytium_mobile/features/pointage/domain/pointage_repository.dart';
@@ -23,6 +24,7 @@ import 'package:sytium_mobile/features/stats/domain/dashboard_models.dart';
 import 'package:sytium_mobile/features/stats/domain/dashboard_series_models.dart';
 import 'package:sytium_mobile/features/stats/domain/stats_models.dart';
 import 'package:sytium_mobile/features/stats/domain/stats_repository.dart';
+import 'package:sytium_mobile/shared/widgets/app_avatar.dart';
 import 'package:sytium_mobile/theme/theme.dart';
 
 // ---------------------------------------------------------------------------
@@ -172,6 +174,7 @@ Future<Widget> _buildScreen(
     finance: false,
   ),
   VoidCallback? onPointer,
+  VoidCallback? onExplorer,
 }) async {
   SharedPreferences.setMockInitialValues({});
 
@@ -198,6 +201,7 @@ Future<Widget> _buildScreen(
           capabilities: capabilities,
           onPointer: onPointer ?? () {},
           onStats: () {},
+          onExplorer: onExplorer ?? () {},
         ),
       ),
     ),
@@ -229,6 +233,7 @@ Widget _hostHome({
           capabilities: capabilities,
           onPointer: () {},
           onStats: () {},
+          onExplorer: () {},
         ),
       ),
     ),
@@ -241,8 +246,7 @@ Widget _hostHome({
 
 void main() {
   group('HomeScreen — profile card', () {
-    testWidgets('renders user name and poste/département subtitle',
-        (tester) async {
+    testWidgets('affiche le poste seul, sans le département', (tester) async {
       await tester.pumpWidget(
         await _buildScreen(
           tester,
@@ -253,12 +257,12 @@ void main() {
       await tester.pump();
 
       expect(find.text('Alice Kouassi'), findsOneWidget);
-      // subtitle = "Ingénieure Logiciel · DSI"
-      expect(find.textContaining('Ingénieure Logiciel'), findsOneWidget);
-      expect(find.textContaining('DSI'), findsOneWidget);
+      expect(find.text('Ingénieure Logiciel'), findsOneWidget);
+      // Le département faisait une seconde ligne tronquée sans valeur ajoutée.
+      expect(find.textContaining('DSI'), findsNothing);
     });
 
-    testWidgets('renders name without subtitle when poste/dept are absent',
+    testWidgets('renders name without subtitle when poste is absent',
         (tester) async {
       await tester.pumpWidget(
         await _buildScreen(
@@ -270,8 +274,67 @@ void main() {
       await tester.pump();
 
       expect(find.text('Bob Martin'), findsOneWidget);
-      // No subtitle separator
-      expect(find.textContaining(' · '), findsNothing);
+    });
+
+    testWidgets("l'en-tête défile avec le contenu", (tester) async {
+      await tester.pumpWidget(
+        await _buildScreen(
+          tester,
+          user: _kUserWithPoste,
+          pointageStatus: _kStatusPresent,
+        ),
+      );
+      await tester.pump();
+
+      final finder = find.byType(ProfileHeaderCard);
+      final before = tester.getTopLeft(finder).dy;
+
+      // On mesure pendant le geste plutôt qu'après : un défilement relâché peut
+      // rebondir si le contenu est plus court que la vue, et une amplitude
+      // suffisante ferait sortir l'en-tête de l'arbre — introuvable.
+      final gesture = await tester.startGesture(tester.getCenter(finder));
+      await gesture.moveBy(const Offset(0, -60));
+      await tester.pump();
+
+      // Un en-tête figé garderait la même ordonnée : c'était le défaut.
+      expect(tester.getTopLeft(finder).dy, lessThan(before));
+
+      await gesture.up();
+      await tester.pumpAndSettle();
+    });
+
+    testWidgets("l'avatar est à droite du nom", (tester) async {
+      await tester.pumpWidget(
+        await _buildScreen(
+          tester,
+          user: _kUserWithPoste,
+          pointageStatus: _kStatusPresent,
+        ),
+      );
+      await tester.pump();
+
+      final avatar = tester.getCenter(find.byType(AppAvatar)).dx;
+      final name = tester.getCenter(find.text('Alice Kouassi')).dx;
+      expect(avatar, greaterThan(name));
+    });
+
+    testWidgets("taper l'avatar ouvre l'onglet Explorer", (tester) async {
+      var opened = false;
+
+      await tester.pumpWidget(
+        await _buildScreen(
+          tester,
+          user: _kUserWithPoste,
+          pointageStatus: _kStatusPresent,
+          onExplorer: () => opened = true,
+        ),
+      );
+      await tester.pump();
+
+      await tester.tap(find.byType(AppAvatar));
+      await tester.pump();
+
+      expect(opened, isTrue);
     });
   });
 
@@ -320,6 +383,7 @@ void main() {
                 ),
                 onPointer: () {},
                 onStats: () {},
+                onExplorer: () {},
               ),
             ),
           ),
@@ -457,6 +521,53 @@ void main() {
 
       // The "Pointer" tile label appears in quick actions grid.
       expect(find.text('Pointer'), findsOneWidget);
+    });
+
+    testWidgets('Facture et Caisse ont rejoint la grille quand la capacité '
+        'financeWrite est vraie', (tester) async {
+      await tester.pumpWidget(
+        await _buildScreen(
+          tester,
+          user: _kUserWithPoste,
+          pointageStatus: _kStatusPresent,
+          capabilities: const MobileCapabilities(
+            dashboard: false,
+            employeeSpace: false,
+            messaging: false,
+            weeklyObjectives: false,
+            leaveRequests: false,
+            permissionRequests: false,
+            approvals: false,
+            commercial: false,
+            finance: false,
+            financeWrite: true,
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.text('Facture'), findsOneWidget);
+      expect(find.text('Caisse'), findsOneWidget);
+      // L'ancien bandeau « Raccourci décisionnel » n'existe plus.
+      expect(find.text('Raccourci décisionnel'), findsNothing);
+      // « Pointage GPS » et « Pointer » étaient la même action : plus de doublon.
+      expect(find.text('Pointage GPS'), findsNothing);
+      expect(find.text('Pointer'), findsOneWidget);
+    });
+
+    testWidgets('Facture et Caisse absentes sans capacité financière',
+        (tester) async {
+      await tester.pumpWidget(
+        await _buildScreen(
+          tester,
+          user: _kUserWithPoste,
+          pointageStatus: _kStatusPresent,
+        ),
+      );
+      await tester.pump();
+
+      expect(find.text('Facture'), findsNothing);
+      expect(find.text('Caisse'), findsNothing);
     });
 
     testWidgets(

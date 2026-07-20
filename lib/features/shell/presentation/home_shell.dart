@@ -76,6 +76,10 @@ class _HomeShellState extends ConsumerState<HomeShell> {
         _index = 3;
         _visited.add(3);
       }),
+      onExplorer: () => setState(() {
+        _index = 4;
+        _visited.add(4);
+      }),
     ),
     1 => const PointerScreen(),
     2 => const WorkspaceScreen(),
