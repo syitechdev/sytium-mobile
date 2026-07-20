@@ -9,7 +9,6 @@ import 'package:flutter_callkit_incoming/flutter_callkit_incoming.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:sytium_mobile/app/router/app_router.dart';
-import 'package:sytium_mobile/core/config/app_config.dart';
 import 'package:sytium_mobile/core/notifications/callkit_service.dart';
 import 'package:sytium_mobile/core/notifications/device_identity.dart';
 import 'package:sytium_mobile/core/notifications/device_token_registrar.dart';
@@ -113,7 +112,10 @@ class PushNotificationsCoordinator {
       voipEnvironment: Platform.isIOS
           ? (kReleaseMode ? 'production' : 'development')
           : null,
-      deviceName: AppConfig.deviceName,
+      // Volontairement non renseigné : `AppConfig.deviceName` est l'identifiant
+      // du client ('sytium-mobile'), pas un nom d'appareil — il s'affichait tel
+      // quel dans « Appareils connectés ». Sans valeur, le backend retombe sur
+      // « Appareil iOS » / « Appareil Android », plus parlant.
       appVersion: '0.1.0',
     );
   }

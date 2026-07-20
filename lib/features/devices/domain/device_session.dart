@@ -15,6 +15,7 @@ class DeviceSession {
     this.clientType = 'mobile',
     this.platform,
     this.appVersion,
+    this.loginIp,
     this.lastUsedAt,
     this.createdAt,
   });
@@ -25,6 +26,10 @@ class DeviceSession {
   final String clientType;
   final String? platform;
   final String? appVersion;
+
+  /// Adresse IP relevée à la connexion. Aide l'utilisateur à distinguer deux
+  /// sessions ouvertes depuis le même navigateur mais des lieux différents.
+  final String? loginIp;
   final DateTime? lastUsedAt;
   final DateTime? createdAt;
 

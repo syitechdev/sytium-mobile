@@ -30,6 +30,8 @@ mixin _$DeviceSessionDto {
   String? get platform => throw _privateConstructorUsedError;
   @JsonKey(name: 'app_version')
   String? get appVersion => throw _privateConstructorUsedError;
+  @JsonKey(name: 'login_ip')
+  String? get loginIp => throw _privateConstructorUsedError;
   @JsonKey(name: 'last_used_at')
   String? get lastUsedAt => throw _privateConstructorUsedError;
   @JsonKey(name: 'created_at')
@@ -60,6 +62,7 @@ abstract class $DeviceSessionDtoCopyWith<$Res> {
     @JsonKey(name: 'client_type') String clientType,
     String? platform,
     @JsonKey(name: 'app_version') String? appVersion,
+    @JsonKey(name: 'login_ip') String? loginIp,
     @JsonKey(name: 'last_used_at') String? lastUsedAt,
     @JsonKey(name: 'created_at') String? createdAt,
     @JsonKey(name: 'is_current') bool isCurrent,
@@ -86,6 +89,7 @@ class _$DeviceSessionDtoCopyWithImpl<$Res, $Val extends DeviceSessionDto>
     Object? clientType = null,
     Object? platform = freezed,
     Object? appVersion = freezed,
+    Object? loginIp = freezed,
     Object? lastUsedAt = freezed,
     Object? createdAt = freezed,
     Object? isCurrent = null,
@@ -111,6 +115,10 @@ class _$DeviceSessionDtoCopyWithImpl<$Res, $Val extends DeviceSessionDto>
             appVersion: freezed == appVersion
                 ? _value.appVersion
                 : appVersion // ignore: cast_nullable_to_non_nullable
+                      as String?,
+            loginIp: freezed == loginIp
+                ? _value.loginIp
+                : loginIp // ignore: cast_nullable_to_non_nullable
                       as String?,
             lastUsedAt: freezed == lastUsedAt
                 ? _value.lastUsedAt
@@ -145,6 +153,7 @@ abstract class _$$DeviceSessionDtoImplCopyWith<$Res>
     @JsonKey(name: 'client_type') String clientType,
     String? platform,
     @JsonKey(name: 'app_version') String? appVersion,
+    @JsonKey(name: 'login_ip') String? loginIp,
     @JsonKey(name: 'last_used_at') String? lastUsedAt,
     @JsonKey(name: 'created_at') String? createdAt,
     @JsonKey(name: 'is_current') bool isCurrent,
@@ -170,6 +179,7 @@ class __$$DeviceSessionDtoImplCopyWithImpl<$Res>
     Object? clientType = null,
     Object? platform = freezed,
     Object? appVersion = freezed,
+    Object? loginIp = freezed,
     Object? lastUsedAt = freezed,
     Object? createdAt = freezed,
     Object? isCurrent = null,
@@ -195,6 +205,10 @@ class __$$DeviceSessionDtoImplCopyWithImpl<$Res>
         appVersion: freezed == appVersion
             ? _value.appVersion
             : appVersion // ignore: cast_nullable_to_non_nullable
+                  as String?,
+        loginIp: freezed == loginIp
+            ? _value.loginIp
+            : loginIp // ignore: cast_nullable_to_non_nullable
                   as String?,
         lastUsedAt: freezed == lastUsedAt
             ? _value.lastUsedAt
@@ -222,6 +236,7 @@ class _$DeviceSessionDtoImpl implements _DeviceSessionDto {
     @JsonKey(name: 'client_type') this.clientType = 'mobile',
     this.platform,
     @JsonKey(name: 'app_version') this.appVersion,
+    @JsonKey(name: 'login_ip') this.loginIp,
     @JsonKey(name: 'last_used_at') this.lastUsedAt,
     @JsonKey(name: 'created_at') this.createdAt,
     @JsonKey(name: 'is_current') this.isCurrent = false,
@@ -246,6 +261,9 @@ class _$DeviceSessionDtoImpl implements _DeviceSessionDto {
   @JsonKey(name: 'app_version')
   final String? appVersion;
   @override
+  @JsonKey(name: 'login_ip')
+  final String? loginIp;
+  @override
   @JsonKey(name: 'last_used_at')
   final String? lastUsedAt;
   @override
@@ -257,7 +275,7 @@ class _$DeviceSessionDtoImpl implements _DeviceSessionDto {
 
   @override
   String toString() {
-    return 'DeviceSessionDto(id: $id, label: $label, clientType: $clientType, platform: $platform, appVersion: $appVersion, lastUsedAt: $lastUsedAt, createdAt: $createdAt, isCurrent: $isCurrent)';
+    return 'DeviceSessionDto(id: $id, label: $label, clientType: $clientType, platform: $platform, appVersion: $appVersion, loginIp: $loginIp, lastUsedAt: $lastUsedAt, createdAt: $createdAt, isCurrent: $isCurrent)';
   }
 
   @override
@@ -273,6 +291,7 @@ class _$DeviceSessionDtoImpl implements _DeviceSessionDto {
                 other.platform == platform) &&
             (identical(other.appVersion, appVersion) ||
                 other.appVersion == appVersion) &&
+            (identical(other.loginIp, loginIp) || other.loginIp == loginIp) &&
             (identical(other.lastUsedAt, lastUsedAt) ||
                 other.lastUsedAt == lastUsedAt) &&
             (identical(other.createdAt, createdAt) ||
@@ -290,6 +309,7 @@ class _$DeviceSessionDtoImpl implements _DeviceSessionDto {
     clientType,
     platform,
     appVersion,
+    loginIp,
     lastUsedAt,
     createdAt,
     isCurrent,
@@ -319,6 +339,7 @@ abstract class _DeviceSessionDto implements DeviceSessionDto {
     @JsonKey(name: 'client_type') final String clientType,
     final String? platform,
     @JsonKey(name: 'app_version') final String? appVersion,
+    @JsonKey(name: 'login_ip') final String? loginIp,
     @JsonKey(name: 'last_used_at') final String? lastUsedAt,
     @JsonKey(name: 'created_at') final String? createdAt,
     @JsonKey(name: 'is_current') final bool isCurrent,
@@ -341,6 +362,9 @@ abstract class _DeviceSessionDto implements DeviceSessionDto {
   @override
   @JsonKey(name: 'app_version')
   String? get appVersion;
+  @override
+  @JsonKey(name: 'login_ip')
+  String? get loginIp;
   @override
   @JsonKey(name: 'last_used_at')
   String? get lastUsedAt;

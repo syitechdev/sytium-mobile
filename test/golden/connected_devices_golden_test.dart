@@ -30,9 +30,10 @@ class _Repo implements SessionsRepository {
     ),
     DeviceSession(
       id: 's3',
-      label: 'Navigateur web',
+      label: 'Chrome sur Windows',
       isCurrent: false,
       clientType: 'web',
+      loginIp: '196.170.24.11',
       lastUsedAt: DateTime(2026, 7, 19),
     ),
     DeviceSession(

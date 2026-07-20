@@ -171,6 +171,9 @@ class _SessionTile extends StatelessWidget {
   String get _subtitle {
     final parts = <String>[
       if (session.appVersion != null) 'v${session.appVersion}',
+      // L'IP est souvent le seul élément qui distingue deux sessions web
+      // ouvertes depuis le même navigateur.
+      if (session.loginIp != null) session.loginIp!,
       if (session.lastUsedAt != null)
         'Vu le ${AppDates.short(session.lastUsedAt!)}'
       else if (session.createdAt != null)

@@ -27,6 +27,7 @@ class SessionsRepositoryImpl implements SessionsRepository {
     clientType: d.clientType,
     platform: d.platform,
     appVersion: d.appVersion,
+    loginIp: d.loginIp,
     lastUsedAt: d.lastUsedAt == null ? null : DateTime.tryParse(d.lastUsedAt!),
     createdAt: d.createdAt == null ? null : DateTime.tryParse(d.createdAt!),
   );

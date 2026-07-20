@@ -120,9 +120,10 @@ void main() {
             _session(isCurrent: true),
             DeviceSession(
               id: 's2',
-              label: 'Navigateur web',
+              label: 'Chrome sur Windows',
               isCurrent: false,
               clientType: 'web',
+              loginIp: '196.170.24.11',
               lastUsedAt: DateTime(2026, 7, 20),
             ),
           ],
@@ -131,11 +132,15 @@ void main() {
     );
     await tester.pump(const Duration(milliseconds: 100));
 
-    expect(find.text('Navigateur web'), findsOneWidget);
+    expect(find.text('Chrome sur Windows'), findsOneWidget);
     // Une session web n'a pas de plateforme : elle ne doit pas retomber sur
     // l'icône « appareil inconnu » du mobile.
     expect(find.byIcon(Icons.computer_outlined), findsOneWidget);
     expect(find.byIcon(Icons.devices_other), findsNothing);
+
+    // Sans l'IP, deux sessions ouvertes depuis le même navigateur seraient
+    // indiscernables : c'est ce qui manquait à l'utilisateur.
+    expect(find.textContaining('196.170.24.11'), findsOneWidget);
   });
 
   testWidgets('une session web est révocable depuis le mobile', (tester) async {

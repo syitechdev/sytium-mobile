@@ -14,6 +14,7 @@ class DeviceSessionDto with _$DeviceSessionDto {
     @JsonKey(name: 'client_type') @Default('mobile') String clientType,
     String? platform,
     @JsonKey(name: 'app_version') String? appVersion,
+    @JsonKey(name: 'login_ip') String? loginIp,
     @JsonKey(name: 'last_used_at') String? lastUsedAt,
     @JsonKey(name: 'created_at') String? createdAt,
     @JsonKey(name: 'is_current') @Default(false) bool isCurrent,
