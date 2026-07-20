@@ -22,6 +22,9 @@ class LeaveCard extends StatelessWidget {
     final period = (leave.dateDebut != null && leave.dateFin != null)
         ? '${leave.dateDebut} → ${leave.dateFin}'
         : null;
+    final hours = (leave.heureDebut != null && leave.heureFin != null)
+        ? '${_hm(leave.heureDebut!)} – ${_hm(leave.heureFin!)}'
+        : null;
 
     return Container(
       decoration: BoxDecoration(
@@ -42,7 +45,7 @@ class LeaveCard extends StatelessWidget {
           if (period != null) ...[
             const SizedBox(height: Tokens.space4),
             Text(
-              period,
+              hours == null ? period : '$period · $hours',
               style: theme.bodySmall?.copyWith(color: colors.textMuted),
             ),
           ],
@@ -76,3 +79,6 @@ class LeaveCard extends StatelessWidget {
     );
   }
 }
+
+/// Réduit une heure `HH:mm:ss` renvoyée par l'API à `HH:mm`.
+String _hm(String raw) => raw.length >= 5 ? raw.substring(0, 5) : raw;

@@ -22,6 +22,8 @@ class LeaveDto with _$LeaveDto {
     String? type,
     @JsonKey(name: 'date_debut') String? dateDebut,
     @JsonKey(name: 'date_fin') String? dateFin,
+    @JsonKey(name: 'heure_debut') String? heureDebut,
+    @JsonKey(name: 'heure_fin') String? heureFin,
     @JsonKey(name: 'jours_ouvrables', fromJson: _intFromJson) int? joursOuvrables,
     String? motif,
     @JsonKey(name: 'commentaire_validation') String? commentaireValidation,
@@ -67,6 +69,8 @@ class LeaveCreateRequestDto with _$LeaveCreateRequestDto {
     @JsonKey(name: 'date_debut') required String dateDebut,
     @JsonKey(name: 'date_fin') required String dateFin,
     @JsonKey(includeIfNull: false) String? type,
+    @JsonKey(name: 'heure_debut', includeIfNull: false) String? heureDebut,
+    @JsonKey(name: 'heure_fin', includeIfNull: false) String? heureFin,
     @JsonKey(includeIfNull: false) String? motif,
   }) = _LeaveCreateRequestDto;
 

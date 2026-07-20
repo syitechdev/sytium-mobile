@@ -29,6 +29,10 @@ mixin _$LeaveDto {
   String? get dateDebut => throw _privateConstructorUsedError;
   @JsonKey(name: 'date_fin')
   String? get dateFin => throw _privateConstructorUsedError;
+  @JsonKey(name: 'heure_debut')
+  String? get heureDebut => throw _privateConstructorUsedError;
+  @JsonKey(name: 'heure_fin')
+  String? get heureFin => throw _privateConstructorUsedError;
   @JsonKey(name: 'jours_ouvrables', fromJson: _intFromJson)
   int? get joursOuvrables => throw _privateConstructorUsedError;
   String? get motif => throw _privateConstructorUsedError;
@@ -57,6 +61,8 @@ abstract class $LeaveDtoCopyWith<$Res> {
     String? type,
     @JsonKey(name: 'date_debut') String? dateDebut,
     @JsonKey(name: 'date_fin') String? dateFin,
+    @JsonKey(name: 'heure_debut') String? heureDebut,
+    @JsonKey(name: 'heure_fin') String? heureFin,
     @JsonKey(name: 'jours_ouvrables', fromJson: _intFromJson)
     int? joursOuvrables,
     String? motif,
@@ -85,6 +91,8 @@ class _$LeaveDtoCopyWithImpl<$Res, $Val extends LeaveDto>
     Object? type = freezed,
     Object? dateDebut = freezed,
     Object? dateFin = freezed,
+    Object? heureDebut = freezed,
+    Object? heureFin = freezed,
     Object? joursOuvrables = freezed,
     Object? motif = freezed,
     Object? commentaireValidation = freezed,
@@ -114,6 +122,14 @@ class _$LeaveDtoCopyWithImpl<$Res, $Val extends LeaveDto>
             dateFin: freezed == dateFin
                 ? _value.dateFin
                 : dateFin // ignore: cast_nullable_to_non_nullable
+                      as String?,
+            heureDebut: freezed == heureDebut
+                ? _value.heureDebut
+                : heureDebut // ignore: cast_nullable_to_non_nullable
+                      as String?,
+            heureFin: freezed == heureFin
+                ? _value.heureFin
+                : heureFin // ignore: cast_nullable_to_non_nullable
                       as String?,
             joursOuvrables: freezed == joursOuvrables
                 ? _value.joursOuvrables
@@ -149,6 +165,8 @@ abstract class _$$LeaveDtoImplCopyWith<$Res>
     String? type,
     @JsonKey(name: 'date_debut') String? dateDebut,
     @JsonKey(name: 'date_fin') String? dateFin,
+    @JsonKey(name: 'heure_debut') String? heureDebut,
+    @JsonKey(name: 'heure_fin') String? heureFin,
     @JsonKey(name: 'jours_ouvrables', fromJson: _intFromJson)
     int? joursOuvrables,
     String? motif,
@@ -176,6 +194,8 @@ class __$$LeaveDtoImplCopyWithImpl<$Res>
     Object? type = freezed,
     Object? dateDebut = freezed,
     Object? dateFin = freezed,
+    Object? heureDebut = freezed,
+    Object? heureFin = freezed,
     Object? joursOuvrables = freezed,
     Object? motif = freezed,
     Object? commentaireValidation = freezed,
@@ -206,6 +226,14 @@ class __$$LeaveDtoImplCopyWithImpl<$Res>
             ? _value.dateFin
             : dateFin // ignore: cast_nullable_to_non_nullable
                   as String?,
+        heureDebut: freezed == heureDebut
+            ? _value.heureDebut
+            : heureDebut // ignore: cast_nullable_to_non_nullable
+                  as String?,
+        heureFin: freezed == heureFin
+            ? _value.heureFin
+            : heureFin // ignore: cast_nullable_to_non_nullable
+                  as String?,
         joursOuvrables: freezed == joursOuvrables
             ? _value.joursOuvrables
             : joursOuvrables // ignore: cast_nullable_to_non_nullable
@@ -233,6 +261,8 @@ class _$LeaveDtoImpl implements _LeaveDto {
     this.type,
     @JsonKey(name: 'date_debut') this.dateDebut,
     @JsonKey(name: 'date_fin') this.dateFin,
+    @JsonKey(name: 'heure_debut') this.heureDebut,
+    @JsonKey(name: 'heure_fin') this.heureFin,
     @JsonKey(name: 'jours_ouvrables', fromJson: _intFromJson)
     this.joursOuvrables,
     this.motif,
@@ -257,6 +287,12 @@ class _$LeaveDtoImpl implements _LeaveDto {
   @JsonKey(name: 'date_fin')
   final String? dateFin;
   @override
+  @JsonKey(name: 'heure_debut')
+  final String? heureDebut;
+  @override
+  @JsonKey(name: 'heure_fin')
+  final String? heureFin;
+  @override
   @JsonKey(name: 'jours_ouvrables', fromJson: _intFromJson)
   final int? joursOuvrables;
   @override
@@ -267,7 +303,7 @@ class _$LeaveDtoImpl implements _LeaveDto {
 
   @override
   String toString() {
-    return 'LeaveDto(id: $id, statut: $statut, numero: $numero, type: $type, dateDebut: $dateDebut, dateFin: $dateFin, joursOuvrables: $joursOuvrables, motif: $motif, commentaireValidation: $commentaireValidation)';
+    return 'LeaveDto(id: $id, statut: $statut, numero: $numero, type: $type, dateDebut: $dateDebut, dateFin: $dateFin, heureDebut: $heureDebut, heureFin: $heureFin, joursOuvrables: $joursOuvrables, motif: $motif, commentaireValidation: $commentaireValidation)';
   }
 
   @override
@@ -282,6 +318,10 @@ class _$LeaveDtoImpl implements _LeaveDto {
             (identical(other.dateDebut, dateDebut) ||
                 other.dateDebut == dateDebut) &&
             (identical(other.dateFin, dateFin) || other.dateFin == dateFin) &&
+            (identical(other.heureDebut, heureDebut) ||
+                other.heureDebut == heureDebut) &&
+            (identical(other.heureFin, heureFin) ||
+                other.heureFin == heureFin) &&
             (identical(other.joursOuvrables, joursOuvrables) ||
                 other.joursOuvrables == joursOuvrables) &&
             (identical(other.motif, motif) || other.motif == motif) &&
@@ -299,6 +339,8 @@ class _$LeaveDtoImpl implements _LeaveDto {
     type,
     dateDebut,
     dateFin,
+    heureDebut,
+    heureFin,
     joursOuvrables,
     motif,
     commentaireValidation,
@@ -326,6 +368,8 @@ abstract class _LeaveDto implements LeaveDto {
     final String? type,
     @JsonKey(name: 'date_debut') final String? dateDebut,
     @JsonKey(name: 'date_fin') final String? dateFin,
+    @JsonKey(name: 'heure_debut') final String? heureDebut,
+    @JsonKey(name: 'heure_fin') final String? heureFin,
     @JsonKey(name: 'jours_ouvrables', fromJson: _intFromJson)
     final int? joursOuvrables,
     final String? motif,
@@ -350,6 +394,12 @@ abstract class _LeaveDto implements LeaveDto {
   @override
   @JsonKey(name: 'date_fin')
   String? get dateFin;
+  @override
+  @JsonKey(name: 'heure_debut')
+  String? get heureDebut;
+  @override
+  @JsonKey(name: 'heure_fin')
+  String? get heureFin;
   @override
   @JsonKey(name: 'jours_ouvrables', fromJson: _intFromJson)
   int? get joursOuvrables;
@@ -934,6 +984,10 @@ mixin _$LeaveCreateRequestDto {
   String get dateFin => throw _privateConstructorUsedError;
   @JsonKey(includeIfNull: false)
   String? get type => throw _privateConstructorUsedError;
+  @JsonKey(name: 'heure_debut', includeIfNull: false)
+  String? get heureDebut => throw _privateConstructorUsedError;
+  @JsonKey(name: 'heure_fin', includeIfNull: false)
+  String? get heureFin => throw _privateConstructorUsedError;
   @JsonKey(includeIfNull: false)
   String? get motif => throw _privateConstructorUsedError;
 
@@ -958,6 +1012,8 @@ abstract class $LeaveCreateRequestDtoCopyWith<$Res> {
     @JsonKey(name: 'date_debut') String dateDebut,
     @JsonKey(name: 'date_fin') String dateFin,
     @JsonKey(includeIfNull: false) String? type,
+    @JsonKey(name: 'heure_debut', includeIfNull: false) String? heureDebut,
+    @JsonKey(name: 'heure_fin', includeIfNull: false) String? heureFin,
     @JsonKey(includeIfNull: false) String? motif,
   });
 }
@@ -983,6 +1039,8 @@ class _$LeaveCreateRequestDtoCopyWithImpl<
     Object? dateDebut = null,
     Object? dateFin = null,
     Object? type = freezed,
+    Object? heureDebut = freezed,
+    Object? heureFin = freezed,
     Object? motif = freezed,
   }) {
     return _then(
@@ -998,6 +1056,14 @@ class _$LeaveCreateRequestDtoCopyWithImpl<
             type: freezed == type
                 ? _value.type
                 : type // ignore: cast_nullable_to_non_nullable
+                      as String?,
+            heureDebut: freezed == heureDebut
+                ? _value.heureDebut
+                : heureDebut // ignore: cast_nullable_to_non_nullable
+                      as String?,
+            heureFin: freezed == heureFin
+                ? _value.heureFin
+                : heureFin // ignore: cast_nullable_to_non_nullable
                       as String?,
             motif: freezed == motif
                 ? _value.motif
@@ -1022,6 +1088,8 @@ abstract class _$$LeaveCreateRequestDtoImplCopyWith<$Res>
     @JsonKey(name: 'date_debut') String dateDebut,
     @JsonKey(name: 'date_fin') String dateFin,
     @JsonKey(includeIfNull: false) String? type,
+    @JsonKey(name: 'heure_debut', includeIfNull: false) String? heureDebut,
+    @JsonKey(name: 'heure_fin', includeIfNull: false) String? heureFin,
     @JsonKey(includeIfNull: false) String? motif,
   });
 }
@@ -1044,6 +1112,8 @@ class __$$LeaveCreateRequestDtoImplCopyWithImpl<$Res>
     Object? dateDebut = null,
     Object? dateFin = null,
     Object? type = freezed,
+    Object? heureDebut = freezed,
+    Object? heureFin = freezed,
     Object? motif = freezed,
   }) {
     return _then(
@@ -1059,6 +1129,14 @@ class __$$LeaveCreateRequestDtoImplCopyWithImpl<$Res>
         type: freezed == type
             ? _value.type
             : type // ignore: cast_nullable_to_non_nullable
+                  as String?,
+        heureDebut: freezed == heureDebut
+            ? _value.heureDebut
+            : heureDebut // ignore: cast_nullable_to_non_nullable
+                  as String?,
+        heureFin: freezed == heureFin
+            ? _value.heureFin
+            : heureFin // ignore: cast_nullable_to_non_nullable
                   as String?,
         motif: freezed == motif
             ? _value.motif
@@ -1076,6 +1154,8 @@ class _$LeaveCreateRequestDtoImpl implements _LeaveCreateRequestDto {
     @JsonKey(name: 'date_debut') required this.dateDebut,
     @JsonKey(name: 'date_fin') required this.dateFin,
     @JsonKey(includeIfNull: false) this.type,
+    @JsonKey(name: 'heure_debut', includeIfNull: false) this.heureDebut,
+    @JsonKey(name: 'heure_fin', includeIfNull: false) this.heureFin,
     @JsonKey(includeIfNull: false) this.motif,
   });
 
@@ -1092,12 +1172,18 @@ class _$LeaveCreateRequestDtoImpl implements _LeaveCreateRequestDto {
   @JsonKey(includeIfNull: false)
   final String? type;
   @override
+  @JsonKey(name: 'heure_debut', includeIfNull: false)
+  final String? heureDebut;
+  @override
+  @JsonKey(name: 'heure_fin', includeIfNull: false)
+  final String? heureFin;
+  @override
   @JsonKey(includeIfNull: false)
   final String? motif;
 
   @override
   String toString() {
-    return 'LeaveCreateRequestDto(dateDebut: $dateDebut, dateFin: $dateFin, type: $type, motif: $motif)';
+    return 'LeaveCreateRequestDto(dateDebut: $dateDebut, dateFin: $dateFin, type: $type, heureDebut: $heureDebut, heureFin: $heureFin, motif: $motif)';
   }
 
   @override
@@ -1109,12 +1195,24 @@ class _$LeaveCreateRequestDtoImpl implements _LeaveCreateRequestDto {
                 other.dateDebut == dateDebut) &&
             (identical(other.dateFin, dateFin) || other.dateFin == dateFin) &&
             (identical(other.type, type) || other.type == type) &&
+            (identical(other.heureDebut, heureDebut) ||
+                other.heureDebut == heureDebut) &&
+            (identical(other.heureFin, heureFin) ||
+                other.heureFin == heureFin) &&
             (identical(other.motif, motif) || other.motif == motif));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode => Object.hash(runtimeType, dateDebut, dateFin, type, motif);
+  int get hashCode => Object.hash(
+    runtimeType,
+    dateDebut,
+    dateFin,
+    type,
+    heureDebut,
+    heureFin,
+    motif,
+  );
 
   /// Create a copy of LeaveCreateRequestDto
   /// with the given fields replaced by the non-null parameter values.
@@ -1139,6 +1237,9 @@ abstract class _LeaveCreateRequestDto implements LeaveCreateRequestDto {
     @JsonKey(name: 'date_debut') required final String dateDebut,
     @JsonKey(name: 'date_fin') required final String dateFin,
     @JsonKey(includeIfNull: false) final String? type,
+    @JsonKey(name: 'heure_debut', includeIfNull: false)
+    final String? heureDebut,
+    @JsonKey(name: 'heure_fin', includeIfNull: false) final String? heureFin,
     @JsonKey(includeIfNull: false) final String? motif,
   }) = _$LeaveCreateRequestDtoImpl;
 
@@ -1154,6 +1255,12 @@ abstract class _LeaveCreateRequestDto implements LeaveCreateRequestDto {
   @override
   @JsonKey(includeIfNull: false)
   String? get type;
+  @override
+  @JsonKey(name: 'heure_debut', includeIfNull: false)
+  String? get heureDebut;
+  @override
+  @JsonKey(name: 'heure_fin', includeIfNull: false)
+  String? get heureFin;
   @override
   @JsonKey(includeIfNull: false)
   String? get motif;

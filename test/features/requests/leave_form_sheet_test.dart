@@ -7,6 +7,7 @@ import 'package:sytium_mobile/features/requests/application/requests_providers.d
 import 'package:sytium_mobile/features/requests/domain/request_models.dart';
 import 'package:sytium_mobile/features/requests/domain/requests_repository.dart';
 import 'package:sytium_mobile/features/requests/presentation/leave_form_sheet.dart';
+import 'package:sytium_mobile/features/requests/presentation/widgets/date_time_field.dart';
 import 'package:sytium_mobile/theme/theme.dart';
 
 class _RecordingRepo implements RequestsRepository {
@@ -82,6 +83,32 @@ void main() {
 
     expect(repo.created, isNotNull);
     expect(repo.created!.type, LeaveType.congePaye);
+    // Sans heure saisie, le congé reste pleine journée.
+    expect(repo.created!.heureDebut, isNull);
+    expect(repo.created!.heureFin, isNull);
+  });
+
+  testWidgets('chaque champ date propose d’ajouter une heure', (tester) async {
+    await _open(tester, _RecordingRepo());
+
+    // Deux champs combinés (Du, Au), chacun avec une action heure « Ajouter ».
+    expect(find.byType(DateTimeField), findsNWidgets(2));
+    expect(find.text('Ajouter'), findsNWidgets(2));
+  });
+
+  testWidgets('sélectionner une heure la fait apparaître dans le champ',
+      (tester) async {
+    await _open(tester, _RecordingRepo());
+
+    await tester.tap(find.text('Ajouter').first);
+    await tester.pumpAndSettle();
+    // Valide l'heure initiale du sélecteur (08:00).
+    await tester.tap(find.text('OK'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('08:00'), findsOneWidget);
+    // Un seul « Ajouter » reste (l'autre champ).
+    expect(find.text('Ajouter'), findsOneWidget);
   });
 
   testWidgets('NO_EMPLOYEE (422) shows an inline message, stays open',

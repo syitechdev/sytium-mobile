@@ -26,6 +26,8 @@ class RequestsRepositoryImpl implements RequestsRepository {
             dateDebut: draft.dateDebut,
             dateFin: draft.dateFin,
             type: draft.type == LeaveType.unknown ? null : draft.type.wire,
+            heureDebut: draft.heureDebut,
+            heureFin: draft.heureFin,
             motif: draft.motif,
           ),
         );
@@ -82,6 +84,8 @@ class RequestsRepositoryImpl implements RequestsRepository {
     numero: d.numero,
     dateDebut: d.dateDebut,
     dateFin: d.dateFin,
+    heureDebut: d.heureDebut,
+    heureFin: d.heureFin,
     joursOuvrables: d.joursOuvrables,
     motif: d.motif,
     commentaireValidation: d.commentaireValidation,

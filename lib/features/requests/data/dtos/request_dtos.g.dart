@@ -14,6 +14,8 @@ _$LeaveDtoImpl _$$LeaveDtoImplFromJson(Map<String, dynamic> json) =>
       type: json['type'] as String?,
       dateDebut: json['date_debut'] as String?,
       dateFin: json['date_fin'] as String?,
+      heureDebut: json['heure_debut'] as String?,
+      heureFin: json['heure_fin'] as String?,
       joursOuvrables: _intFromJson(json['jours_ouvrables']),
       motif: json['motif'] as String?,
       commentaireValidation: json['commentaire_validation'] as String?,
@@ -27,6 +29,8 @@ Map<String, dynamic> _$$LeaveDtoImplToJson(_$LeaveDtoImpl instance) =>
       'type': instance.type,
       'date_debut': instance.dateDebut,
       'date_fin': instance.dateFin,
+      'heure_debut': instance.heureDebut,
+      'heure_fin': instance.heureFin,
       'jours_ouvrables': instance.joursOuvrables,
       'motif': instance.motif,
       'commentaire_validation': instance.commentaireValidation,
@@ -80,6 +84,8 @@ _$LeaveCreateRequestDtoImpl _$$LeaveCreateRequestDtoImplFromJson(
   dateDebut: json['date_debut'] as String,
   dateFin: json['date_fin'] as String,
   type: json['type'] as String?,
+  heureDebut: json['heure_debut'] as String?,
+  heureFin: json['heure_fin'] as String?,
   motif: json['motif'] as String?,
 );
 
@@ -89,6 +95,8 @@ Map<String, dynamic> _$$LeaveCreateRequestDtoImplToJson(
   'date_debut': instance.dateDebut,
   'date_fin': instance.dateFin,
   if (instance.type case final value?) 'type': value,
+  if (instance.heureDebut case final value?) 'heure_debut': value,
+  if (instance.heureFin case final value?) 'heure_fin': value,
   if (instance.motif case final value?) 'motif': value,
 };
 

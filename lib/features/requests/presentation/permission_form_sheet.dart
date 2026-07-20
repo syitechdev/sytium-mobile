@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sytium_mobile/core/error/failure.dart';
 import 'package:sytium_mobile/features/requests/application/requests_providers.dart';
 import 'package:sytium_mobile/features/requests/domain/request_models.dart';
+import 'package:sytium_mobile/features/requests/presentation/widgets/date_time_field.dart';
 import 'package:sytium_mobile/shared/widgets/app_primary_button.dart';
 import 'package:sytium_mobile/shared/widgets/app_sheet.dart';
 import 'package:sytium_mobile/shared/widgets/app_text_field.dart';
@@ -229,32 +230,22 @@ class _PermissionFormSheetState extends ConsumerState<_PermissionFormSheet> {
                     label: 'Destination (optionnel)',
                   ),
                   const SizedBox(height: Tokens.space12),
-                  _PickerRow(
+                  DateTimeField(
                     label: 'Du',
-                    value: _ymd(_debut),
-                    icon: Icons.calendar_today_outlined,
-                    onTap: () => _pickDate(true),
+                    date: _debut,
+                    time: _heureDebut,
+                    onPickDate: () => _pickDate(true),
+                    onPickTime: () => _pickTime(true),
+                    onClearTime: () => setState(() => _heureDebut = null),
                   ),
                   const SizedBox(height: Tokens.space12),
-                  _PickerRow(
+                  DateTimeField(
                     label: 'Au',
-                    value: _ymd(_fin),
-                    icon: Icons.calendar_today_outlined,
-                    onTap: () => _pickDate(false),
-                  ),
-                  const SizedBox(height: Tokens.space12),
-                  _PickerRow(
-                    label: 'Heure de début (optionnel)',
-                    value: _heureDebut == null ? '—' : _hm(_heureDebut!),
-                    icon: Icons.schedule_outlined,
-                    onTap: () => _pickTime(true),
-                  ),
-                  const SizedBox(height: Tokens.space12),
-                  _PickerRow(
-                    label: 'Heure de fin (optionnel)',
-                    value: _heureFin == null ? '—' : _hm(_heureFin!),
-                    icon: Icons.schedule_outlined,
-                    onTap: () => _pickTime(false),
+                    date: _fin,
+                    time: _heureFin,
+                    onPickDate: () => _pickDate(false),
+                    onPickTime: () => _pickTime(false),
+                    onClearTime: () => setState(() => _heureFin = null),
                   ),
                   const SizedBox(height: Tokens.space12),
                   AppTextField(
@@ -286,51 +277,6 @@ class _PermissionFormSheetState extends ConsumerState<_PermissionFormSheet> {
           ],
         ),
       ),
-    );
-  }
-}
-
-/// A labelled, tappable picker field (date or time).
-class _PickerRow extends StatelessWidget {
-  const _PickerRow({
-    required this.label,
-    required this.value,
-    required this.icon,
-    required this.onTap,
-  });
-
-  final String label;
-  final String value;
-  final IconData icon;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.colors;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(label, style: Theme.of(context).textTheme.labelLarge),
-        const SizedBox(height: Tokens.space8),
-        InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(Tokens.radiusMd),
-          child: Container(
-            padding: const EdgeInsets.all(Tokens.space16),
-            decoration: BoxDecoration(
-              border: Border.all(color: colors.border),
-              borderRadius: BorderRadius.circular(Tokens.radiusMd),
-            ),
-            child: Row(
-              children: [
-                Icon(icon, size: 18, color: colors.textMuted),
-                const SizedBox(width: Tokens.space12),
-                Text(value),
-              ],
-            ),
-          ),
-        ),
-      ],
     );
   }
 }

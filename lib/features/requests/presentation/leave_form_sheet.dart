@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sytium_mobile/core/error/failure.dart';
 import 'package:sytium_mobile/features/requests/application/requests_providers.dart';
 import 'package:sytium_mobile/features/requests/domain/request_models.dart';
+import 'package:sytium_mobile/features/requests/presentation/widgets/date_time_field.dart';
 import 'package:sytium_mobile/shared/widgets/app_primary_button.dart';
 import 'package:sytium_mobile/shared/widgets/app_sheet.dart';
 import 'package:sytium_mobile/shared/widgets/app_text_field.dart';
@@ -29,6 +30,8 @@ class _LeaveFormSheetState extends ConsumerState<_LeaveFormSheet> {
   LeaveType _type = LeaveType.congePaye;
   late DateTime _debut;
   late DateTime _fin;
+  TimeOfDay? _heureDebut;
+  TimeOfDay? _heureFin;
   late final TextEditingController _motif;
   bool _saving = false;
   String? _error;
@@ -75,11 +78,43 @@ class _LeaveFormSheetState extends ConsumerState<_LeaveFormSheet> {
     );
   }
 
+  Future<void> _pickTime(bool isStart) async {
+    final picked = await showTimePicker(
+      context: context,
+      initialTime:
+          (isStart ? _heureDebut : _heureFin) ??
+          const TimeOfDay(hour: 8, minute: 0),
+    );
+    if (!mounted || picked == null) return;
+    setState(() {
+      if (isStart) {
+        _heureDebut = picked;
+      } else {
+        _heureFin = picked;
+      }
+    });
+  }
+
   Future<void> _submit() async {
     if (_fin.isBefore(_debut)) {
       setState(() => _error = 'La date de fin doit suivre la date de début.');
       return;
     }
+    // Heures : tout ou rien, et fin après début (le backend applique la même
+    // règle). Elles restent optionnelles : sans heure, congé pleine journée.
+    final hasDebut = _heureDebut != null;
+    final hasFin = _heureFin != null;
+    if (hasDebut != hasFin) {
+      setState(
+        () => _error = 'Renseignez les deux heures (début et fin) ou aucune.',
+      );
+      return;
+    }
+    if (hasDebut && hasFin && !_isAfter(_heureFin!, _heureDebut!)) {
+      setState(() => _error = "L'heure de fin doit suivre l'heure de début.");
+      return;
+    }
+
     setState(() {
       _saving = true;
       _error = null;
@@ -92,6 +127,8 @@ class _LeaveFormSheetState extends ConsumerState<_LeaveFormSheet> {
             type: _type,
             dateDebut: _ymd(_debut),
             dateFin: _ymd(_fin),
+            heureDebut: hasDebut ? _hm(_heureDebut!) : null,
+            heureFin: hasFin ? _hm(_heureFin!) : null,
             motif: _motif.text.trim().isEmpty ? null : _motif.text.trim(),
           ),
         );
@@ -152,9 +189,23 @@ class _LeaveFormSheetState extends ConsumerState<_LeaveFormSheet> {
                     onChanged: (t) => setState(() => _type = t ?? _type),
                   ),
                   const SizedBox(height: Tokens.space12),
-                  _DateRow(label: 'Du', value: _ymd(_debut), onTap: _pickDebut),
+                  DateTimeField(
+                    label: 'Du',
+                    date: _debut,
+                    time: _heureDebut,
+                    onPickDate: _pickDebut,
+                    onPickTime: () => _pickTime(true),
+                    onClearTime: () => setState(() => _heureDebut = null),
+                  ),
                   const SizedBox(height: Tokens.space12),
-                  _DateRow(label: 'Au', value: _ymd(_fin), onTap: _pickFin),
+                  DateTimeField(
+                    label: 'Au',
+                    date: _fin,
+                    time: _heureFin,
+                    onPickDate: _pickFin,
+                    onPickTime: () => _pickTime(false),
+                    onClearTime: () => setState(() => _heureFin = null),
+                  ),
                   const SizedBox(height: Tokens.space12),
                   AppTextField(
                     controller: _motif,
@@ -184,55 +235,15 @@ class _LeaveFormSheetState extends ConsumerState<_LeaveFormSheet> {
   }
 }
 
-/// A labelled, tappable date field showing the current `YYYY-MM-DD` value.
-class _DateRow extends StatelessWidget {
-  const _DateRow({
-    required this.label,
-    required this.value,
-    required this.onTap,
-  });
-
-  final String label;
-  final String value;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.colors;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(label, style: Theme.of(context).textTheme.labelLarge),
-        const SizedBox(height: Tokens.space8),
-        InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(Tokens.radiusMd),
-          child: Container(
-            padding: const EdgeInsets.all(Tokens.space16),
-            decoration: BoxDecoration(
-              border: Border.all(color: colors.border),
-              borderRadius: BorderRadius.circular(Tokens.radiusMd),
-            ),
-            child: Row(
-              children: [
-                Icon(
-                  Icons.calendar_today_outlined,
-                  size: 18,
-                  color: colors.textMuted,
-                ),
-                const SizedBox(width: Tokens.space12),
-                Text(value),
-              ],
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
 /// `YYYY-MM-DD` for a date.
 String _ymd(DateTime d) =>
     '${d.year.toString().padLeft(4, '0')}-'
     '${d.month.toString().padLeft(2, '0')}-'
     '${d.day.toString().padLeft(2, '0')}';
+
+/// `HH:mm` for a time.
+String _hm(TimeOfDay t) =>
+    '${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}';
+
+bool _isAfter(TimeOfDay a, TimeOfDay b) =>
+    a.hour * 60 + a.minute > b.hour * 60 + b.minute;

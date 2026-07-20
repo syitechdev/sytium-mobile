@@ -140,6 +140,8 @@ class LeaveRequest {
     this.numero,
     this.dateDebut,
     this.dateFin,
+    this.heureDebut,
+    this.heureFin,
     this.joursOuvrables,
     this.motif,
     this.commentaireValidation,
@@ -149,6 +151,8 @@ class LeaveRequest {
   final LeaveStatus statut;
   final LeaveType type;
   final String? numero;
+  final String? heureDebut;
+  final String? heureFin;
   final String? dateDebut;
   final String? dateFin;
   final int? joursOuvrables;
@@ -235,12 +239,16 @@ class LeaveDraft {
     required this.type,
     required this.dateDebut,
     required this.dateFin,
+    this.heureDebut,
+    this.heureFin,
     this.motif,
   });
 
   final LeaveType type;
   final String dateDebut; // YYYY-MM-DD
   final String dateFin; // YYYY-MM-DD
+  final String? heureDebut; // HH:mm, optionnel
+  final String? heureFin; // HH:mm, optionnel
   final String? motif;
 }
 
