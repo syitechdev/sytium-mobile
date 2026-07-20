@@ -1,0 +1,26 @@
+/// Maps a backend role code to its French display label (mirrors the web's
+/// ROLE_LABELS). Returns a neutral 'Utilisateur' for unknown/absent roles.
+String roleLabel(String? role) => switch (role) {
+  'super_admin' => 'Super Admin',
+  'admin' => 'Administrateur',
+  'manager' => 'Manager',
+  'finance' => 'Finance & Compta',
+  'comptable' => 'Comptable',
+  'production' => 'Production',
+  'rh' => 'Ressources Humaines',
+  'commercial' => 'Commercial',
+  'secretariat' => 'Secrétariat',
+  'actionnaire' => 'Actionnaire',
+  'stock' => 'Stock & Logistique',
+  'logistique' => 'Logistique & Supply Chain',
+  'employe' || 'employee' => 'Employé',
+  'parrain' => 'Parrain',
+  'expert_comptable' => 'Expert-Comptable',
+  'cabinet_collaborateur' => 'Collaborateur Cabinet',
+  'cabinet_assistant' => 'Assistant Cabinet',
+  'cabinet_client_portail' => 'Client Cabinet',
+  'royalty_beneficiary' => 'Bénéficiaire de royalties',
+  'client' => 'Client',
+  'viewer' => 'Lecture seule',
+  _ => 'Utilisateur',
+};

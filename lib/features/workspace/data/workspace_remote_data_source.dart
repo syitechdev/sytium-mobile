@@ -1,0 +1,170 @@
+import 'package:dio/dio.dart';
+import 'package:sytium_mobile/features/workspace/data/dtos/workspace_dtos.dart';
+
+/// Thin Dio wrapper over `/workspace/*`. Each method unwraps the `{data: ...}`
+/// envelope and returns DTOs; the repository maps them to domain models.
+class WorkspaceRemoteDataSource {
+  WorkspaceRemoteDataSource(this._dio);
+  final Dio _dio;
+
+  Future<List<ChannelDto>> channels() async {
+    final res = await _dio.get<Map<String, dynamic>>('/workspace/channels');
+    final list = res.data!['data'] as List<dynamic>;
+    return list
+        .map((e) => ChannelDto.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
+  Future<List<ChannelMemberDto>> channelMembers(String channelId) async {
+    final res = await _dio.get<Map<String, dynamic>>(
+      '/workspace/channels/$channelId/members',
+    );
+    final list = res.data!['data'] as List<dynamic>;
+    return list
+        .map((e) => ChannelMemberDto.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
+  Future<List<OrgMemberDto>> members() async {
+    final res = await _dio.get<Map<String, dynamic>>('/workspace/members');
+    final list = res.data!['data'] as List<dynamic>;
+    return list
+        .map((e) => OrgMemberDto.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
+  Future<ChannelDto> openDm(String userId) async {
+    final res = await _dio.post<Map<String, dynamic>>(
+      '/workspace/dm',
+      data: {'user_id': userId},
+    );
+    return ChannelDto.fromJson(res.data!['data'] as Map<String, dynamic>);
+  }
+
+  Future<List<PresenceDto>> presence() async {
+    final res = await _dio.get<Map<String, dynamic>>('/workspace/presence');
+    final list = res.data!['data'] as List<dynamic>;
+    return list
+        .map((e) => PresenceDto.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
+  Future<void> heartbeat({String? channelId}) async {
+    await _dio.post<Map<String, dynamic>>(
+      '/workspace/presence/heartbeat',
+      data: {if (channelId != null) 'channel_id': channelId},
+    );
+  }
+
+  Future<ChannelDto> createChannel({
+    required String name,
+    required String type,
+    String? description,
+  }) async {
+    final res = await _dio.post<Map<String, dynamic>>(
+      '/workspace/channels',
+      data: {
+        'name': name,
+        'type': type,
+        if (description != null && description.isNotEmpty)
+          'description': description,
+      },
+    );
+    return ChannelDto.fromJson(res.data!['data'] as Map<String, dynamic>);
+  }
+
+  Future<void> joinChannel(String channelId) async {
+    await _dio.post<Map<String, dynamic>>(
+      '/workspace/channels/$channelId/join',
+    );
+  }
+
+  Future<MessagesPageDto> messages(
+    String channelId, {
+    String? cursor,
+    int limit = 50,
+  }) async {
+    final res = await _dio.get<Map<String, dynamic>>(
+      '/workspace/channels/$channelId/messages',
+      queryParameters: {
+        if (cursor != null) 'cursor': cursor,
+        'limit': limit,
+        // Flat mode: replies come inline (with their `parent` quote) since the
+        // mobile thread has no separate thread panel.
+        'flat': 1,
+      },
+    );
+    return MessagesPageDto.fromJson(res.data!);
+  }
+
+  Future<MessageDto> sendMessage(
+    String channelId, {
+    String content = '',
+    List<String> attachmentPaths = const <String>[],
+    String? parentId,
+  }) async {
+    // With attachments we must use multipart/form-data. The files MUST be keyed
+    // `attachments[]` so PHP/Laravel parses them as an array (a plain repeated
+    // `attachments` key keeps only the last file → 422).
+    final Object payload;
+    if (attachmentPaths.isEmpty) {
+      payload = {
+        'content': content,
+        if (parentId != null) 'parent_id': parentId,
+      };
+    } else {
+      final form = FormData();
+      if (content.isNotEmpty) form.fields.add(MapEntry('content', content));
+      if (parentId != null) form.fields.add(MapEntry('parent_id', parentId));
+      for (final path in attachmentPaths) {
+        form.files.add(MapEntry(
+          'attachments[]',
+          await MultipartFile.fromFile(path, filename: path.split('/').last),
+        ));
+      }
+      payload = form;
+    }
+    final res = await _dio.post<Map<String, dynamic>>(
+      '/workspace/channels/$channelId/messages',
+      data: payload,
+    );
+    return MessageDto.fromJson(res.data!['data'] as Map<String, dynamic>);
+  }
+
+  /// Toggles an emoji reaction; returns whether it is now present.
+  Future<bool> toggleReaction(String messageId, String emoji) async {
+    final res = await _dio.post<Map<String, dynamic>>(
+      '/workspace/messages/$messageId/reactions',
+      data: {'emoji': emoji},
+    );
+    final data = res.data?['data'];
+    return data is Map<String, dynamic> && data['added'] == true;
+  }
+
+  Future<MessageDto> editMessage(String messageId, String content) async {
+    final res = await _dio.patch<Map<String, dynamic>>(
+      '/workspace/messages/$messageId',
+      data: {'content': content},
+    );
+    return MessageDto.fromJson(res.data!['data'] as Map<String, dynamic>);
+  }
+
+  Future<void> deleteForMe(String messageId) async {
+    await _dio.delete<Map<String, dynamic>>(
+      '/workspace/messages/$messageId/for-me',
+    );
+  }
+
+  Future<MessageDto> deleteForEveryone(String messageId) async {
+    final res = await _dio.delete<Map<String, dynamic>>(
+      '/workspace/messages/$messageId/for-everyone',
+    );
+    return MessageDto.fromJson(res.data!['data'] as Map<String, dynamic>);
+  }
+
+  Future<void> markRead(String channelId) async {
+    await _dio.post<Map<String, dynamic>>(
+      '/workspace/channels/$channelId/read',
+    );
+  }
+}

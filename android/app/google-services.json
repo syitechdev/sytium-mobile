@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "516082351651",
+    "project_id": "sytium-7676a",
+    "storage_bucket": "sytium-7676a.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:516082351651:android:7eee73296990a488313b96",
+        "android_client_info": {
+          "package_name": "tech.sytium.mobile"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD4-JkgfM4MffgfoqbSjsd7NzkAMOc0irw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

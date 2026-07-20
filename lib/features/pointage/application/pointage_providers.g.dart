@@ -1,0 +1,113 @@
+// GENERATED CODE - DO NOT MODIFY BY HAND
+
+part of 'pointage_providers.dart';
+
+// **************************************************************************
+// RiverpodGenerator
+// **************************************************************************
+
+String _$pointageRepositoryHash() =>
+    r'12ab27bd1e11c72b2e575789e6ab56a7e0415491';
+
+/// See also [pointageRepository].
+@ProviderFor(pointageRepository)
+final pointageRepositoryProvider =
+    AutoDisposeProvider<PointageRepository>.internal(
+      pointageRepository,
+      name: r'pointageRepositoryProvider',
+      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+          ? null
+          : _$pointageRepositoryHash,
+      dependencies: null,
+      allTransitiveDependencies: null,
+    );
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+typedef PointageRepositoryRef = AutoDisposeProviderRef<PointageRepository>;
+String _$vpnActiveHash() => r'1a38e3f3c9a37e1fc708d4bdfc5c215d4500bf81';
+
+/// Real-time VPN state. Emits the current state immediately, then live
+/// updates from the platform. VPN is **non-blocking** (a red warning), never
+/// a hard lock — iOS exposes `utun*` interfaces with or without a real VPN, so
+/// blocking on it caused false positives. The scan still sends `vpn_suspected`.
+///
+/// Copied from [vpnActive].
+@ProviderFor(vpnActive)
+final vpnActiveProvider = AutoDisposeStreamProvider<bool>.internal(
+  vpnActive,
+  name: r'vpnActiveProvider',
+  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+      ? null
+      : _$vpnActiveHash,
+  dependencies: null,
+  allTransitiveDependencies: null,
+);
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+typedef VpnActiveRef = AutoDisposeStreamProviderRef<bool>;
+String _$pointageStatusHash() => r'ddbae47c3ab50cba8b02f0aa81909977fb691206';
+
+/// Today's status (next allowed motif). Refreshable after a scan.
+///
+/// Copied from [pointageStatus].
+@ProviderFor(pointageStatus)
+final pointageStatusProvider =
+    AutoDisposeFutureProvider<PointageStatus>.internal(
+      pointageStatus,
+      name: r'pointageStatusProvider',
+      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+          ? null
+          : _$pointageStatusHash,
+      dependencies: null,
+      allTransitiveDependencies: null,
+    );
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+typedef PointageStatusRef = AutoDisposeFutureProviderRef<PointageStatus>;
+String _$pointageZonesHash() => r'7079b639d33e9e166caf432052abb74fed26e6a0';
+
+/// Active geofence zones for the org (for the out-of-zone pre-warning).
+///
+/// Copied from [pointageZones].
+@ProviderFor(pointageZones)
+final pointageZonesProvider =
+    AutoDisposeFutureProvider<List<PointageZone>>.internal(
+      pointageZones,
+      name: r'pointageZonesProvider',
+      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+          ? null
+          : _$pointageZonesHash,
+      dependencies: null,
+      allTransitiveDependencies: null,
+    );
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+typedef PointageZonesRef = AutoDisposeFutureProviderRef<List<PointageZone>>;
+String _$pointageHistoryHash() => r'e5861e805d6a13c164896b90ed4052cc8773dce5';
+
+/// Paginated history notifier — loads page 1 on build, supports loadMore().
+///
+/// Copied from [PointageHistory].
+@ProviderFor(PointageHistory)
+final pointageHistoryProvider =
+    AutoDisposeAsyncNotifierProvider<
+      PointageHistory,
+      List<PointageHistoryEntry>
+    >.internal(
+      PointageHistory.new,
+      name: r'pointageHistoryProvider',
+      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+          ? null
+          : _$pointageHistoryHash,
+      dependencies: null,
+      allTransitiveDependencies: null,
+    );
+
+typedef _$PointageHistory =
+    AutoDisposeAsyncNotifier<List<PointageHistoryEntry>>;
+// ignore_for_file: type=lint
+// ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package

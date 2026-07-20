@@ -1,0 +1,1147 @@
+import 'dart:async';
+import 'dart:io';
+
+import 'package:file_picker/file_picker.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:intl/intl.dart';
+import 'package:sytium_mobile/features/auth/application/auth_controller.dart';
+import 'package:sytium_mobile/features/calls/application/call_controller.dart';
+import 'package:sytium_mobile/features/calls/domain/call_models.dart';
+import 'package:sytium_mobile/features/workspace/application/workspace_providers.dart';
+import 'package:sytium_mobile/features/workspace/domain/workspace_models.dart';
+import 'package:sytium_mobile/features/workspace/presentation/attachment_preview.dart';
+import 'package:sytium_mobile/features/workspace/realtime/workspace_realtime.dart';
+import 'package:sytium_mobile/features/workspace/realtime/workspace_realtime_provider.dart';
+import 'package:sytium_mobile/shared/widgets/app_avatar.dart';
+import 'package:sytium_mobile/shared/widgets/error_state.dart';
+import 'package:sytium_mobile/theme/sytium_colors.dart';
+import 'package:sytium_mobile/theme/tokens.dart';
+
+/// Real polling interval; tests pass `pollInterval: null` to disable it.
+const _kPollInterval = Duration(seconds: 7);
+
+/// Placeholder bubble dimensions for the loading skeleton.
+const _kSkeletonBarWidth = 180.0;
+const _kSkeletonBarHeight = 36.0;
+
+/// Curated quick-reaction emojis (a full keyboard is overkill on mobile chat).
+const _kQuickReactions = ['👍', '❤️', '😂', '🎉', '✅', '🙏'];
+
+String _timeLabel(DateTime? at) =>
+    at == null ? '' : DateFormat('HH:mm', 'fr_FR').format(at);
+
+/// A file the user picked but hasn't sent yet.
+class _PendingAttachment {
+  const _PendingAttachment({required this.path, required this.name, required this.isImage});
+  final String path;
+  final String name;
+  final bool isImage;
+}
+
+/// Chat thread: bubbles + pagination + realtime/polling, plus a rich composer
+/// (text + image/file attachments + replies) and per-message reactions.
+/// [pollInterval] null disables polling (deterministic in tests).
+class ChatThreadScreen extends ConsumerStatefulWidget {
+  const ChatThreadScreen({
+    required this.conversation,
+    this.pollInterval = _kPollInterval,
+    super.key,
+  });
+
+  final Conversation conversation;
+  final Duration? pollInterval;
+
+  @override
+  ConsumerState<ChatThreadScreen> createState() => ChatThreadScreenState();
+}
+
+class ChatThreadScreenState extends ConsumerState<ChatThreadScreen> {
+  Timer? _poll;
+
+  /// The realtime channel currently subscribed (null until subscribed / when
+  /// the org is missing or Reverb is unconfigured); used to unsubscribe on
+  /// dispose.
+  String? _realtimeChannel;
+
+  /// Cached transport captured at subscribe time so [dispose] can unsubscribe
+  /// without touching `ref` (which is already torn down by then).
+  WorkspaceRealtime? _realtime;
+
+  /// Older pages already fetched via the cursor, oldest-first; merged in front
+  /// of the live first page.
+  final List<Message> _older = [];
+  String? _cursor;
+  bool _hasMore = false;
+  bool _loadingOlder = false;
+
+  final TextEditingController _composer = TextEditingController();
+  final ImagePicker _imagePicker = ImagePicker();
+
+  /// Attachments staged for the next send.
+  final List<_PendingAttachment> _pending = [];
+
+  /// The message being replied to (null when composing a fresh message).
+  Message? _replyTo;
+
+  /// True while a send is in flight (disables the send button + shows spinner).
+  bool _sending = false;
+
+  String get _channelId => widget.conversation.id;
+
+  @override
+  void initState() {
+    super.initState();
+    // Mark the channel read on open (purges the unread badge); refresh the
+    // conversations list so the badge updates.
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await ref.read(workspaceRepositoryProvider).markRead(_channelId);
+      if (!mounted) return;
+      ref.invalidate(conversationsProvider);
+      _subscribeRealtime();
+    });
+    final interval = widget.pollInterval;
+    if (interval != null) {
+      _poll = Timer.periodic(
+        interval,
+        (_) => ref.invalidate(channelMessagesProvider(_channelId)),
+      );
+    }
+  }
+
+  @override
+  void dispose() {
+    final channel = _realtimeChannel;
+    if (channel != null) {
+      _realtime?.unsubscribe(channel);
+    }
+    _poll?.cancel();
+    _composer.dispose();
+    super.dispose();
+  }
+
+  void _subscribeRealtime() {
+    final auth = ref.read(authControllerProvider).valueOrNull;
+    final orgId = auth is Authenticated ? auth.session.user.organizationId : null;
+    if (orgId == null || orgId.isEmpty) return;
+    final channel = 'private-org.$orgId.workspace.$_channelId';
+    final realtime = ref.read(workspaceRealtimeProvider);
+    unawaited(realtime.ensureConnected());
+    realtime.subscribe(channel, _onRealtimeEvent);
+    _realtime = realtime;
+    _realtimeChannel = channel;
+  }
+
+  void _onRealtimeEvent(RealtimeEvent e) {
+    final isMessage = e.event == 'workspace.message.created' ||
+        e.event == 'workspace.message.updated';
+    if (!isMessage) return;
+    if (e.data['channel_id'] != _channelId) return;
+    if (!mounted) return;
+    ref
+      ..invalidate(channelMessagesProvider(_channelId))
+      ..invalidate(conversationsProvider);
+  }
+
+  Future<void> _loadOlder() async {
+    if (_loadingOlder || _cursor == null) return;
+    setState(() => _loadingOlder = true);
+    final result = await ref
+        .read(workspaceRepositoryProvider)
+        .messages(_channelId, cursor: _cursor, limit: 50);
+    if (!mounted) return;
+    final page = result.valueOrNull;
+    setState(() {
+      _loadingOlder = false;
+      if (page != null) {
+        _older.insertAll(0, page.messages);
+        _cursor = page.nextCursor;
+        _hasMore = page.hasMore;
+      }
+    });
+  }
+
+  void _refresh() {
+    ref
+      ..invalidate(channelMessagesProvider(_channelId))
+      ..invalidate(conversationsProvider);
+  }
+
+  // ---- Composer actions ----------------------------------------------------
+
+  Future<void> _pickImage(ImageSource source) async {
+    try {
+      // Downscale + recompress so photos stay small (well under the server's
+      // per-file limit) and upload fast; full-res phone photos are needlessly
+      // large for a chat.
+      final file = await _imagePicker.pickImage(
+        source: source,
+        imageQuality: 80,
+        maxWidth: 1920,
+        maxHeight: 1920,
+      );
+      if (file == null || !mounted) return;
+      setState(() => _pending.add(
+            _PendingAttachment(path: file.path, name: file.name, isImage: true),
+          ));
+    } catch (_) {
+      if (mounted) _toast("Impossible d'ouvrir la galerie.");
+    }
+  }
+
+  Future<void> _pickFile() async {
+    try {
+      final result = await FilePicker.platform.pickFiles(allowMultiple: true);
+      if (result == null || !mounted) return;
+      setState(() {
+        for (final f in result.files) {
+          final path = f.path;
+          if (path == null) continue;
+          final isImage = _looksLikeImage(f.extension);
+          _pending.add(_PendingAttachment(path: path, name: f.name, isImage: isImage));
+        }
+      });
+    } catch (_) {
+      if (mounted) _toast('Impossible de choisir un fichier.');
+    }
+  }
+
+  void _showAttachMenu() {
+    showModalBottomSheet<void>(
+      context: context,
+      builder: (sheetContext) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.photo_library_outlined),
+              title: const Text('Photothèque'),
+              onTap: () {
+                Navigator.of(sheetContext).pop();
+                _pickImage(ImageSource.gallery);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.camera_alt_outlined),
+              title: const Text('Appareil photo'),
+              onTap: () {
+                Navigator.of(sheetContext).pop();
+                _pickImage(ImageSource.camera);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.attach_file),
+              title: const Text('Fichier'),
+              onTap: () {
+                Navigator.of(sheetContext).pop();
+                _pickFile();
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _send() async {
+    final text = _composer.text.trim();
+    if (text.isEmpty && _pending.isEmpty) return;
+    setState(() => _sending = true);
+    final result = await ref.read(workspaceRepositoryProvider).sendMessage(
+          _channelId,
+          content: text,
+          attachmentPaths: _pending.map((p) => p.path).toList(),
+          parentId: _replyTo?.id,
+        );
+    if (!mounted) return;
+    setState(() => _sending = false);
+    if (result.isOk) {
+      _composer.clear();
+      setState(() {
+        _pending.clear();
+        _replyTo = null;
+      });
+      _refresh();
+    } else {
+      // Keep the typed text + attachments on failure so nothing is lost.
+      _toast(result.failureOrNull?.message ?? "Échec de l'envoi.");
+    }
+  }
+
+  // ---- Message actions -----------------------------------------------------
+
+  void _showActions(Message message, bool isMine) {
+    showModalBottomSheet<void>(
+      context: context,
+      builder: (sheetContext) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Quick reactions row.
+            Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: Tokens.space12,
+                vertical: Tokens.space8,
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  for (final emoji in _kQuickReactions)
+                    _EmojiButton(
+                      emoji: emoji,
+                      onTap: () {
+                        Navigator.of(sheetContext).pop();
+                        _toggleReaction(message, emoji);
+                      },
+                    ),
+                ],
+              ),
+            ),
+            const Divider(height: 1),
+            ListTile(
+              leading: const Icon(Icons.reply_outlined),
+              title: const Text('Répondre'),
+              onTap: () {
+                Navigator.of(sheetContext).pop();
+                setState(() => _replyTo = message);
+              },
+            ),
+            if (isMine) ...[
+              ListTile(
+                leading: const Icon(Icons.edit_outlined),
+                title: const Text('Éditer'),
+                onTap: () {
+                  Navigator.of(sheetContext).pop();
+                  _editMessage(message);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.delete_outline),
+                title: const Text('Supprimer pour tous'),
+                onTap: () {
+                  Navigator.of(sheetContext).pop();
+                  _deleteForEveryone(message);
+                },
+              ),
+            ],
+            ListTile(
+              leading: const Icon(Icons.visibility_off_outlined),
+              title: const Text('Supprimer pour moi'),
+              onTap: () {
+                Navigator.of(sheetContext).pop();
+                _deleteForMe(message);
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _toggleReaction(Message message, String emoji) async {
+    final result =
+        await ref.read(workspaceRepositoryProvider).toggleReaction(message.id, emoji);
+    if (!mounted) return;
+    if (result.isOk) {
+      _refresh();
+    } else {
+      _toast(result.failureOrNull?.message ?? 'Réaction impossible.');
+    }
+  }
+
+  Future<void> _editMessage(Message message) async {
+    final controller = TextEditingController(text: message.content);
+    String? newText;
+    try {
+      newText = await showDialog<String>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: const Text('Éditer le message'),
+          content: TextField(
+            controller: controller,
+            autofocus: true,
+            maxLines: null,
+            decoration: const InputDecoration(hintText: 'Votre message'),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: const Text('Annuler'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(controller.text.trim()),
+              child: const Text('Enregistrer'),
+            ),
+          ],
+        ),
+      );
+    } finally {
+      // Defer dispose until after the dialog close animation settles so the
+      // controller isn't accessed post-dispose during the closing frames.
+      WidgetsBinding.instance.addPostFrameCallback((_) => controller.dispose());
+    }
+    if (newText == null || newText.isEmpty || !mounted) return;
+    final result = await ref.read(workspaceRepositoryProvider).editMessage(message.id, newText);
+    if (!mounted) return;
+    if (result.isOk) {
+      _refresh();
+    } else {
+      _toast(result.failureOrNull?.message ?? "Échec de l'édition.");
+    }
+  }
+
+  Future<void> _deleteForMe(Message message) async {
+    final result = await ref.read(workspaceRepositoryProvider).deleteForMe(message.id);
+    if (!mounted) return;
+    if (result.isOk) {
+      _refresh();
+    } else {
+      _toast(result.failureOrNull?.message ?? 'Échec de la suppression.');
+    }
+  }
+
+  Future<void> _deleteForEveryone(Message message) async {
+    final result = await ref.read(workspaceRepositoryProvider).deleteForEveryone(message.id);
+    if (!mounted) return;
+    if (result.isOk) {
+      _refresh();
+    } else {
+      // 422 → past the 24h window; surface the server message clearly.
+      _toast(result.failureOrNull?.message ??
+          'Suppression impossible (délai de 24 h dépassé).');
+    }
+  }
+
+  Future<void> _startCall(CallKind kind) async {
+    // Prefer the resolved DM peer name over the raw `dm-…` slug.
+    final peer = ref.read(dmPeerProvider(_channelId)).valueOrNull;
+    final name = peer?.fullName.isNotEmpty ?? false
+        ? peer!.fullName
+        : widget.conversation.title;
+    await ref.read(callControllerProvider.notifier).startOutgoing(
+          channelId: _channelId,
+          kind: kind,
+          peerName: name,
+        );
+  }
+
+  void _toast(String message) {
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final me = ref.watch(currentUserIdProvider);
+    final async = ref.watch(channelMessagesProvider(_channelId));
+    return Scaffold(
+      appBar: AppBar(
+        titleSpacing: 0,
+        title: _ThreadHeader(conversation: widget.conversation),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.call_rounded),
+            tooltip: 'Appel audio',
+            onPressed: () => _startCall(CallKind.audio),
+          ),
+          IconButton(
+            icon: const Icon(Icons.videocam_rounded),
+            tooltip: 'Appel vidéo',
+            onPressed: () => _startCall(CallKind.video),
+          ),
+        ],
+      ),
+      body: Column(
+        children: [
+          Expanded(
+            child: RefreshIndicator(
+              onRefresh: () async => ref.invalidate(channelMessagesProvider(_channelId)),
+              child: async.when(
+                loading: () => const _ThreadSkeleton(),
+                error: (e, _) => ListView(
+                  children: [
+                    const SizedBox(height: Tokens.space48),
+                    ErrorState(
+                      message: 'Impossible de charger les messages.',
+                      onRetry: () => ref.invalidate(channelMessagesProvider(_channelId)),
+                    ),
+                  ],
+                ),
+                data: (page) {
+                  // Sync pagination cursor from the live first page (only seed once,
+                  // when we have not paginated yet, so polling doesn't reset it).
+                  if (_older.isEmpty && _cursor == null && !_loadingOlder) {
+                    _cursor = page.nextCursor;
+                    _hasMore = page.hasMore;
+                  }
+                  final all = [..._older, ...page.messages];
+                  if (all.isEmpty) {
+                    return ListView(
+                      children: const [
+                        SizedBox(height: Tokens.space48),
+                        Center(child: Text('Aucun message, démarrez la conversation')),
+                      ],
+                    );
+                  }
+                  // reverse:true → newest at the bottom; index 0 is the newest.
+                  final reversed = all.reversed.toList();
+                  return ListView.builder(
+                    reverse: true,
+                    padding: const EdgeInsets.all(Tokens.space12),
+                    itemCount: reversed.length + (_hasMore ? 1 : 0),
+                    itemBuilder: (context, i) {
+                      if (_hasMore && i == reversed.length) {
+                        // "load older" trigger lives at the visual top (last index).
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(vertical: Tokens.space12),
+                          child: Center(
+                            child: _loadingOlder
+                                ? const CircularProgressIndicator()
+                                : TextButton(
+                                    onPressed: _loadOlder,
+                                    child: const Text('Charger les messages précédents'),
+                                  ),
+                          ),
+                        );
+                      }
+                      final m = reversed[i];
+                      final mine = m.isMine(me);
+                      return _MessageBubble(
+                        message: m,
+                        isMine: mine,
+                        currentUserId: me,
+                        showAuthor: widget.conversation.isGroup,
+                        onLongPress: (m.isDeleted || m.isSystem)
+                            ? null
+                            : () => _showActions(m, mine),
+                        onReactionTap: (emoji) => _toggleReaction(m, emoji),
+                      );
+                    },
+                  );
+                },
+              ),
+            ),
+          ),
+          _Composer(
+            controller: _composer,
+            pending: _pending,
+            replyTo: _replyTo,
+            sending: _sending,
+            onSend: _send,
+            onAttach: _showAttachMenu,
+            onRemovePending: (i) => setState(() => _pending.removeAt(i)),
+            onCancelReply: () => setState(() => _replyTo = null),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+bool _looksLikeImage(String? ext) {
+  const imageExts = {'jpg', 'jpeg', 'png', 'gif', 'webp', 'heic', 'bmp'};
+  return ext != null && imageExts.contains(ext.toLowerCase());
+}
+
+/// The AppBar title: for a DM, the resolved peer (avatar + name + online dot);
+/// for a channel, its name (never the raw `dm-…`/channel slug alone).
+class _ThreadHeader extends ConsumerWidget {
+  const _ThreadHeader({required this.conversation});
+  final Conversation conversation;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final colors = context.colors;
+    final theme = Theme.of(context).textTheme;
+    final isDm = conversation.type == ConversationType.dm;
+
+    if (!isDm) {
+      return Row(
+        children: [
+          Icon(
+            conversation.type == ConversationType.private
+                ? Icons.lock_outline
+                : Icons.tag,
+            size: 18,
+            color: colors.textMuted,
+          ),
+          const SizedBox(width: Tokens.space8),
+          Expanded(
+            child: Text(
+              conversation.title,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: theme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+            ),
+          ),
+        ],
+      );
+    }
+
+    final peer = ref.watch(dmPeerProvider(conversation.id)).valueOrNull;
+    final online = peer != null &&
+        ((ref.watch(onlineByUserProvider).valueOrNull ??
+                const <String, bool>{})[peer.userId] ??
+            false);
+    // Fallback name: resolved peer, else the passed title unless it's the raw slug.
+    final rawSlug = conversation.title.startsWith('dm-');
+    final name = peer?.fullName.isNotEmpty ?? false
+        ? peer!.fullName
+        : (rawSlug ? 'Conversation' : conversation.title);
+
+    return Row(
+      children: [
+        Stack(
+          children: [
+            AppAvatar(name: name, imageUrl: peer?.avatarUrl, radius: 18),
+            if (online)
+              Positioned(
+                right: 0,
+                bottom: 0,
+                child: Container(
+                  width: 11,
+                  height: 11,
+                  decoration: BoxDecoration(
+                    color: colors.brand,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: colors.background, width: 2),
+                  ),
+                ),
+              ),
+          ],
+        ),
+        const SizedBox(width: Tokens.space8),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                name,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: theme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
+              ),
+              Text(
+                online ? 'En ligne' : 'Hors ligne',
+                style: theme.labelSmall?.copyWith(
+                  color: online ? colors.brand : colors.textMuted,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _MessageBubble extends StatelessWidget {
+  const _MessageBubble({
+    required this.message,
+    required this.isMine,
+    required this.showAuthor,
+    required this.currentUserId,
+    this.onLongPress,
+    this.onReactionTap,
+  });
+
+  final Message message;
+  final bool isMine;
+  final bool showAuthor;
+  final String? currentUserId;
+  final VoidCallback? onLongPress;
+  final void Function(String emoji)? onReactionTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+
+    // System messages (e.g. call summaries) render as a centered muted pill.
+    if (message.isSystem) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: Tokens.space8),
+        child: Center(
+          child: Container(
+            padding: const EdgeInsets.symmetric(
+              horizontal: Tokens.space12,
+              vertical: Tokens.space4,
+            ),
+            decoration: BoxDecoration(
+              color: colors.card,
+              borderRadius: BorderRadius.circular(Tokens.radiusPill),
+              border: Border.all(color: colors.border),
+            ),
+            child: Text(
+              message.content,
+              textAlign: TextAlign.center,
+              style: Theme.of(context)
+                  .textTheme
+                  .labelSmall
+                  ?.copyWith(color: colors.textMuted),
+            ),
+          ),
+        ),
+      );
+    }
+
+    final bg = isMine ? colors.brand : colors.card;
+    final fg = isMine ? colors.onBrand : colors.textPrimary;
+    final align = isMine ? CrossAxisAlignment.end : CrossAxisAlignment.start;
+    final hasText = message.content.isNotEmpty;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: Tokens.space4),
+      child: Column(
+        crossAxisAlignment: align,
+        children: [
+          if (showAuthor && !isMine && (message.authorName?.isNotEmpty ?? false))
+            Padding(
+              padding: const EdgeInsets.only(left: Tokens.space8, bottom: Tokens.space4),
+              child: Text(
+                message.authorName!,
+                style: Theme.of(context)
+                    .textTheme
+                    .labelSmall
+                    ?.copyWith(color: colors.textMuted, fontWeight: FontWeight.w600),
+              ),
+            ),
+          GestureDetector(
+            onLongPress: onLongPress,
+            child: Container(
+              constraints: BoxConstraints(
+                maxWidth: MediaQuery.of(context).size.width * 0.78,
+              ),
+              padding: const EdgeInsets.symmetric(
+                horizontal: Tokens.space12,
+                vertical: Tokens.space8,
+              ),
+              decoration: BoxDecoration(
+                color: bg,
+                borderRadius: BorderRadius.circular(Tokens.radiusMd),
+                border: isMine ? null : Border.all(color: colors.border),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (message.replyTo != null) ...[
+                    _ReplyQuote(reply: message.replyTo!, onBrand: isMine),
+                    const SizedBox(height: Tokens.space8),
+                  ],
+                  if (message.attachments.isNotEmpty) ...[
+                    for (final a in message.attachments)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: Tokens.space4),
+                        child: AttachmentView(attachment: a, onBrand: isMine),
+                      ),
+                    if (hasText) const SizedBox(height: Tokens.space4),
+                  ],
+                  if (message.isDeleted)
+                    Text(
+                      'Message supprimé',
+                      style: TextStyle(
+                        fontStyle: FontStyle.italic,
+                        color: isMine ? colors.onBrand : colors.textMuted,
+                      ),
+                    )
+                  else if (hasText)
+                    Text(message.content, style: TextStyle(color: fg)),
+                ],
+              ),
+            ),
+          ),
+          if (message.reactions.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(top: Tokens.space4),
+              child: _ReactionsRow(
+                reactions: message.reactions,
+                currentUserId: currentUserId,
+                onTap: onReactionTap,
+              ),
+            ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: Tokens.space8, vertical: Tokens.space4),
+            child: Text(
+              [
+                _timeLabel(message.createdAt),
+                if (message.isEdited && !message.isDeleted) 'modifié',
+              ].where((s) => s.isNotEmpty).join(' · '),
+              style: Theme.of(context)
+                  .textTheme
+                  .labelSmall
+                  ?.copyWith(color: colors.textMuted),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// A reply-to preview shown at the top of a bubble.
+class _ReplyQuote extends StatelessWidget {
+  const _ReplyQuote({required this.reply, required this.onBrand});
+  final ReplyPreview reply;
+  final bool onBrand;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    final accent = onBrand ? colors.onBrand : colors.brand;
+    final text = reply.isDeleted ? 'Message supprimé' : reply.content;
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: Tokens.space8,
+        vertical: Tokens.space4,
+      ),
+      decoration: BoxDecoration(
+        color: (onBrand ? colors.onBrand : colors.brand).withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(Tokens.radiusSm),
+        border: Border(left: BorderSide(color: accent, width: 3)),
+      ),
+      child: Text(
+        text,
+        maxLines: 2,
+        overflow: TextOverflow.ellipsis,
+        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: onBrand ? colors.onBrand : colors.textMuted,
+              fontStyle: reply.isDeleted ? FontStyle.italic : FontStyle.normal,
+            ),
+      ),
+    );
+  }
+}
+
+/// The chips row of aggregated reactions under a bubble.
+class _ReactionsRow extends StatelessWidget {
+  const _ReactionsRow({
+    required this.reactions,
+    required this.currentUserId,
+    this.onTap,
+  });
+
+  final List<MessageReaction> reactions;
+  final String? currentUserId;
+  final void Function(String emoji)? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    return Wrap(
+      spacing: Tokens.space4,
+      runSpacing: Tokens.space4,
+      children: [
+        for (final r in reactions)
+          _ReactionChip(
+            reaction: r,
+            mine: r.reactedBy(currentUserId),
+            onTap: onTap == null ? null : () => onTap!(r.emoji),
+            colors: colors,
+          ),
+      ],
+    );
+  }
+}
+
+class _ReactionChip extends StatelessWidget {
+  const _ReactionChip({
+    required this.reaction,
+    required this.mine,
+    required this.colors,
+    this.onTap,
+  });
+
+  final MessageReaction reaction;
+  final bool mine;
+  final SytiumColors colors;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(Tokens.radiusPill),
+      child: Container(
+        padding: const EdgeInsets.symmetric(
+          horizontal: Tokens.space8,
+          vertical: Tokens.space4,
+        ),
+        decoration: BoxDecoration(
+          color: mine ? colors.brand.withValues(alpha: 0.14) : colors.card,
+          borderRadius: BorderRadius.circular(Tokens.radiusPill),
+          border: Border.all(
+            color: mine ? colors.brand : colors.border,
+          ),
+        ),
+        child: Text(
+          '${reaction.emoji} ${reaction.count}',
+          style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                color: mine ? colors.brand : colors.textPrimary,
+                fontWeight: FontWeight.w600,
+              ),
+        ),
+      ),
+    );
+  }
+}
+
+class _EmojiButton extends StatelessWidget {
+  const _EmojiButton({required this.emoji, required this.onTap});
+  final String emoji;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkResponse(
+      onTap: onTap,
+      radius: 28,
+      child: Padding(
+        padding: const EdgeInsets.all(Tokens.space8),
+        child: Text(emoji, style: const TextStyle(fontSize: 26)),
+      ),
+    );
+  }
+}
+
+class _ThreadSkeleton extends StatelessWidget {
+  const _ThreadSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    final fill = context.colors.border.withValues(alpha: 0.55);
+    return ListView(
+      padding: const EdgeInsets.all(Tokens.space12),
+      children: [
+        for (var i = 0; i < 8; i++)
+          Align(
+            alignment: i.isEven ? Alignment.centerLeft : Alignment.centerRight,
+            child: Container(
+              width: _kSkeletonBarWidth,
+              height: _kSkeletonBarHeight,
+              margin: const EdgeInsets.symmetric(vertical: Tokens.space4),
+              decoration: BoxDecoration(
+                color: fill,
+                borderRadius: BorderRadius.circular(Tokens.radiusMd),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+class _Composer extends StatelessWidget {
+  const _Composer({
+    required this.controller,
+    required this.pending,
+    required this.replyTo,
+    required this.sending,
+    required this.onSend,
+    required this.onAttach,
+    required this.onRemovePending,
+    required this.onCancelReply,
+  });
+
+  final TextEditingController controller;
+  final List<_PendingAttachment> pending;
+  final Message? replyTo;
+  final bool sending;
+  final VoidCallback onSend;
+  final VoidCallback onAttach;
+  final void Function(int index) onRemovePending;
+  final VoidCallback onCancelReply;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    return SafeArea(
+      top: false,
+      child: Container(
+        decoration: BoxDecoration(
+          color: colors.card,
+          border: Border(top: BorderSide(color: colors.border)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (replyTo != null) _ReplyBanner(replyTo: replyTo!, onCancel: onCancelReply),
+            if (pending.isNotEmpty) _PendingStrip(pending: pending, onRemove: onRemovePending),
+            Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: Tokens.space8,
+                vertical: Tokens.space8,
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.add_circle_outline),
+                    color: colors.textMuted,
+                    tooltip: 'Joindre',
+                    onPressed: sending ? null : onAttach,
+                  ),
+                  Expanded(
+                    child: TextField(
+                      controller: controller,
+                      minLines: 1,
+                      maxLines: 5,
+                      textInputAction: TextInputAction.newline,
+                      decoration: const InputDecoration(
+                        hintText: 'Votre message',
+                        isDense: true,
+                        border: InputBorder.none,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: Tokens.space8),
+                  if (sending)
+                    const Padding(
+                      padding: EdgeInsets.all(Tokens.space12),
+                      child: SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                    )
+                  else
+                    IconButton(
+                      icon: const Icon(Icons.send),
+                      color: colors.brand,
+                      onPressed: onSend,
+                    ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ReplyBanner extends StatelessWidget {
+  const _ReplyBanner({required this.replyTo, required this.onCancel});
+  final Message replyTo;
+  final VoidCallback onCancel;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    final label = replyTo.content.isNotEmpty
+        ? replyTo.content
+        : (replyTo.attachments.isNotEmpty ? 'Pièce jointe' : 'Message');
+    return Container(
+      padding: const EdgeInsets.fromLTRB(
+        Tokens.space12,
+        Tokens.space8,
+        Tokens.space8,
+        0,
+      ),
+      child: Row(
+        children: [
+          Container(width: 3, height: 32, color: colors.brand),
+          const SizedBox(width: Tokens.space8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Réponse à ${replyTo.authorName ?? 'un message'}',
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                        color: colors.brand,
+                        fontWeight: FontWeight.w600,
+                      ),
+                ),
+                Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context)
+                      .textTheme
+                      .bodySmall
+                      ?.copyWith(color: colors.textMuted),
+                ),
+              ],
+            ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.close, size: 18),
+            onPressed: onCancel,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PendingStrip extends StatelessWidget {
+  const _PendingStrip({required this.pending, required this.onRemove});
+  final List<_PendingAttachment> pending;
+  final void Function(int index) onRemove;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    return SizedBox(
+      height: 84,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.fromLTRB(
+          Tokens.space12,
+          Tokens.space8,
+          Tokens.space12,
+          0,
+        ),
+        itemCount: pending.length,
+        separatorBuilder: (_, __) => const SizedBox(width: Tokens.space8),
+        itemBuilder: (context, i) {
+          final p = pending[i];
+          return Stack(
+            clipBehavior: Clip.none,
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(Tokens.radiusSm),
+                child: p.isImage
+                    ? Image.file(File(p.path), width: 72, height: 72, fit: BoxFit.cover)
+                    : Container(
+                        width: 72,
+                        height: 72,
+                        color: colors.background,
+                        alignment: Alignment.center,
+                        padding: const EdgeInsets.all(Tokens.space4),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.insert_drive_file_outlined,
+                                color: colors.textMuted),
+                            const SizedBox(height: Tokens.space4),
+                            Text(
+                              p.name,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: Theme.of(context).textTheme.labelSmall,
+                            ),
+                          ],
+                        ),
+                      ),
+              ),
+              Positioned(
+                top: -6,
+                right: -6,
+                child: GestureDetector(
+                  onTap: () => onRemove(i),
+                  child: CircleAvatar(
+                    radius: 11,
+                    backgroundColor: colors.danger,
+                    child: const Icon(Icons.close, size: 14, color: Colors.white),
+                  ),
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+}
