@@ -49,7 +49,7 @@ class _HomeShellState extends ConsumerState<HomeShell> {
     AppBottomNavItem(
       icon: Icons.chat_bubble_outline,
       activeIcon: Icons.chat_bubble,
-      label: 'Messagerie',
+      label: 'Messages',
     ),
     AppBottomNavItem(
       icon: Icons.bar_chart_outlined,
@@ -97,11 +97,11 @@ class _HomeShellState extends ConsumerState<HomeShell> {
         ? auth.session.capabilities
         : const MobileCapabilities.baseline();
     final onHome = _index == 0;
-    final hasUnread = ref.watch(workspaceUnreadProvider) > 0;
+    final unread = ref.watch(workspaceUnreadProvider);
     final navItems = [
-      // La messagerie est l'onglet 1 : c'est lui qui porte la pastille non-lus.
+      // Messages est l'onglet 1 : c'est lui qui porte la pastille de non-lus.
       for (var i = 0; i < _items.length; i++)
-        i == 1 ? _withBadge(_items[i], hasUnread) : _items[i],
+        i == 1 ? _withBadge(_items[i], unread) : _items[i],
     ];
 
     return Scaffold(
@@ -207,11 +207,11 @@ class _PlaceholderTab extends StatelessWidget {
   }
 }
 
-/// Returns a copy of [item] with [showBadge] set to the given value.
-AppBottomNavItem _withBadge(AppBottomNavItem item, bool showBadge) =>
+/// Returns a copy of [item] carrying the given unread [count] badge.
+AppBottomNavItem _withBadge(AppBottomNavItem item, int count) =>
     AppBottomNavItem(
       icon: item.icon,
       activeIcon: item.activeIcon,
       label: item.label,
-      showBadge: showBadge,
+      badgeCount: count,
     );

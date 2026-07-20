@@ -570,28 +570,14 @@ class _DmRow extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
               style: theme.bodySmall?.copyWith(color: colors.textMuted),
             ),
-      trailing: c.unreadCount > 0
-          ? Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-              decoration: BoxDecoration(
-                color: colors.brand,
-                borderRadius: BorderRadius.circular(Tokens.radiusPill),
-              ),
-              child: Text(
-                'LIVE',
-                style: theme.labelSmall?.copyWith(
-                  color: colors.onBrand,
-                  fontWeight: FontWeight.w800,
-                  fontSize: 9,
-                ),
-              ),
-            )
-          : null,
+      trailing: c.unreadCount > 0 ? _UnreadPill(count: c.unreadCount) : null,
       onTap: onTap,
     );
   }
 }
 
+/// Pastille de non-lus : rouge, comme la cloche de notifications. Cohérente
+/// entre canaux, DM et la pastille de l'onglet Messages.
 class _UnreadPill extends StatelessWidget {
   const _UnreadPill({required this.count});
   final int count;
@@ -599,18 +585,21 @@ class _UnreadPill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
+    // Pas d'alignment ni de minWidth ici : dans un trailing de ListTile (largeur
+    // non bornée), un Container avec alignment s'étire sur toute la largeur et
+    // casse la mise en page. La pastille reste ajustée à son contenu.
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      padding: const EdgeInsets.symmetric(horizontal: Tokens.space8, vertical: 2),
       decoration: BoxDecoration(
-        color: colors.brand,
+        color: colors.danger,
         borderRadius: BorderRadius.circular(Tokens.radiusPill),
       ),
       child: Text(
-        '$count',
+        count > 99 ? '99+' : '$count',
         style: Theme.of(context).textTheme.labelSmall?.copyWith(
-              color: colors.onBrand,
-              fontWeight: FontWeight.w700,
-            ),
+          color: colors.onBrand,
+          fontWeight: FontWeight.w700,
+        ),
       ),
     );
   }

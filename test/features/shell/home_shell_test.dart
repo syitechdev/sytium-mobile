@@ -183,9 +183,9 @@ void main() {
     await tester.pumpWidget(const SizedBox());
   });
 
-  testWidgets('shows WorkspaceScreen on the Messagerie tab', (tester) async {
+  testWidgets('shows WorkspaceScreen on the Messages tab', (tester) async {
     await _pump(tester);
-    await tester.tap(find.text('Messagerie'));
+    await tester.tap(find.text('Messages'));
     await tester.pump();
     expect(find.byType(WorkspaceScreen), findsOneWidget);
     // Dispose tree immediately so any pending timer is cancelled before teardown.

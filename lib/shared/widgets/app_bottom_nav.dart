@@ -9,7 +9,7 @@ class AppBottomNavItem {
     required this.icon,
     required this.activeIcon,
     required this.label,
-    this.showBadge = false,
+    this.badgeCount = 0,
   });
 
   /// Icon shown when the tab is inactive (outline style).
@@ -19,8 +19,9 @@ class AppBottomNavItem {
   final IconData activeIcon;
   final String label;
 
-  /// Whether to show a small unread/notification dot on the icon.
-  final bool showBadge;
+  /// Nombre de non-lus affiché en pastille rouge sur l'icône. 0 = pas de
+  /// pastille. Même langage visuel que la cloche de notifications de l'app bar.
+  final int badgeCount;
 }
 
 /// Premium custom bottom navigation. Emphasis comes from a filled brand icon,
@@ -182,17 +183,31 @@ class _NavItem extends StatelessWidget {
                     size: 24,
                   ),
                 ),
-                if (item.showBadge)
+                if (item.badgeCount > 0)
                   Positioned(
-                    right: -3,
-                    top: -2,
+                    right: -10,
+                    top: -6,
                     child: Container(
-                      width: 9,
-                      height: 9,
+                      constraints: const BoxConstraints(
+                        minWidth: 16,
+                        minHeight: 16,
+                      ),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: Tokens.space4,
+                      ),
                       decoration: BoxDecoration(
-                        color: colors.brand,
-                        shape: BoxShape.circle,
+                        color: colors.danger,
+                        borderRadius: BorderRadius.circular(Tokens.radiusPill),
                         border: Border.all(color: colors.card, width: 1.5),
+                      ),
+                      alignment: Alignment.center,
+                      child: Text(
+                        item.badgeCount > 99 ? '99+' : '${item.badgeCount}',
+                        style: TextStyle(
+                          color: colors.onBrand,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
                     ),
                   ),

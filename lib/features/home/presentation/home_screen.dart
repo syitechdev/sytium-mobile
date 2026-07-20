@@ -2,10 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sytium_mobile/features/auth/domain/auth_user.dart';
 import 'package:sytium_mobile/features/auth/domain/mobile_capabilities.dart';
-import 'package:sytium_mobile/features/cash/presentation/cash_movement_sheet.dart';
 import 'package:sytium_mobile/features/cash/presentation/compta_caisse_view.dart';
 import 'package:sytium_mobile/features/documents/presentation/compta_docs_view.dart';
-import 'package:sytium_mobile/features/explorer/presentation/module_navigation.dart';
 import 'package:sytium_mobile/features/home/presentation/widgets/activity_ring_card.dart';
 import 'package:sytium_mobile/features/home/presentation/widgets/approvals_alert_card.dart';
 import 'package:sytium_mobile/features/home/presentation/widgets/home_ca_trend_card.dart';
@@ -14,7 +12,6 @@ import 'package:sytium_mobile/features/home/presentation/widgets/home_pulse_card
 import 'package:sytium_mobile/features/home/presentation/widgets/profile_header_card.dart';
 import 'package:sytium_mobile/features/home/presentation/widgets/stats_preview_card.dart';
 import 'package:sytium_mobile/features/home/presentation/widgets/today_status_card.dart';
-import 'package:sytium_mobile/features/invoicing/presentation/sales_doc_form_sheet.dart';
 import 'package:sytium_mobile/features/pointage/application/pointage_providers.dart';
 import 'package:sytium_mobile/theme/sytium_colors.dart';
 import 'package:sytium_mobile/theme/tokens.dart';
@@ -188,99 +185,7 @@ class _StatsTab extends ConsumerWidget {
               ),
             ),
           ),
-        const SizedBox(height: Tokens.space24),
-        Text('Accès rapide', style: theme.titleSmall),
-        const SizedBox(height: Tokens.space12),
-        GridView.count(
-          crossAxisCount: 3,
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          mainAxisSpacing: Tokens.space12,
-          crossAxisSpacing: Tokens.space12,
-          childAspectRatio: 0.95,
-          children: [
-            // Les anciens « Raccourcis décisionnels » (Facture, Caisse,
-            // Pointage GPS) ont rejoint cette grille : même gabarit, même
-            // gating par capacité. « Pointage GPS » et « Pointer » étaient la
-            // même action, la fusion supprime le doublon.
-            if (capabilities.financeWrite || capabilities.commercial)
-              _QuickAction(
-                icon: Icons.request_quote_outlined,
-                label: 'Facture',
-                onTap: () => showSalesDocSheet(context),
-              ),
-            if (capabilities.financeWrite)
-              _QuickAction(
-                icon: Icons.point_of_sale_outlined,
-                label: 'Caisse',
-                onTap: () => showCashMovementSheet(context),
-              ),
-            _QuickAction(
-              icon: Icons.qr_code_scanner,
-              label: 'Pointer',
-              onTap: onPointer,
-            ),
-            if (capabilities.weeklyObjectives)
-              _QuickAction(
-                icon: Icons.flag_outlined,
-                label: 'Objectifs',
-                onTap: () => navigateForModule(context, 'objectives'),
-              ),
-            if (capabilities.leaveRequests)
-              _QuickAction(
-                icon: Icons.beach_access_outlined,
-                label: 'Congés',
-                onTap: () => navigateForModule(context, 'requests'),
-              ),
-          ],
-        ),
       ],
-    );
-  }
-}
-
-/// A home quick-action tile. A null [onTap] disables the tile visually.
-class _QuickAction extends StatelessWidget {
-  const _QuickAction({
-    required this.icon,
-    required this.label,
-    required this.onTap,
-  });
-
-  final IconData icon;
-  final String label;
-  final VoidCallback? onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.colors;
-    final enabled = onTap != null;
-    return InkWell(
-      borderRadius: BorderRadius.circular(Tokens.radiusMd),
-      onTap: onTap,
-      child: Opacity(
-        opacity: enabled ? 1 : 0.5,
-        child: Container(
-          decoration: BoxDecoration(
-            color: colors.card,
-            border: Border.all(color: colors.border),
-            borderRadius: BorderRadius.circular(Tokens.radiusMd),
-          ),
-          padding: const EdgeInsets.all(Tokens.space16),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(icon, color: colors.brand, size: 28),
-              const SizedBox(height: Tokens.space8),
-              Text(
-                label,
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.bodySmall,
-              ),
-            ],
-          ),
-        ),
-      ),
     );
   }
 }
