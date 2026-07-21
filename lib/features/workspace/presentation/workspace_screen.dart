@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:sytium_mobile/app/lifecycle/app_foreground.dart';
 import 'package:sytium_mobile/features/auth/application/auth_controller.dart';
 import 'package:sytium_mobile/features/workspace/application/workspace_providers.dart';
 import 'package:sytium_mobile/features/workspace/domain/workspace_models.dart';
@@ -46,7 +47,12 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
       // Présence uniquement : la liste des conversations est tenue à jour
       // app-wide par `WorkspaceLiveSync` (temps réel + repli périodique).
       // La rafraîchir aussi ici doublait chaque appel.
+      //
+      // Et jamais en arrière-plan : le heartbeat déclare l'utilisateur en
+      // ligne, donc le laisser battre téléphone verrouillé affichait un point
+      // vert à des collègues qui dorment.
       _poll = Timer.periodic(interval, (_) {
+        if (!ref.read(appForegroundProvider)) return;
         ref.invalidate(onlineByUserProvider);
         unawaited(ref.read(workspaceRepositoryProvider).heartbeat());
       });

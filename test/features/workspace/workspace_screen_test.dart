@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/date_symbol_data_local.dart';
+import 'package:sytium_mobile/app/lifecycle/app_foreground.dart';
 import 'package:sytium_mobile/core/error/failure.dart';
 import 'package:sytium_mobile/core/result/result.dart';
 import 'package:sytium_mobile/features/auth/application/auth_controller.dart';
@@ -69,8 +70,14 @@ class _BaseRepo implements WorkspaceRepository {
   Future<Result<void>> markRead(String channelId) async => const Ok(null);
   @override
   Future<Result<List<Presence>>> presence() async => const Ok([]);
+
+  int heartbeats = 0;
+
   @override
-  Future<Result<void>> heartbeat({String? channelId}) async => const Ok(null);
+  Future<Result<void>> heartbeat({String? channelId}) async {
+    heartbeats++;
+    return const Ok(null);
+  }
   @override
   Future<Result<Conversation>> createChannel({
     required String name,
@@ -132,7 +139,42 @@ Widget _host(WorkspaceRepository repo) => ProviderScope(
       ),
     );
 
+/// App en arrière-plan pour la durée du test.
+class _Background extends AppForeground {
+  @override
+  bool build() => false;
+}
+
 void main() {
+  testWidgets('ne bat pas le cœur de présence en arrière-plan', (tester) async {
+    final repo = _DataRepo();
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          authControllerProvider.overrideWith(_FakeAuth.new),
+          workspaceRepositoryProvider.overrideWithValue(repo),
+          workspaceRealtimeProvider.overrideWithValue(FakeWorkspaceRealtime()),
+          appForegroundProvider.overrideWith(_Background.new),
+        ],
+        child: MaterialApp(
+          theme: AppTheme.light(),
+          home: const WorkspaceScreen(pollInterval: Duration(milliseconds: 40)),
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump();
+    final before = repo.heartbeats;
+
+    await tester.pump(const Duration(milliseconds: 130));
+    await tester.pump();
+
+    // Le heartbeat déclare l'utilisateur en ligne : le laisser battre écran
+    // éteint affichait un point vert à des collègues qui dorment.
+    expect(repo.heartbeats, before);
+    await tester.pumpWidget(const SizedBox());
+  });
+
   setUpAll(() async => initializeDateFormatting('fr_FR'));
 
   testWidgets('renders channels + DMs with avatar, title and unread badge', (tester) async {
