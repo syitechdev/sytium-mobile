@@ -1,19 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:mobile_scanner/mobile_scanner.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:sytium_mobile/core/error/failure.dart';
 import 'package:sytium_mobile/core/location/location_service.dart';
 import 'package:sytium_mobile/features/pointage/application/pointage_providers.dart';
 import 'package:sytium_mobile/features/pointage/domain/pointage_models.dart';
 import 'package:sytium_mobile/features/pointage/presentation/scan_controller.dart';
 import 'package:sytium_mobile/features/pointage/presentation/widgets/history_tile.dart';
-import 'package:sytium_mobile/features/pointage/presentation/widgets/motif_sheet.dart';
 import 'package:sytium_mobile/features/pointage/presentation/widgets/pointage_dialogs.dart';
-import 'package:sytium_mobile/features/pointage/presentation/widgets/scan_frame_card.dart';
+import 'package:sytium_mobile/features/pointage/presentation/widgets/punch_card.dart';
 import 'package:sytium_mobile/shared/widgets/error_state.dart';
 import 'package:sytium_mobile/theme/sytium_colors.dart';
 import 'package:sytium_mobile/theme/tokens.dart';
+
+/// Durée minimale d'affichage du balayage radar. Sans ce plancher, une réponse
+/// rapide ferait disparaître l'animation avant qu'on ne l'ait vue.
+const _kMinScanDuration = Duration(milliseconds: 1600);
 
 const _motifLabels = {
   'entree': 'Arrivée',
@@ -35,6 +39,10 @@ class _PointerScreenState extends ConsumerState<PointerScreen> {
   bool _blocked = false;
   bool _retrying = false;
   LocationStatus? _locStatus;
+
+  PunchPhase _phase = const PunchIdle();
+  LatLng? _position;
+  int _scanTrigger = 0;
 
   late final ScrollController _scrollController;
 
@@ -86,38 +94,62 @@ class _PointerScreenState extends ConsumerState<PointerScreen> {
       _checkingGuard = false;
       _retrying = false;
     });
+
+    if (loc == LocationStatus.granted && !mock) {
+      await _primePosition();
+    }
   }
 
-  Future<void> _startScan(String nextType) async {
-    final motif = await showMotifSheet(context, nextType: nextType);
-    if (motif == null || !mounted) return;
+  /// Recentre la carte dès l'entrée sur l'écran, pour qu'elle ne s'ouvre pas
+  /// sur un cadre de repli avant même le premier pointage.
+  Future<void> _primePosition() async {
+    try {
+      final pos = await _location.current();
+      if (!mounted) return;
+      setState(() => _position = LatLng(pos.latitude, pos.longitude));
+    } catch (_) {
+      // Sans position, la carte se centre sur le premier site connu.
+    }
+  }
 
-    final token = await Navigator.of(context).push<String>(
-      MaterialPageRoute<String>(builder: (_) => const _ScannerPage()),
-    );
-    if (token == null || !mounted) return;
+  Future<void> _punch(String nextType) async {
+    setState(() {
+      _phase = const PunchScanning();
+      _scanTrigger += 1;
+    });
 
-    final pos = await _location.current();
+    // Le balayage doit rester lisible : sur un bon réseau la réponse arrive en
+    // quelques centaines de millisecondes, trop vite pour que l'effet se voie.
+    final started = DateTime.now();
+
+    final Position pos;
+    try {
+      pos = await _location.current();
+    } catch (_) {
+      if (!mounted) return;
+      await _settleAfter(started);
+      if (!mounted) return;
+      setState(
+        () => _phase = const PunchRefused(
+          title: 'Position introuvable',
+          detail: 'Activez la localisation puis réessayez.',
+        ),
+      );
+      return;
+    }
     if (!mounted) return;
 
     if (pos.isMocked) {
-      _toast('Localisation falsifiée détectée.', error: true);
-      setState(() => _blocked = true);
+      setState(() {
+        _blocked = true;
+        _phase = const PunchIdle();
+      });
       return;
     }
 
-    final zones =
-        ref.read(pointageZonesProvider).valueOrNull ?? const <PointageZone>[];
-    if (!isInsideAnyZone(pos.latitude, pos.longitude, zones)) {
-      final proceed = await showOutOfZoneWarning(context);
-      if (!proceed || !mounted) return;
-    }
-
-    final vpn = ref.read(vpnActiveProvider).valueOrNull ?? false;
     final result = await ScanController(ref).submit(
-      qrToken: token,
-      type: motif,
-      vpnSuspected: vpn,
+      type: nextType,
+      vpnSuspected: ref.read(vpnActiveProvider).valueOrNull ?? false,
       latitude: pos.latitude,
       longitude: pos.longitude,
       isMockLocation: pos.isMocked,
@@ -125,42 +157,38 @@ class _PointerScreenState extends ConsumerState<PointerScreen> {
     );
     if (!mounted) return;
 
+    await _settleAfter(started);
+    if (!mounted) return;
+
+    setState(() => _position = LatLng(pos.latitude, pos.longitude));
+
     result.fold(
       (ok) {
         HapticFeedback.lightImpact();
-        _toast(ok.message);
+        setState(() => _phase = PunchDone(ok.message));
         ref
           ..invalidate(pointageStatusProvider)
           ..invalidate(pointageHistoryProvider);
       },
-      (f) => _toast(_failureMessage(f), error: true),
+      (f) {
+        if (f is PointageFailure && f.code == 'LOCATION_SPOOF') {
+          setState(() {
+            _blocked = true;
+            _phase = const PunchIdle();
+          });
+          return;
+        }
+        setState(() => _phase = punchRefusalFor(f));
+      },
     );
   }
 
-  String _failureMessage(Failure f) {
-    if (f is PointageFailure) {
-      return switch (f.code) {
-        'QR_EXPIRED' => 'Code expiré, réessayez.',
-        'QR_BADGE_MISMATCH' => 'Ce badge ne vous appartient pas.',
-        'LOCATION_SPOOF' => 'Localisation falsifiée détectée.',
-        'DUPLICATE_PUNCH' => 'Double pointage trop rapproché.',
-        'INVALID_PUNCH_SEQUENCE' => "Ce motif n'est pas autorisé maintenant.",
-        'DAY_CLOSED' => 'Journée déjà clôturée.',
-        'NO_EMPLOYEE' => 'Aucun profil employé associé.',
-        _ => f.message ?? 'Erreur de pointage.',
-      };
+  /// Laisse le balayage tourner au moins [_kMinScanDuration] depuis [started].
+  Future<void> _settleAfter(DateTime started) async {
+    final elapsed = DateTime.now().difference(started);
+    if (elapsed < _kMinScanDuration) {
+      await Future<void>.delayed(_kMinScanDuration - elapsed);
     }
-    return f.message ?? 'Erreur de pointage.';
-  }
-
-  void _toast(String msg, {bool error = false}) {
-    final colors = context.colors;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(msg),
-        backgroundColor: error ? colors.danger : colors.brand,
-      ),
-    );
   }
 
   @override
@@ -224,12 +252,23 @@ class _PointerScreenState extends ConsumerState<PointerScreen> {
                       if (!status.hasEmployee) {
                         return const _NoEmployee();
                       }
-                      if (next == null) {
+                      // Journée close : plus rien à pointer, sauf si l'on vient
+                      // tout juste de valider — on laisse alors la confirmation
+                      // visible plutôt que de la remplacer aussitôt.
+                      if (next == null && _phase is! PunchDone) {
                         return const _DayClosed();
                       }
-                      return ScanFrameCard(
-                        nextLabel: _motifLabels[next] ?? next,
-                        onScan: () => _startScan(next),
+                      return PunchCard(
+                        phase: _phase,
+                        nextLabel: next == null
+                            ? ''
+                            : (_motifLabels[next] ?? next),
+                        position: _position,
+                        sites:
+                            ref.watch(pointageZonesProvider).valueOrNull ??
+                            const <PointageZone>[],
+                        scanTrigger: _scanTrigger,
+                        onPunch: next == null ? () {} : () => _punch(next),
                       );
                     },
                   ),
@@ -364,44 +403,6 @@ class _HistorySkeleton extends StatelessWidget {
               ),
             ),
         ],
-      ),
-    );
-  }
-}
-
-class _ScannerPage extends StatefulWidget {
-  const _ScannerPage();
-
-  @override
-  State<_ScannerPage> createState() => _ScannerPageState();
-}
-
-class _ScannerPageState extends State<_ScannerPage> {
-  final _controller =
-      MobileScannerController(formats: const [BarcodeFormat.qrCode]);
-  bool _handled = false;
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Scanner le QR')),
-      body: MobileScanner(
-        controller: _controller,
-        onDetect: (capture) {
-          if (_handled) return;
-          final raw = capture.barcodes
-              .map((b) => b.rawValue)
-              .firstWhere((v) => v != null && v.isNotEmpty, orElse: () => null);
-          if (raw == null) return;
-          _handled = true;
-          Navigator.of(context).pop(raw);
-        },
       ),
     );
   }

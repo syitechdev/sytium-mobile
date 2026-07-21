@@ -60,7 +60,6 @@ class PointageSiteDto with _$PointageSiteDto {
 @freezed
 class PointageScanRequestDto with _$PointageScanRequestDto {
   const factory PointageScanRequestDto({
-    @JsonKey(name: 'qr_token') required String qrToken,
     required String type,
     required double latitude,
     required double longitude,
@@ -68,6 +67,9 @@ class PointageScanRequestDto with _$PointageScanRequestDto {
     @JsonKey(name: 'vpn_suspected') required bool vpnSuspected,
     @JsonKey(name: 'gps_accuracy_m') double? gpsAccuracyM,
     @JsonKey(name: 'device_info') String? deviceInfo,
+    // Le pointage se valide par la géolocalisation seule ; le QR n'est plus
+    // envoyé. Le champ subsiste pour le mode QR, réactivable côté serveur.
+    @JsonKey(name: 'qr_token', includeIfNull: false) String? qrToken,
   }) = _PointageScanRequestDto;
 
   factory PointageScanRequestDto.fromJson(Map<String, dynamic> json) =>

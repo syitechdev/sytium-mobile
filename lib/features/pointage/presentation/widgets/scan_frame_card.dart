@@ -2,6 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:sytium_mobile/theme/sytium_colors.dart';
 import 'package:sytium_mobile/theme/tokens.dart';
 
+/// **Hors du parcours actuel.** Le pointage se valide par la géolocalisation
+/// seule ; cette carte au cadre QR n'est plus affichée. Conservée avec le mode
+/// QR côté serveur (`sytium.pointage.mode`) pour pouvoir être remise en service.
+///
 /// Premium idle scan card: a framed QR illustration + the next-motif hint + CTA.
 class ScanFrameCard extends StatelessWidget {
   const ScanFrameCard({

@@ -43,4 +43,20 @@ void main() {
     expect(json['is_mock_location'], false);
     expect(json['vpn_suspected'], true);
   });
+
+  test('omits qr_token entirely when the punch is GPS-only', () {
+    final json = const PointageScanRequestDto(
+      type: 'entree',
+      latitude: 5.36,
+      longitude: -4,
+      gpsAccuracyM: 8,
+      isMockLocation: false,
+      vpnSuspected: false,
+    ).toJson();
+
+    // La clé doit être ABSENTE, pas nulle : un qr_token null serait rejeté par
+    // la validation serveur en mode QR au lieu de tomber dans le mode GPS.
+    expect(json.containsKey('qr_token'), isFalse);
+    expect(json['type'], 'entree');
+  });
 }

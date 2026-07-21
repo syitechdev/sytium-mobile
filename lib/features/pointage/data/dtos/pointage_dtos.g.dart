@@ -84,7 +84,6 @@ Map<String, dynamic> _$$PointageSiteDtoImplToJson(
 _$PointageScanRequestDtoImpl _$$PointageScanRequestDtoImplFromJson(
   Map<String, dynamic> json,
 ) => _$PointageScanRequestDtoImpl(
-  qrToken: json['qr_token'] as String,
   type: json['type'] as String,
   latitude: (json['latitude'] as num).toDouble(),
   longitude: (json['longitude'] as num).toDouble(),
@@ -92,12 +91,12 @@ _$PointageScanRequestDtoImpl _$$PointageScanRequestDtoImplFromJson(
   vpnSuspected: json['vpn_suspected'] as bool,
   gpsAccuracyM: (json['gps_accuracy_m'] as num?)?.toDouble(),
   deviceInfo: json['device_info'] as String?,
+  qrToken: json['qr_token'] as String?,
 );
 
 Map<String, dynamic> _$$PointageScanRequestDtoImplToJson(
   _$PointageScanRequestDtoImpl instance,
 ) => <String, dynamic>{
-  'qr_token': instance.qrToken,
   'type': instance.type,
   'latitude': instance.latitude,
   'longitude': instance.longitude,
@@ -105,6 +104,7 @@ Map<String, dynamic> _$$PointageScanRequestDtoImplToJson(
   'vpn_suspected': instance.vpnSuspected,
   'gps_accuracy_m': instance.gpsAccuracyM,
   'device_info': instance.deviceInfo,
+  if (instance.qrToken case final value?) 'qr_token': value,
 };
 
 _$PointageScanResultDtoImpl _$$PointageScanResultDtoImplFromJson(

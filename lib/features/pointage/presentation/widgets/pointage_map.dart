@@ -27,6 +27,7 @@ class PointageMap extends StatelessWidget {
     required this.sites,
     required this.scanning,
     required this.scanTrigger,
+    this.tileProvider,
     super.key,
   });
 
@@ -41,6 +42,10 @@ class PointageMap extends StatelessWidget {
 
   /// Incrémenter pour rejouer le balayage (voir [RadarSweepOverlay.trigger]).
   final int scanTrigger;
+
+  /// Fournisseur de tuiles. Injectable pour les tests : celui par défaut met en
+  /// cache via path_provider, indisponible hors appareil.
+  final TileProvider? tileProvider;
 
   /// Centre de la carte : la position si on l'a, sinon le premier site, sinon
   /// un repli — la carte doit toujours pouvoir se construire.
@@ -75,7 +80,7 @@ class PointageMap extends StatelessWidget {
               TileLayer(
                 urlTemplate: AppConfig.mapTileUrl,
                 userAgentPackageName: _kUserAgent,
-                tileProvider: NetworkTileProvider(),
+                tileProvider: tileProvider ?? NetworkTileProvider(),
               ),
               if (sites.isNotEmpty)
                 CircleLayer(

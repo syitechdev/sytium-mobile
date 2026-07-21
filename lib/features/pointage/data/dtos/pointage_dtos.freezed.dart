@@ -946,8 +946,6 @@ PointageScanRequestDto _$PointageScanRequestDtoFromJson(
 
 /// @nodoc
 mixin _$PointageScanRequestDto {
-  @JsonKey(name: 'qr_token')
-  String get qrToken => throw _privateConstructorUsedError;
   String get type => throw _privateConstructorUsedError;
   double get latitude => throw _privateConstructorUsedError;
   double get longitude => throw _privateConstructorUsedError;
@@ -958,7 +956,10 @@ mixin _$PointageScanRequestDto {
   @JsonKey(name: 'gps_accuracy_m')
   double? get gpsAccuracyM => throw _privateConstructorUsedError;
   @JsonKey(name: 'device_info')
-  String? get deviceInfo => throw _privateConstructorUsedError;
+  String? get deviceInfo => throw _privateConstructorUsedError; // Le pointage se valide par la géolocalisation seule ; le QR n'est plus
+  // envoyé. Le champ subsiste pour le mode QR, réactivable côté serveur.
+  @JsonKey(name: 'qr_token', includeIfNull: false)
+  String? get qrToken => throw _privateConstructorUsedError;
 
   /// Serializes this PointageScanRequestDto to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -978,7 +979,6 @@ abstract class $PointageScanRequestDtoCopyWith<$Res> {
   ) = _$PointageScanRequestDtoCopyWithImpl<$Res, PointageScanRequestDto>;
   @useResult
   $Res call({
-    @JsonKey(name: 'qr_token') String qrToken,
     String type,
     double latitude,
     double longitude,
@@ -986,6 +986,7 @@ abstract class $PointageScanRequestDtoCopyWith<$Res> {
     @JsonKey(name: 'vpn_suspected') bool vpnSuspected,
     @JsonKey(name: 'gps_accuracy_m') double? gpsAccuracyM,
     @JsonKey(name: 'device_info') String? deviceInfo,
+    @JsonKey(name: 'qr_token', includeIfNull: false) String? qrToken,
   });
 }
 
@@ -1007,7 +1008,6 @@ class _$PointageScanRequestDtoCopyWithImpl<
   @pragma('vm:prefer-inline')
   @override
   $Res call({
-    Object? qrToken = null,
     Object? type = null,
     Object? latitude = null,
     Object? longitude = null,
@@ -1015,13 +1015,10 @@ class _$PointageScanRequestDtoCopyWithImpl<
     Object? vpnSuspected = null,
     Object? gpsAccuracyM = freezed,
     Object? deviceInfo = freezed,
+    Object? qrToken = freezed,
   }) {
     return _then(
       _value.copyWith(
-            qrToken: null == qrToken
-                ? _value.qrToken
-                : qrToken // ignore: cast_nullable_to_non_nullable
-                      as String,
             type: null == type
                 ? _value.type
                 : type // ignore: cast_nullable_to_non_nullable
@@ -1050,6 +1047,10 @@ class _$PointageScanRequestDtoCopyWithImpl<
                 ? _value.deviceInfo
                 : deviceInfo // ignore: cast_nullable_to_non_nullable
                       as String?,
+            qrToken: freezed == qrToken
+                ? _value.qrToken
+                : qrToken // ignore: cast_nullable_to_non_nullable
+                      as String?,
           )
           as $Val,
     );
@@ -1066,7 +1067,6 @@ abstract class _$$PointageScanRequestDtoImplCopyWith<$Res>
   @override
   @useResult
   $Res call({
-    @JsonKey(name: 'qr_token') String qrToken,
     String type,
     double latitude,
     double longitude,
@@ -1074,6 +1074,7 @@ abstract class _$$PointageScanRequestDtoImplCopyWith<$Res>
     @JsonKey(name: 'vpn_suspected') bool vpnSuspected,
     @JsonKey(name: 'gps_accuracy_m') double? gpsAccuracyM,
     @JsonKey(name: 'device_info') String? deviceInfo,
+    @JsonKey(name: 'qr_token', includeIfNull: false) String? qrToken,
   });
 }
 
@@ -1092,7 +1093,6 @@ class __$$PointageScanRequestDtoImplCopyWithImpl<$Res>
   @pragma('vm:prefer-inline')
   @override
   $Res call({
-    Object? qrToken = null,
     Object? type = null,
     Object? latitude = null,
     Object? longitude = null,
@@ -1100,13 +1100,10 @@ class __$$PointageScanRequestDtoImplCopyWithImpl<$Res>
     Object? vpnSuspected = null,
     Object? gpsAccuracyM = freezed,
     Object? deviceInfo = freezed,
+    Object? qrToken = freezed,
   }) {
     return _then(
       _$PointageScanRequestDtoImpl(
-        qrToken: null == qrToken
-            ? _value.qrToken
-            : qrToken // ignore: cast_nullable_to_non_nullable
-                  as String,
         type: null == type
             ? _value.type
             : type // ignore: cast_nullable_to_non_nullable
@@ -1135,6 +1132,10 @@ class __$$PointageScanRequestDtoImplCopyWithImpl<$Res>
             ? _value.deviceInfo
             : deviceInfo // ignore: cast_nullable_to_non_nullable
                   as String?,
+        qrToken: freezed == qrToken
+            ? _value.qrToken
+            : qrToken // ignore: cast_nullable_to_non_nullable
+                  as String?,
       ),
     );
   }
@@ -1144,7 +1145,6 @@ class __$$PointageScanRequestDtoImplCopyWithImpl<$Res>
 @JsonSerializable()
 class _$PointageScanRequestDtoImpl implements _PointageScanRequestDto {
   const _$PointageScanRequestDtoImpl({
-    @JsonKey(name: 'qr_token') required this.qrToken,
     required this.type,
     required this.latitude,
     required this.longitude,
@@ -1152,14 +1152,12 @@ class _$PointageScanRequestDtoImpl implements _PointageScanRequestDto {
     @JsonKey(name: 'vpn_suspected') required this.vpnSuspected,
     @JsonKey(name: 'gps_accuracy_m') this.gpsAccuracyM,
     @JsonKey(name: 'device_info') this.deviceInfo,
+    @JsonKey(name: 'qr_token', includeIfNull: false) this.qrToken,
   });
 
   factory _$PointageScanRequestDtoImpl.fromJson(Map<String, dynamic> json) =>
       _$$PointageScanRequestDtoImplFromJson(json);
 
-  @override
-  @JsonKey(name: 'qr_token')
-  final String qrToken;
   @override
   final String type;
   @override
@@ -1178,10 +1176,15 @@ class _$PointageScanRequestDtoImpl implements _PointageScanRequestDto {
   @override
   @JsonKey(name: 'device_info')
   final String? deviceInfo;
+  // Le pointage se valide par la géolocalisation seule ; le QR n'est plus
+  // envoyé. Le champ subsiste pour le mode QR, réactivable côté serveur.
+  @override
+  @JsonKey(name: 'qr_token', includeIfNull: false)
+  final String? qrToken;
 
   @override
   String toString() {
-    return 'PointageScanRequestDto(qrToken: $qrToken, type: $type, latitude: $latitude, longitude: $longitude, isMockLocation: $isMockLocation, vpnSuspected: $vpnSuspected, gpsAccuracyM: $gpsAccuracyM, deviceInfo: $deviceInfo)';
+    return 'PointageScanRequestDto(type: $type, latitude: $latitude, longitude: $longitude, isMockLocation: $isMockLocation, vpnSuspected: $vpnSuspected, gpsAccuracyM: $gpsAccuracyM, deviceInfo: $deviceInfo, qrToken: $qrToken)';
   }
 
   @override
@@ -1189,7 +1192,6 @@ class _$PointageScanRequestDtoImpl implements _PointageScanRequestDto {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
             other is _$PointageScanRequestDtoImpl &&
-            (identical(other.qrToken, qrToken) || other.qrToken == qrToken) &&
             (identical(other.type, type) || other.type == type) &&
             (identical(other.latitude, latitude) ||
                 other.latitude == latitude) &&
@@ -1202,14 +1204,14 @@ class _$PointageScanRequestDtoImpl implements _PointageScanRequestDto {
             (identical(other.gpsAccuracyM, gpsAccuracyM) ||
                 other.gpsAccuracyM == gpsAccuracyM) &&
             (identical(other.deviceInfo, deviceInfo) ||
-                other.deviceInfo == deviceInfo));
+                other.deviceInfo == deviceInfo) &&
+            (identical(other.qrToken, qrToken) || other.qrToken == qrToken));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   int get hashCode => Object.hash(
     runtimeType,
-    qrToken,
     type,
     latitude,
     longitude,
@@ -1217,6 +1219,7 @@ class _$PointageScanRequestDtoImpl implements _PointageScanRequestDto {
     vpnSuspected,
     gpsAccuracyM,
     deviceInfo,
+    qrToken,
   );
 
   /// Create a copy of PointageScanRequestDto
@@ -1239,7 +1242,6 @@ class _$PointageScanRequestDtoImpl implements _PointageScanRequestDto {
 
 abstract class _PointageScanRequestDto implements PointageScanRequestDto {
   const factory _PointageScanRequestDto({
-    @JsonKey(name: 'qr_token') required final String qrToken,
     required final String type,
     required final double latitude,
     required final double longitude,
@@ -1247,14 +1249,12 @@ abstract class _PointageScanRequestDto implements PointageScanRequestDto {
     @JsonKey(name: 'vpn_suspected') required final bool vpnSuspected,
     @JsonKey(name: 'gps_accuracy_m') final double? gpsAccuracyM,
     @JsonKey(name: 'device_info') final String? deviceInfo,
+    @JsonKey(name: 'qr_token', includeIfNull: false) final String? qrToken,
   }) = _$PointageScanRequestDtoImpl;
 
   factory _PointageScanRequestDto.fromJson(Map<String, dynamic> json) =
       _$PointageScanRequestDtoImpl.fromJson;
 
-  @override
-  @JsonKey(name: 'qr_token')
-  String get qrToken;
   @override
   String get type;
   @override
@@ -1272,7 +1272,11 @@ abstract class _PointageScanRequestDto implements PointageScanRequestDto {
   double? get gpsAccuracyM;
   @override
   @JsonKey(name: 'device_info')
-  String? get deviceInfo;
+  String? get deviceInfo; // Le pointage se valide par la géolocalisation seule ; le QR n'est plus
+  // envoyé. Le champ subsiste pour le mode QR, réactivable côté serveur.
+  @override
+  @JsonKey(name: 'qr_token', includeIfNull: false)
+  String? get qrToken;
 
   /// Create a copy of PointageScanRequestDto
   /// with the given fields replaced by the non-null parameter values.

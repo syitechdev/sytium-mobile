@@ -49,9 +49,21 @@ class UnknownFailure extends Failure {
 /// A pointage scan rejected by the server with a domain code
 /// (QR_EXPIRED, QR_BADGE_MISMATCH, LOCATION_SPOOF, NO_EMPLOYEE, …).
 class PointageFailure extends Failure {
-  const PointageFailure({required this.code, super.message});
+  const PointageFailure({
+    required this.code,
+    super.message,
+    this.distanceM,
+    this.radiusMeters,
+    this.siteNom,
+  });
 
   final String code;
+
+  /// Renseignés par un refus OUT_OF_ZONE : de quoi annoncer « vous êtes à 45 m
+  /// du Siège (rayon 20 m) » plutôt qu'un message générique.
+  final double? distanceM;
+  final int? radiusMeters;
+  final String? siteNom;
 }
 
 /// A weekly-objective write rejected by the server with a domain code

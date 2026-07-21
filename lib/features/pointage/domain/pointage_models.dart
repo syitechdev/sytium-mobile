@@ -35,7 +35,6 @@ class PointageZone {
 @immutable
 class PointageScanInput {
   const PointageScanInput({
-    required this.qrToken,
     required this.type,
     required this.latitude,
     required this.longitude,
@@ -43,10 +42,13 @@ class PointageScanInput {
     required this.vpnSuspected,
     this.gpsAccuracyM,
     this.deviceInfo,
+    this.qrToken,
   });
 
-  final String qrToken;
   final String type;
+
+  /// Nul en mode GPS. Conservé pour le mode QR, réactivable côté serveur.
+  final String? qrToken;
   final double latitude;
   final double longitude;
   final bool isMockLocation;

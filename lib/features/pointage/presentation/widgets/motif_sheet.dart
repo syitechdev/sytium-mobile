@@ -10,6 +10,10 @@ const _motifs = [
   (type: 'sortie', label: 'Départ', icon: Icons.logout),
 ];
 
+/// **Hors du parcours actuel.** Le motif n'est plus demandé : le serveur impose
+/// de toute façon la prochaine étape de la séquence, et cette feuille ne
+/// proposait donc qu'un seul choix possible. Conservée pour le mode QR.
+///
 /// Bottom sheet to pick the punch motif. Only [nextType] is selectable
 /// (the state machine forbids the others); returns the chosen type or null.
 Future<String?> showMotifSheet(

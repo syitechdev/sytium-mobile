@@ -94,6 +94,10 @@ class PointageRepositoryImpl implements PointageRepository {
           PointageFailure(
             code: data['code'] as String,
             message: data['message'] as String?,
+            // Portés par un refus hors zone, pour afficher la distance réelle.
+            distanceM: (data['distance_m'] as num?)?.toDouble(),
+            radiusMeters: (data['radius_meters'] as num?)?.toInt(),
+            siteNom: data['site_nom'] as String?,
           ),
         );
       }
