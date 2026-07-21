@@ -30,6 +30,15 @@ const _kProduct = ProductRef(
 
 class _FakeInvoicing implements InvoicingRepository {
   SalesDocInput? sent;
+  SalesDocInput? updated;
+  String? updatedId;
+
+  @override
+  Future<Result<void>> updateProforma(String id, SalesDocInput input) async {
+    updatedId = id;
+    updated = input;
+    return const Ok(null);
+  }
 
   @override
   Future<Result<SalesDocResult>> createDocument(SalesDocInput input) async {

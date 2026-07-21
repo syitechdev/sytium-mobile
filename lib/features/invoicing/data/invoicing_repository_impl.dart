@@ -26,4 +26,16 @@ class InvoicingRepositoryImpl implements InvoicingRepository {
       return const Err(UnknownFailure());
     }
   }
+
+  @override
+  Future<Result<void>> updateProforma(String id, SalesDocInput input) async {
+    try {
+      await _remote.updateProforma(id, input);
+      return const Ok(null);
+    } on DioException catch (e) {
+      return Err(mapDioError(e));
+    } catch (_) {
+      return const Err(UnknownFailure());
+    }
+  }
 }

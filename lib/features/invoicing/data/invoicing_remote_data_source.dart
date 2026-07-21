@@ -49,5 +49,33 @@ class InvoicingRemoteDataSource {
     return ProformaResultDto.fromJson(res.data!['data'] as Map<String, dynamic>);
   }
 
+  Future<void> updateProforma(String id, SalesDocInput input) async {
+    await _dio.patch<Map<String, dynamic>>(
+      '/proforma-invoices/$id',
+      data: {
+        'client_nom': input.clientNom,
+        'client_email': input.clientEmail,
+        'client_adresse': input.clientAdresse,
+        'objet': input.objet,
+        'notes': input.notes,
+        'taux_tva': input.tauxTva,
+        'statut': input.statut.wire,
+        if (input.dateEmission != null) 'date_emission': _day(input.dateEmission!),
+        if (input.dateEcheance != null) 'date_echeance': _day(input.dateEcheance!),
+        'items': [
+          for (final it in input.items)
+            {
+              'description': it.description,
+              'quantite': it.quantite,
+              'prix_unitaire': it.prixUnitaire,
+              if (it.productId != null) 'product_id': it.productId,
+              if (it.reference != null && it.reference!.isNotEmpty)
+                'reference': it.reference,
+            },
+        ],
+      },
+    );
+  }
+
   static String _day(DateTime d) => d.toIso8601String().split('T').first;
 }

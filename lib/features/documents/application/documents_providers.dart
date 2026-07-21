@@ -18,3 +18,25 @@ Future<List<DocItem>> documents(Ref ref, DocType? type) async {
   final result = await ref.watch(documentsRepositoryProvider).list(type: type);
   return result.fold((d) => d, (f) => throw Exception(f.message ?? 'Erreur'));
 }
+
+/// Détail d'une proforma : en-tête, lignes et état de verrouillage.
+@riverpod
+Future<ProformaDetail> proformaDetail(Ref ref, String id) async =>
+    (await ref.watch(documentsRepositoryProvider).proforma(id)).fold(
+      (d) => d,
+      (f) => throw Exception(f.message ?? 'Erreur'),
+    );
+
+@riverpod
+Future<InvoiceDetail> invoiceDetail(Ref ref, String id) async =>
+    (await ref.watch(documentsRepositoryProvider).invoice(id)).fold(
+      (d) => d,
+      (f) => throw Exception(f.message ?? 'Erreur'),
+    );
+
+@riverpod
+Future<LegalDocDetail> legalDocDetail(Ref ref, String id) async =>
+    (await ref.watch(documentsRepositoryProvider).legalDocument(id)).fold(
+      (d) => d,
+      (f) => throw Exception(f.message ?? 'Erreur'),
+    );

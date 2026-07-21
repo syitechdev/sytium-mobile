@@ -8,6 +8,7 @@ import 'package:sytium_mobile/features/auth/domain/auth_session.dart';
 import 'package:sytium_mobile/features/cash/application/cash_providers.dart';
 import 'package:sytium_mobile/features/cash/domain/cash_models.dart';
 import 'package:sytium_mobile/features/commercial/application/commercial_providers.dart';
+import 'package:sytium_mobile/features/documents/domain/document_models.dart';
 import 'package:sytium_mobile/features/finance/application/finance_providers.dart';
 import 'package:sytium_mobile/features/invoicing/application/invoicing_providers.dart';
 import 'package:sytium_mobile/features/invoicing/domain/catalogue.dart';
@@ -28,10 +29,12 @@ import 'package:sytium_mobile/theme/tokens.dart';
 Future<bool?> showSalesDocSheet(
   BuildContext context, {
   SalesDocKind initialKind = SalesDocKind.proforma,
+  ProformaDetail? editing,
 }) {
   return showAppSheet<bool>(
     context,
-    builder: (_) => _SalesDocFormSheet(initialKind: initialKind),
+    builder: (_) =>
+        _SalesDocFormSheet(initialKind: initialKind, editing: editing),
   );
 }
 
@@ -75,9 +78,12 @@ class _Line {
 }
 
 class _SalesDocFormSheet extends ConsumerStatefulWidget {
-  const _SalesDocFormSheet({required this.initialKind});
+  const _SalesDocFormSheet({required this.initialKind, this.editing});
 
   final SalesDocKind initialKind;
+
+  /// Proforma à modifier ; nulle pour une émission.
+  final ProformaDetail? editing;
 
   @override
   ConsumerState<_SalesDocFormSheet> createState() => _SalesDocFormSheetState();
@@ -119,8 +125,63 @@ class _SalesDocFormSheetState extends ConsumerState<_SalesDocFormSheet> {
     if (_kind == SalesDocKind.comptant && !_canComptant) {
       _kind = SalesDocKind.proforma;
     }
-    _addLine();
+
+    final editing = widget.editing;
+    if (editing == null) {
+      _addLine();
+      return;
+    }
+    _prefill(editing);
   }
+
+  /// Recharge la pièce dans le formulaire. Les lignes sont recréées telles
+  /// quelles, rattachement au catalogue compris, pour qu'un enregistrement sans
+  /// retouche ne perde rien.
+  void _prefill(ProformaDetail p) {
+    _client.text = p.clientNom;
+    _objet.text = p.objet ?? '';
+    _notes.text = p.notes ?? '';
+    _clientRef = ClientRef(
+      id: '',
+      nom: p.clientNom,
+      email: p.clientEmail,
+      adresse: p.clientAdresse,
+    );
+    _tauxChoisi = p.tauxTva;
+    _statut = ProformaStatus.values.firstWhere(
+      (s) => s.wire == p.statut,
+      orElse: () => ProformaStatus.brouillon,
+    );
+    if (p.dateEmission != null) _dateEmission = p.dateEmission!;
+    if (p.dateEcheance != null) {
+      _dateEcheance = p.dateEcheance!;
+      // L'échéance vient de la pièce : aucune durée ne doit la recalculer.
+      _validityDays = null;
+    }
+
+    for (final line in p.items) {
+      final l = _Line()
+        ..description.text = line.description
+        ..quantite.text = _plain(line.quantite)
+        ..prix.text = _plain(line.prixUnitaire);
+      if (line.productId != null) {
+        l.product = ProductRef(
+          id: line.productId!,
+          libelle: line.description,
+          reference: line.reference,
+          prixHt: line.prixUnitaire,
+        );
+      }
+      l.quantite.addListener(_recompute);
+      l.prix.addListener(_recompute);
+      _lines.add(l);
+    }
+    if (_lines.isEmpty) _addLine();
+  }
+
+  /// « 2 » plutôt que « 2.0 » dans un champ de saisie.
+  static String _plain(num v) =>
+      v == v.roundToDouble() ? v.round().toString() : v.toString();
 
   @override
   void dispose() {
@@ -141,6 +202,23 @@ class _SalesDocFormSheetState extends ConsumerState<_SalesDocFormSheet> {
       _dateEcheance = _dateEmission.add(Duration(days: days));
     }
   }
+
+  /// Décrit la pièce telle qu'elle sera envoyée, à la création comme à la
+  /// modification — une seule définition, donc aucun champ oublié d'un côté.
+  SalesDocInput _input(String client, List<_Line> lines) => SalesDocInput(
+    kind: _kind,
+    clientNom: client,
+    clientEmail: _clientRef?.email,
+    clientAdresse: _clientRef?.adresse,
+    objet: _objet.text.trim(),
+    notes: _notes.text.trim().isEmpty ? null : _notes.text.trim(),
+    dateEmission: _dateEmission,
+    dateEcheance: _dateEcheance,
+    statut: _statut,
+    tauxTva: _taux,
+    accountId: _kind == SalesDocKind.comptant ? _account?.id : null,
+    items: lines.map((l) => l.toInput()).toList(),
+  );
 
   Future<void> _pickClient() async {
     final catalogue = ref.read(catalogueProvider);
@@ -255,24 +333,35 @@ class _SalesDocFormSheetState extends ConsumerState<_SalesDocFormSheet> {
     }
 
     setState(() => _submitting = true);
-    final result = await ref
-        .read(invoicingRepositoryProvider)
-        .createDocument(
-          SalesDocInput(
-            kind: _kind,
-            clientNom: client,
-            clientEmail: _clientRef?.email,
-            clientAdresse: _clientRef?.adresse,
-            objet: _objet.text.trim(),
-            notes: _notes.text.trim().isEmpty ? null : _notes.text.trim(),
-            dateEmission: _dateEmission,
-            dateEcheance: _dateEcheance,
-            statut: _statut,
-            tauxTva: _taux,
-            accountId: needAccount ? _account!.id : null,
-            items: validLines.map((l) => l.toInput()).toList(),
-          ),
-        );
+    final editing = widget.editing;
+    final repo = ref.read(invoicingRepositoryProvider);
+
+    if (editing != null) {
+      final updated = await repo.updateProforma(
+        editing.id,
+        _input(client, validLines),
+      );
+      if (!mounted) return;
+      setState(() => _submitting = false);
+
+      updated.fold(
+        (_) {
+          unawaited(HapticFeedback.lightImpact());
+          Navigator.of(context).pop(true);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Proforma ${editing.numero} mise à jour')),
+          );
+        },
+        // Le serveur porte les garde-fous : proforma déjà facturée, validation
+        // exigée pour l'accepter. Son message est plus précis que le nôtre.
+        (f) => setState(
+          () => _banner = f.message ?? 'Modification impossible. Réessayez.',
+        ),
+      );
+      return;
+    }
+
+    final result = await repo.createDocument(_input(client, validLines));
     if (!mounted) return;
     setState(() => _submitting = false);
 
@@ -311,6 +400,7 @@ class _SalesDocFormSheetState extends ConsumerState<_SalesDocFormSheet> {
     final theme = Theme.of(context).textTheme;
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
     final comptant = _kind == SalesDocKind.comptant;
+    final editing = widget.editing;
 
     return Padding(
       padding: EdgeInsets.only(bottom: bottomInset),
@@ -320,10 +410,17 @@ class _SalesDocFormSheetState extends ConsumerState<_SalesDocFormSheet> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text('Émission de pièce commerciale', style: theme.titleLarge),
+            Text(
+              editing == null
+                  ? 'Émission de pièce commerciale'
+                  : 'Modifier la proforma',
+              style: theme.titleLarge,
+            ),
             const SizedBox(height: Tokens.space4),
             Text(
-              comptant
+              editing != null
+                  ? editing.numero
+                  : comptant
                   ? 'Facture comptant · intègre la trésorerie'
                   : 'Proforma · devis non comptabilisé',
               style: theme.bodySmall?.copyWith(color: colors.textMuted),
@@ -333,7 +430,7 @@ class _SalesDocFormSheetState extends ConsumerState<_SalesDocFormSheet> {
               _Banner(message: _banner!),
               const SizedBox(height: Tokens.space16),
             ],
-            if (_canComptant)
+            if (_canComptant && editing == null)
               SegmentedButton<SalesDocKind>(
                 showSelectedIcon: false,
                 segments: const [
@@ -349,7 +446,8 @@ class _SalesDocFormSheetState extends ConsumerState<_SalesDocFormSheet> {
                 selected: {_kind},
                 onSelectionChanged: (s) => setState(() => _kind = s.first),
               ),
-            if (_canComptant) const SizedBox(height: Tokens.space16),
+            if (_canComptant && editing == null)
+              const SizedBox(height: Tokens.space16),
             AppTextField(
               controller: _client,
               label: 'Client',
@@ -455,7 +553,9 @@ class _SalesDocFormSheetState extends ConsumerState<_SalesDocFormSheet> {
             ),
             const SizedBox(height: Tokens.space24),
             AppPrimaryButton(
-              label: comptant
+              label: editing != null
+                  ? 'Enregistrer les modifications'
+                  : comptant
                   ? 'Générer & encaisser la facture'
                   : 'Émettre le proforma',
               isLoading: _submitting,

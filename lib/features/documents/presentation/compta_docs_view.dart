@@ -4,6 +4,9 @@ import 'package:intl/intl.dart';
 import 'package:sytium_mobile/core/utils/money.dart';
 import 'package:sytium_mobile/features/documents/application/documents_providers.dart';
 import 'package:sytium_mobile/features/documents/domain/document_models.dart';
+import 'package:sytium_mobile/features/documents/presentation/invoice_detail_screen.dart';
+import 'package:sytium_mobile/features/documents/presentation/legal_doc_detail_screen.dart';
+import 'package:sytium_mobile/features/documents/presentation/proforma_detail_screen.dart';
 import 'package:sytium_mobile/shared/widgets/error_state.dart';
 import 'package:sytium_mobile/theme/sytium_colors.dart';
 import 'package:sytium_mobile/theme/tokens.dart';
@@ -94,6 +97,22 @@ class _DocTile extends StatelessWidget {
   const _DocTile({required this.doc});
   final DocItem doc;
 
+  /// Chaque nature a sa fiche ; une pièce inconnue n'en a pas, on ne prétend
+  /// pas pouvoir l'ouvrir.
+  void _open(BuildContext context) {
+    final screen = switch (doc.type) {
+      DocType.proforma => ProformaDetailScreen(id: doc.id),
+      DocType.facture => InvoiceDetailScreen(id: doc.id),
+      DocType.document => LegalDocDetailScreen(id: doc.id),
+      DocType.unknown => null,
+    };
+    if (screen == null) return;
+
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute<void>(builder: (_) => screen));
+  }
+
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
@@ -108,6 +127,7 @@ class _DocTile extends StatelessWidget {
     return Card(
       margin: const EdgeInsets.only(bottom: Tokens.space8),
       child: ListTile(
+        onTap: () => _open(context),
         leading: CircleAvatar(
           radius: 18,
           backgroundColor: _typeColor(colors, doc.type).withValues(alpha: 0.12),
