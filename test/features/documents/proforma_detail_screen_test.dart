@@ -108,6 +108,13 @@ class _FakeUpload implements UploadRepository {
   int calls = 0;
 
   @override
+  Future<Result<String?>> signedUrl({
+    required String path,
+    required String bucket,
+    int ttlMinutes = 15,
+  }) async => const Ok('https://exemple.test/signe');
+
+  @override
   Future<Result<UploadedFile>> upload({
     required String filePath,
     required String fileName,

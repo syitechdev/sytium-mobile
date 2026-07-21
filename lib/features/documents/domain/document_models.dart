@@ -165,6 +165,8 @@ class LegalDocDetail {
     this.dateExpiration,
     this.notes,
     this.url,
+    this.storagePath,
+    this.storageBucket,
     this.mimeType,
     this.taille,
   });
@@ -177,7 +179,18 @@ class LegalDocDetail {
   final DateTime? dateEmission;
   final DateTime? dateExpiration;
   final String? notes;
+
+  /// Lien externe saisi tel quel : s'ouvre sans rien demander.
   final String? url;
+
+  /// Fichier déposé sur la plateforme, privé : exige une URL signée.
+  final String? storagePath;
+  final String? storageBucket;
+
   final String? mimeType;
   final int? taille;
+
+  bool get hasFile =>
+      (storagePath != null && storagePath!.isNotEmpty) ||
+      (url != null && url!.isNotEmpty);
 }

@@ -110,6 +110,8 @@ class DocumentsRepositoryImpl implements DocumentsRepository {
     dateExpiration: _date(j['date_expiration']),
     notes: j['notes'] as String?,
     url: j['url'] as String?,
+    storagePath: j['storage_path'] as String?,
+    storageBucket: j['storage_bucket'] as String?,
     mimeType: j['mime_type'] as String?,
     taille: (j['taille'] as num?)?.toInt(),
   );

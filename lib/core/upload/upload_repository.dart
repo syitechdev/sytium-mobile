@@ -53,4 +53,31 @@ class UploadRepository {
       return const Err(UnknownFailure());
     }
   }
+
+  /// Demande un lien d'accès temporaire à un fichier stocké.
+  ///
+  /// Les documents sensibles ne sont pas publics : c'est le serveur qui signe
+  /// un accès de courte durée, ce qui évite à la fois d'exposer le fichier et
+  /// d'avoir à authentifier le navigateur qui l'ouvrira.
+  ///
+  /// Renvoie `null` quand le stockage ne sait pas signer — le fichier existe,
+  /// mais il n'est pas consultable par ce chemin.
+  Future<Result<String?>> signedUrl({
+    required String path,
+    required String bucket,
+    int ttlMinutes = 15,
+  }) async {
+    try {
+      final res = await _dio.post<Map<String, dynamic>>(
+        '/uploads/signed-url',
+        data: {'bucket': bucket, 'path': path, 'ttl_minutes': ttlMinutes},
+      );
+      final data = res.data?['data'];
+      return Ok(data is Map ? data['url'] as String? : null);
+    } on DioException catch (e) {
+      return Err(mapDioError(e));
+    } catch (_) {
+      return const Err(UnknownFailure());
+    }
+  }
 }
