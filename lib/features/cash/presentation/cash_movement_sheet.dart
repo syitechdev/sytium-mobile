@@ -7,6 +7,7 @@ import 'package:sytium_mobile/core/upload/upload_providers.dart';
 import 'package:sytium_mobile/core/upload/uploaded_file.dart';
 import 'package:sytium_mobile/core/utils/money.dart';
 import 'package:sytium_mobile/features/cash/application/cash_providers.dart';
+import 'package:sytium_mobile/features/cash/domain/beneficiary.dart';
 import 'package:sytium_mobile/features/cash/domain/cash_models.dart';
 import 'package:sytium_mobile/features/cash/presentation/widgets/payment_proof_field.dart';
 import 'package:sytium_mobile/features/finance/application/finance_providers.dart';
@@ -14,6 +15,7 @@ import 'package:sytium_mobile/shared/widgets/app_primary_button.dart';
 import 'package:sytium_mobile/shared/widgets/app_sheet.dart';
 import 'package:sytium_mobile/shared/widgets/app_text_field.dart';
 import 'package:sytium_mobile/shared/widgets/error_state.dart';
+import 'package:sytium_mobile/shared/widgets/search_picker_sheet.dart';
 import 'package:sytium_mobile/theme/sytium_colors.dart';
 import 'package:sytium_mobile/theme/tokens.dart';
 
@@ -43,11 +45,15 @@ class _CashMovementSheetState extends ConsumerState<_CashMovementSheet> {
   CashAccount? _account;
   DateTime _date = DateTime.now();
   PickedProof? _proof;
+  BeneficiaryType _beneficiaryType = BeneficiaryType.autre;
+  Beneficiary? _beneficiary;
+  String? _filiale;
   bool _submitting = false;
   String? _montantError;
   String? _libelleError;
   String? _accountError;
   String? _proofError;
+  String? _beneficiaryError;
   String? _banner;
 
   @override
@@ -59,6 +65,21 @@ class _CashMovementSheetState extends ConsumerState<_CashMovementSheet> {
     super.dispose();
   }
 
+  /// Notes envoyées : le bénéficiaire en première ligne, puis la saisie libre.
+  ///
+  /// La plateforme n'a pas de colonne bénéficiaire ; c'est cette ligne qui en
+  /// garde la trace, exactement comme au web.
+  String? _composedNotes() {
+    final free = _notes.text.trim();
+    final beneficiary = _beneficiary;
+    final parts = [
+      if (_type == CashMovementType.sortie && beneficiary != null)
+        'Bénéficiaire : ${_beneficiaryType.label} — ${beneficiary.label}',
+      if (free.isNotEmpty) free,
+    ];
+    return parts.isEmpty ? null : parts.join('\n');
+  }
+
   /// Parses the amount field (accepts spaces/thousands separators) into a
   /// positive number, or null if invalid.
   num? _parsedMontant() {
@@ -67,6 +88,37 @@ class _CashMovementSheetState extends ConsumerState<_CashMovementSheet> {
         .replaceAll(',', '.');
     final v = num.tryParse(raw);
     return (v != null && v > 0) ? v : null;
+  }
+
+  /// Vrai quand la sortie exige un bénéficiaire choisi dans la base.
+  bool get _needsBeneficiary =>
+      _type == CashMovementType.sortie && _beneficiaryType.picksFromDatabase;
+
+  Future<void> _pickBeneficiary() async {
+    final entries = await ref.read(beneficiariesProvider(_beneficiaryType).future);
+    if (!mounted) return;
+
+    final picked = await showSearchPicker<Beneficiary>(
+      context,
+      title: _beneficiaryType.label,
+      hint: 'Rechercher dans la base',
+      emptyLabel:
+          'Aucun ${_beneficiaryType.label.toLowerCase()} enregistré dans la base.',
+      entries: [
+        for (final b in entries)
+          PickerEntry(value: b, label: b.label, detail: b.detail),
+      ],
+    );
+    if (picked == null || !mounted) return;
+
+    setState(() {
+      _beneficiary = picked;
+      _beneficiaryError = null;
+      // Le libellé déjà saisi n'est jamais écrasé — même règle qu'au web.
+      if (_libelle.text.trim().isEmpty) {
+        _libelle.text = '${_beneficiaryType.shortLabel} — ${picked.label}';
+      }
+    });
   }
 
   Future<void> _pickDate() async {
@@ -90,9 +142,16 @@ class _CashMovementSheetState extends ConsumerState<_CashMovementSheet> {
       _montantError = montant == null ? 'Montant invalide.' : null;
       _libelleError = libelle.isEmpty ? 'Libellé requis.' : null;
       _proofError = proof == null ? 'Justificatif requis.' : null;
+      _beneficiaryError = _needsBeneficiary && _beneficiary == null
+          ? 'Sélectionnez le bénéficiaire dans la base.'
+          : null;
       _banner = null;
     });
-    if (_account == null || montant == null || libelle.isEmpty || proof == null) {
+    if (_account == null ||
+        montant == null ||
+        libelle.isEmpty ||
+        proof == null ||
+        (_needsBeneficiary && _beneficiary == null)) {
       return;
     }
 
@@ -134,7 +193,8 @@ class _CashMovementSheetState extends ConsumerState<_CashMovementSheet> {
             reference: _reference.text.trim().isEmpty
                 ? null
                 : _reference.text.trim(),
-            notes: _notes.text.trim().isEmpty ? null : _notes.text.trim(),
+            filiale: _filiale,
+            notes: _composedNotes(),
           ),
         );
     if (!mounted) return;
@@ -203,8 +263,29 @@ class _CashMovementSheetState extends ConsumerState<_CashMovementSheet> {
                 ),
               ],
               selected: {_type},
-              onSelectionChanged: (s) => setState(() => _type = s.first),
+              onSelectionChanged: (s) => setState(() {
+                _type = s.first;
+                // Un encaissement n'a pas de bénéficiaire : on repart propre.
+                if (_type == CashMovementType.entree) {
+                  _beneficiary = null;
+                  _beneficiaryError = null;
+                }
+              }),
             ),
+            if (_type == CashMovementType.sortie) ...[
+              const SizedBox(height: Tokens.space16),
+              _BeneficiaryBlock(
+                type: _beneficiaryType,
+                value: _beneficiary,
+                errorText: _beneficiaryError,
+                onTypeChanged: (t) => setState(() {
+                  _beneficiaryType = t;
+                  _beneficiary = null;
+                  _beneficiaryError = null;
+                }),
+                onPick: _pickBeneficiary,
+              ),
+            ],
             const SizedBox(height: Tokens.space24),
             Text('Compte', style: theme.labelLarge),
             const SizedBox(height: Tokens.space8),
@@ -250,6 +331,11 @@ class _CashMovementSheetState extends ConsumerState<_CashMovementSheet> {
               prefixIcon: Icons.tag,
             ),
             const SizedBox(height: Tokens.space16),
+            _FilialeField(
+              value: _filiale,
+              onChanged: (v) => setState(() => _filiale = v),
+            ),
+            const SizedBox(height: Tokens.space16),
             AppTextField(
               controller: _notes,
               label: 'Notes (optionnel)',
@@ -274,6 +360,126 @@ class _CashMovementSheetState extends ConsumerState<_CashMovementSheet> {
           ],
         ),
       ),
+    );
+  }
+}
+
+/// Bloc bénéficiaire d'un décaissement : sa nature, puis qui exactement.
+///
+/// Détaché visuellement du reste, comme au web : il ne concerne que les
+/// sorties, et ce cadre évite qu'il se confonde avec les champs du mouvement.
+class _BeneficiaryBlock extends StatelessWidget {
+  const _BeneficiaryBlock({
+    required this.type,
+    required this.value,
+    required this.errorText,
+    required this.onTypeChanged,
+    required this.onPick,
+  });
+
+  final BeneficiaryType type;
+  final Beneficiary? value;
+  final String? errorText;
+  final ValueChanged<BeneficiaryType> onTypeChanged;
+  final VoidCallback onPick;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    final theme = Theme.of(context).textTheme;
+
+    return Container(
+      padding: const EdgeInsets.all(Tokens.space12),
+      decoration: BoxDecoration(
+        color: colors.background,
+        borderRadius: BorderRadius.circular(Tokens.radiusMd),
+        border: Border.all(color: colors.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text('Type de bénéficiaire', style: theme.labelLarge),
+          const SizedBox(height: Tokens.space8),
+          DropdownButtonFormField<BeneficiaryType>(
+            initialValue: type,
+            isExpanded: true,
+            decoration: const InputDecoration(border: OutlineInputBorder()),
+            items: [
+              for (final t in BeneficiaryType.values)
+                DropdownMenuItem(
+                  value: t,
+                  child: Text(t.label, overflow: TextOverflow.ellipsis),
+                ),
+            ],
+            onChanged: (t) => t == null ? null : onTypeChanged(t),
+          ),
+          if (type.picksFromDatabase) ...[
+            const SizedBox(height: Tokens.space12),
+            Text('Bénéficiaire', style: theme.labelLarge),
+            const SizedBox(height: Tokens.space8),
+            OutlinedButton.icon(
+              onPressed: onPick,
+              icon: const Icon(Icons.search),
+              label: Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  value?.label ?? 'Sélectionner dans la base',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              style: OutlinedButton.styleFrom(
+                minimumSize: const Size.fromHeight(52),
+                alignment: Alignment.centerLeft,
+                side: BorderSide(
+                  color: errorText == null ? colors.border : colors.danger,
+                ),
+              ),
+            ),
+            if (errorText != null) ...[
+              const SizedBox(height: Tokens.space4),
+              Text(
+                errorText!,
+                style: theme.bodySmall?.copyWith(color: colors.danger),
+              ),
+            ],
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+/// Filiale concernée, prise dans les listes de référence de l'organisation.
+/// Absente ou vide, le champ ne s'affiche pas : rien à choisir.
+class _FilialeField extends ConsumerWidget {
+  const _FilialeField({required this.value, required this.onChanged});
+
+  final String? value;
+  final ValueChanged<String?> onChanged;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final filiales = ref.watch(filialesProvider).valueOrNull ?? const <String>[];
+    if (filiales.isEmpty) return const SizedBox.shrink();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text('Filiale (optionnel)', style: Theme.of(context).textTheme.labelLarge),
+        const SizedBox(height: Tokens.space8),
+        DropdownButtonFormField<String?>(
+          initialValue: value,
+          isExpanded: true,
+          decoration: const InputDecoration(border: OutlineInputBorder()),
+          items: [
+            const DropdownMenuItem<String?>(child: Text('Toutes')),
+            for (final f in filiales)
+              DropdownMenuItem<String?>(value: f, child: Text(f)),
+          ],
+          onChanged: onChanged,
+        ),
+      ],
     );
   }
 }

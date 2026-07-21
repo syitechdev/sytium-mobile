@@ -27,6 +27,8 @@ class CashRemoteDataSource {
         'libelle': input.libelle,
         if (input.reference != null && input.reference!.isNotEmpty)
           'reference': input.reference,
+        if (input.filiale != null && input.filiale!.isNotEmpty)
+          'filiale': input.filiale,
         if (input.notes != null && input.notes!.isNotEmpty) 'notes': input.notes,
         if (input.dateMouvement != null) 'date_mouvement': input.dateMouvement,
         'proof_path': input.proof.path,

@@ -7,6 +7,7 @@ import 'package:sytium_mobile/core/upload/upload_providers.dart';
 import 'package:sytium_mobile/core/upload/upload_repository.dart';
 import 'package:sytium_mobile/core/upload/uploaded_file.dart';
 import 'package:sytium_mobile/features/cash/application/cash_providers.dart';
+import 'package:sytium_mobile/features/cash/domain/beneficiary.dart';
 import 'package:sytium_mobile/features/cash/domain/cash_models.dart';
 import 'package:sytium_mobile/features/cash/domain/cash_repository.dart';
 import 'package:sytium_mobile/features/cash/presentation/cash_movement_sheet.dart';
@@ -73,10 +74,17 @@ class _FakeUpload implements UploadRepository {
   }
 }
 
+const _kFournisseur = Beneficiary(
+  id: 'f1',
+  label: 'Papeterie du Plateau',
+  detail: '+225 07 00 00 00',
+);
+
 Future<void> _pump(
   WidgetTester tester, {
   required CashRepository cash,
   UploadRepository? upload,
+  List<Beneficiary> beneficiaries = const [_kFournisseur],
 }) async {
   // Le formulaire est long : sur la surface par défaut (600 px) le bouton
   // d'envoi tombe hors du viewport et le tap n'atteint rien.
@@ -89,6 +97,11 @@ Future<void> _pump(
       overrides: [
         cashRepositoryProvider.overrideWithValue(cash),
         uploadRepositoryProvider.overrideWithValue(upload ?? _FakeUpload()),
+        // Ces deux-là passent par le réseau : hors appareil, on les fournit.
+        filialesProvider.overrideWith((ref) async => const <String>[]),
+        beneficiariesProvider(
+          BeneficiaryType.fournisseur,
+        ).overrideWith((ref) async => beneficiaries),
       ],
       child: MaterialApp(
         theme: AppTheme.light(),
@@ -107,17 +120,47 @@ Future<void> _pump(
   await tester.pumpAndSettle();
 }
 
+/// Le formulaire dépasse la hauteur du banc : sans ce défilement, le tap
+/// tomberait hors du viewport et ne déclencherait rien.
 Future<void> _tapSubmit(WidgetTester tester) async {
+  await tester.scrollUntilVisible(
+    find.text('Enregistrer'),
+    200,
+    scrollable: find.byType(Scrollable).first,
+  );
+  await tester.pumpAndSettle();
   await tester.tap(find.text('Enregistrer'));
+  await tester.pumpAndSettle();
+}
+
+Future<void> _selectAccount(WidgetTester tester) async {
+  await tester.tap(find.byType(DropdownButtonFormField<CashAccount>));
+  await tester.pumpAndSettle();
+  await tester.tap(find.text('Caisse principale · 500 000 FCFA').last);
+  await tester.pumpAndSettle();
+}
+
+/// Le sélecteur de fichier touche la plateforme : on injecte le résultat.
+Future<void> _pickProof(WidgetTester tester) async {
+  tester
+      .widget<PaymentProofField>(find.byType(PaymentProofField))
+      .onChanged(const PickedProof(path: '/tmp/recu.pdf', name: 'recu.pdf'));
+  await tester.pumpAndSettle();
+}
+
+Future<void> _chooseBeneficiaryType(
+  WidgetTester tester,
+  BeneficiaryType type,
+) async {
+  await tester.tap(find.byType(DropdownButtonFormField<BeneficiaryType>));
+  await tester.pumpAndSettle();
+  await tester.tap(find.text(type.label).last);
   await tester.pumpAndSettle();
 }
 
 /// Renseigne le strict nécessaire hors justificatif.
 Future<void> _fillMinimum(WidgetTester tester) async {
-  await tester.tap(find.byType(DropdownButtonFormField<CashAccount>));
-  await tester.pumpAndSettle();
-  await tester.tap(find.text('Caisse principale · 500 000 FCFA').last);
-  await tester.pumpAndSettle();
+  await _selectAccount(tester);
 
   await tester.enterText(find.widgetWithText(TextField, 'Ex : 250 000'), '25000');
   await tester.enterText(
@@ -180,5 +223,86 @@ void main() {
 
     expect(cash.sent, isNull);
     expect(find.textContaining('justificatif'), findsWidgets);
+  });
+
+  testWidgets('un encaissement n’a pas de bénéficiaire', (tester) async {
+    await _pump(tester, cash: _FakeCashRepo());
+
+    // Le bloc ne concerne que les sorties : l'afficher pour une entrée
+    // suggérerait qu'on encaisse « de la part de » quelqu'un.
+    expect(find.text('Type de bénéficiaire'), findsNothing);
+
+    await tester.tap(find.text('Décaissement'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Type de bénéficiaire'), findsOneWidget);
+  });
+
+  testWidgets('un décaissement nommé exige de choisir dans la base', (
+    tester,
+  ) async {
+    final cash = _FakeCashRepo();
+    await _pump(tester, cash: cash);
+    await _fillMinimum(tester);
+    await _pickProof(tester);
+
+    await tester.tap(find.text('Décaissement'));
+    await tester.pumpAndSettle();
+    await _chooseBeneficiaryType(tester, BeneficiaryType.fournisseur);
+
+    await _tapSubmit(tester);
+
+    expect(find.text('Sélectionnez le bénéficiaire dans la base.'), findsOneWidget);
+    expect(cash.sent, isNull);
+  });
+
+  testWidgets('le bénéficiaire choisi préfixe le libellé et part en notes', (
+    tester,
+  ) async {
+    final cash = _FakeCashRepo();
+    await _pump(tester, cash: cash);
+    await _pickProof(tester);
+    await _selectAccount(tester);
+    await tester.enterText(
+      find.widgetWithText(TextField, 'Ex : 250 000'),
+      '25000',
+    );
+
+    await tester.tap(find.text('Décaissement'));
+    await tester.pumpAndSettle();
+    await _chooseBeneficiaryType(tester, BeneficiaryType.fournisseur);
+
+    await tester.tap(find.text('Sélectionner dans la base'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Papeterie du Plateau').last);
+    await tester.pumpAndSettle();
+
+    await _tapSubmit(tester);
+
+    // Le libellé était vide : il reprend la nature puis le nom, comme au web.
+    expect(cash.sent!.libelle, 'Fournisseur — Papeterie du Plateau');
+    // Aucune colonne ne stocke le bénéficiaire : les notes en gardent la trace.
+    expect(cash.sent!.notes, contains('Bénéficiaire : Fournisseur'));
+    expect(cash.sent!.notes, contains('Papeterie du Plateau'));
+  });
+
+  testWidgets('un libellé déjà saisi n’est pas écrasé', (tester) async {
+    final cash = _FakeCashRepo();
+    await _pump(tester, cash: cash);
+    await _fillMinimum(tester);
+    await _pickProof(tester);
+
+    await tester.tap(find.text('Décaissement'));
+    await tester.pumpAndSettle();
+    await _chooseBeneficiaryType(tester, BeneficiaryType.fournisseur);
+
+    await tester.tap(find.text('Sélectionner dans la base'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Papeterie du Plateau').last);
+    await tester.pumpAndSettle();
+
+    await _tapSubmit(tester);
+
+    expect(cash.sent!.libelle, 'Achat fournitures');
   });
 }

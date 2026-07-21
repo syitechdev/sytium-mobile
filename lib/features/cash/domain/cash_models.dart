@@ -43,6 +43,7 @@ class CashMovementInput {
     required this.libelle,
     required this.proof,
     this.reference,
+    this.filiale,
     this.notes,
     this.dateMouvement,
   });
@@ -56,6 +57,7 @@ class CashMovementInput {
   final UploadedFile proof;
 
   final String? reference;
+  final String? filiale;
   final String? notes;
 
   /// `YYYY-MM-DD`; null → server uses today.
