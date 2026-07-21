@@ -9,6 +9,7 @@ import 'package:intl/intl.dart';
 import 'package:sytium_mobile/features/auth/application/auth_controller.dart';
 import 'package:sytium_mobile/features/calls/application/call_controller.dart';
 import 'package:sytium_mobile/features/calls/domain/call_models.dart';
+import 'package:sytium_mobile/features/workspace/application/active_chat_channel.dart';
 import 'package:sytium_mobile/features/workspace/application/outgoing_messages.dart';
 import 'package:sytium_mobile/features/workspace/application/workspace_providers.dart';
 import 'package:sytium_mobile/features/workspace/domain/workspace_models.dart';
@@ -184,15 +185,24 @@ class ChatThreadScreenState extends ConsumerState<ChatThreadScreen> {
   /// Id of the newest server message already accounted for in [_newSinceScroll].
   String? _newestSeenId;
 
+  /// Captured in [initState] so [dispose] can release the active-channel flag
+  /// without touching `ref`, which is already torn down by then.
+  ActiveChatChannel? _activeChannel;
+
   String get _channelId => widget.conversation.id;
 
   @override
   void initState() {
     super.initState();
     _scroll.addListener(_onScroll);
+    _activeChannel = ref.read(activeChatChannelProvider.notifier);
     // Mark the channel read on open (purges the unread badge); refresh the
     // conversations list so the badge updates.
     WidgetsBinding.instance.addPostFrameCallback((_) async {
+      // Announce which thread is on screen so a notification for it opens
+      // nothing on top of it. Deferred to after the frame: Riverpod forbids
+      // writing to a provider from a widget life-cycle.
+      _activeChannel?.enter(_channelId);
       await ref.read(workspaceRepositoryProvider).markRead(_channelId);
       if (!mounted) return;
       ref.invalidate(conversationsProvider);
@@ -212,6 +222,13 @@ class ChatThreadScreenState extends ConsumerState<ChatThreadScreen> {
     final channel = _realtimeChannel;
     if (channel != null) {
       _realtime?.unsubscribe(channel);
+    }
+    // Same reason as [initState]: releasing the flag is a provider write, so it
+    // waits for the end of the frame rather than running inside dispose.
+    final active = _activeChannel;
+    final channelId = _channelId;
+    if (active != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => active.leave(channelId));
     }
     _poll?.cancel();
     _composer.dispose();

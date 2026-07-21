@@ -8,16 +8,22 @@ import 'package:flutter_callkit_incoming/entities/entities.dart';
 import 'package:flutter_callkit_incoming/flutter_callkit_incoming.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:sytium_mobile/app/notifications/deferred_navigator.dart';
 import 'package:sytium_mobile/app/router/app_router.dart';
 import 'package:sytium_mobile/core/notifications/callkit_service.dart';
 import 'package:sytium_mobile/core/notifications/device_identity.dart';
 import 'package:sytium_mobile/core/notifications/device_token_registrar.dart';
 import 'package:sytium_mobile/core/notifications/push_messaging_service.dart';
+import 'package:sytium_mobile/core/notifications/push_payload.dart';
 import 'package:sytium_mobile/features/auth/application/auth_providers.dart';
 import 'package:sytium_mobile/features/calls/application/call_controller.dart';
 import 'package:sytium_mobile/features/calls/domain/call_models.dart';
 import 'package:sytium_mobile/features/notifications/application/notifications_providers.dart';
 import 'package:sytium_mobile/features/notifications/presentation/notifications_screen.dart';
+import 'package:sytium_mobile/features/workspace/application/active_chat_channel.dart';
+import 'package:sytium_mobile/features/workspace/application/workspace_providers.dart';
+import 'package:sytium_mobile/features/workspace/domain/workspace_models.dart';
+import 'package:sytium_mobile/features/workspace/presentation/chat_thread_screen.dart';
 
 part 'push_notifications_coordinator.g.dart';
 
@@ -56,6 +62,10 @@ class PushNotificationsCoordinator {
   StreamSubscription<RemoteMessage>? _openedSub;
   StreamSubscription<CallEvent?>? _callkitSub;
 
+  /// Construit à la première navigation : le router n'existe pas encore quand
+  /// le coordinateur est instancié.
+  DeferredNavigator? _deferred;
+
   PushMessagingService get _service => _ref.read(pushMessagingServiceProvider);
   DeviceTokenRegistrar get _registrar =>
       _ref.read(deviceTokenRegistrarProvider);
@@ -85,6 +95,7 @@ class PushNotificationsCoordinator {
     if (!_started) return;
     _started = false;
 
+    _deferred?.cancel();
     await CallKitService.endAll();
     await _registrar.unregister(_deviceServerId);
     await _service.deleteToken();
@@ -186,20 +197,57 @@ class PushNotificationsCoordinator {
 
   // ---- Taps notification ----------------------------------------------------
 
-  /// Notification tapée : rafraîchit la liste in-app puis ouvre l'écran des
-  /// notifications. Le `route` du payload est un point d'extension pour un
-  /// deep-link ciblé quand les routes typées existeront.
+  /// Notification tapée : rafraîchit la liste in-app puis ouvre l'écran visé.
+  /// Un push de message mène à SA conversation ; tout le reste retombe sur la
+  /// liste des notifications.
   void _handleOpened(RemoteMessage message) {
     _ref.invalidate(notificationsProvider);
 
-    final navigator = _ref
-        .read(appRouterProvider)
-        .routerDelegate
-        .navigatorKey
-        .currentState;
-    navigator?.push(
-      MaterialPageRoute<void>(builder: (_) => const NotificationsScreen()),
-    );
+    switch (destinationFor(PushPayload.fromData(message.data))) {
+      case OpenConversation(:final channelId):
+        unawaited(_openConversation(channelId));
+      case OpenNotificationList():
+        _navigateWhenHome((_) => const NotificationsScreen());
+    }
+  }
+
+  /// Ouvre le fil du canal [channelId].
+  ///
+  /// `ChatThreadScreen` attend une [Conversation] complète (titre, avatar du
+  /// correspondant pour un DM) alors que le push ne porte qu'un id : on la
+  /// retrouve dans la liste des conversations, qui résout déjà le pair d'un DM.
+  /// Un push de message n'est envoyé qu'aux membres du canal, il y est donc.
+  Future<void> _openConversation(String channelId) async {
+    // Déjà sur ce fil : ne pas empiler un second écran identique.
+    if (_ref.read(activeChatChannelProvider) == channelId) return;
+
+    List<Conversation> conversations;
+    try {
+      conversations = await _ref.read(conversationsProvider.future);
+    } catch (_) {
+      // Réseau coupé au moment du tap : la liste des notifications reste utile.
+      _navigateWhenHome((_) => const NotificationsScreen());
+      return;
+    }
+
+    final match = conversations.where((c) => c.id == channelId).toList();
+    if (match.isEmpty) {
+      _navigateWhenHome((_) => const NotificationsScreen());
+      return;
+    }
+    _navigateWhenHome((_) => ChatThreadScreen(conversation: match.first));
+  }
+
+  /// Navigation différée jusqu'à l'accueil (cf. [DeferredNavigator]).
+  DeferredNavigator get _navigator =>
+      _deferred ??= DeferredNavigator(_ref.read(appRouterProvider));
+
+  void _navigateWhenHome(WidgetBuilder builder) {
+    // Déconnexion pendant la résolution de la conversation : ne rien ouvrir.
+    // Sans ce garde-fou, l'écran attendrait l'accueil et s'ouvrirait chez
+    // l'utilisateur SUIVANT.
+    if (!_started) return;
+    _navigator.push(builder);
   }
 
   Map<String, dynamic> _asMap(dynamic value) {

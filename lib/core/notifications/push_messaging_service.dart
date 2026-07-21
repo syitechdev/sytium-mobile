@@ -178,18 +178,18 @@ class PushMessagingService {
           presentSound: true,
         ),
       ),
-      // Transmet la route ciblée (si fournie) pour la navigation au tap.
-      payload: message.data['route'] as String?,
+      // Transmet TOUT le payload de données, pas seulement la route : c'est lui
+      // qui porte `type` et `channel_id`, donc la capacité d'ouvrir la bonne
+      // conversation au tap.
+      payload: encodePushData(message.data),
     );
   }
 
   void _onLocalNotificationTapped(NotificationResponse response) {
-    // Reconstruit un RemoteMessage minimal pour partager le même canal de
-    // navigation que onMessageOpenedApp.
-    final route = response.payload;
-    _openedController.add(
-      RemoteMessage(data: {if (route != null) 'route': route}),
-    );
+    // Reconstruit un RemoteMessage pour partager le même canal de navigation
+    // que onMessageOpenedApp : un tap au premier plan et un tap en arrière-plan
+    // doivent mener au même écran.
+    _openedController.add(RemoteMessage(data: decodePushData(response.payload)));
   }
 
   Future<void> dispose() async {

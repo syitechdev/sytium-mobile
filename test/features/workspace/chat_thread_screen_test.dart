@@ -10,6 +10,7 @@ import 'package:sytium_mobile/features/auth/application/auth_controller.dart';
 import 'package:sytium_mobile/features/auth/domain/auth_session.dart';
 import 'package:sytium_mobile/features/auth/domain/auth_user.dart';
 import 'package:sytium_mobile/features/auth/domain/mobile_capabilities.dart';
+import 'package:sytium_mobile/features/workspace/application/active_chat_channel.dart';
 import 'package:sytium_mobile/features/workspace/application/workspace_providers.dart';
 import 'package:sytium_mobile/features/workspace/domain/workspace_models.dart';
 import 'package:sytium_mobile/features/workspace/domain/workspace_repository.dart';
@@ -369,6 +370,39 @@ Widget _host(
 
 void main() {
   setUpAll(() async => initializeDateFormatting('fr_FR'));
+
+  testWidgets('flags its channel as the one on screen, and releases it on close',
+      (tester) async {
+    // Own the container so it outlives the screen and can still be read after
+    // the thread is torn down.
+    final container = ProviderContainer(
+      overrides: [
+        authControllerProvider.overrideWith(_FakeAuth.new),
+        workspaceRepositoryProvider.overrideWithValue(_MessagesRepo()),
+        workspaceRealtimeProvider.overrideWithValue(FakeWorkspaceRealtime()),
+      ],
+    );
+    addTearDown(container.dispose);
+
+    Widget host(Widget child) => UncontrolledProviderScope(
+          container: container,
+          child: MaterialApp(home: Theme(data: AppTheme.light(), child: child)),
+        );
+
+    await tester.pumpWidget(
+      host(const ChatThreadScreen(conversation: _kChannel, pollInterval: null)),
+    );
+    await tester.pump();
+    await tester.pump();
+
+    // A notification for this very thread must not stack a second screen.
+    expect(container.read(activeChatChannelProvider), 'c1');
+
+    // The flag is released one frame after the screen goes away.
+    await tester.pumpWidget(host(const SizedBox()));
+    await tester.pump();
+    expect(container.read(activeChatChannelProvider), isNull);
+  });
 
   testWidgets('renders mine vs others bubbles, author name, edited + deleted', (tester) async {
     await tester.pumpWidget(_host(_MessagesRepo()));
