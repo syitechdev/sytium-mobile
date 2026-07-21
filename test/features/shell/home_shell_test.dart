@@ -49,6 +49,17 @@ class _FakePointageRepo implements PointageRepository {
       const Ok([]);
 }
 
+/// Compte les appels de statut : c'est le marqueur d'un rechargement.
+class _CountingPointageRepo extends _FakePointageRepo {
+  int statusCalls = 0;
+
+  @override
+  Future<Result<PointageStatus>> status() async {
+    statusCalls++;
+    return const Err(NetworkFailure());
+  }
+}
+
 class _FakeStatsRepo implements StatsRepository {
   @override
   Future<Result<MonthlyAttendance>> attendanceSummary(String month) async =>
@@ -128,12 +139,14 @@ AuthSession _session() => const AuthSession(
       capabilities: MobileCapabilities.baseline(),
     );
 
-Future<void> _pump(WidgetTester tester) async {
+Future<void> _pump(WidgetTester tester, {PointageRepository? pointage}) async {
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
         authControllerProvider.overrideWith(_FakeAuth.new),
-        pointageRepositoryProvider.overrideWithValue(_FakePointageRepo()),
+        pointageRepositoryProvider.overrideWithValue(
+          pointage ?? _FakePointageRepo(),
+        ),
         statsRepositoryProvider.overrideWithValue(_FakeStatsRepo()),
         workspaceRepositoryProvider.overrideWithValue(_FakeWorkspaceRepo()),
       ],
@@ -161,6 +174,37 @@ void main() {
     await _pump(tester);
     expect(find.byType(HomeScreen), findsOneWidget);
     // Dispose tree so any remaining timers are cancelled cleanly.
+    await tester.pumpWidget(const SizedBox());
+  });
+
+  testWidgets('revenir sur l’accueil relance ses données', (tester) async {
+    // Les onglets restent montés pour que le retour soit instantané ; sans
+    // rappel explicite, l'accueil gardait les données du premier chargement.
+    final repo = _CountingPointageRepo();
+    await _pump(tester, pointage: repo);
+    await tester.pump();
+    expect(repo.statusCalls, 1);
+
+    await tester.tap(find.text('Stats'));
+    await tester.pump();
+    await tester.tap(find.text('Accueil'));
+    await tester.pump();
+
+    expect(repo.statusCalls, 2);
+    await tester.pumpWidget(const SizedBox());
+  });
+
+  testWidgets('quitter l’accueil ne relance rien', (tester) async {
+    final repo = _CountingPointageRepo();
+    await _pump(tester, pointage: repo);
+    await tester.pump();
+
+    await tester.tap(find.text('Explorer'));
+    await tester.pump();
+
+    // Rafraîchir en partant serait du trafic pour un écran qu'on ne regarde
+    // plus.
+    expect(repo.statusCalls, 1);
     await tester.pumpWidget(const SizedBox());
   });
 

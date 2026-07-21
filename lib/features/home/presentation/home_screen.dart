@@ -4,6 +4,7 @@ import 'package:sytium_mobile/features/auth/domain/auth_user.dart';
 import 'package:sytium_mobile/features/auth/domain/mobile_capabilities.dart';
 import 'package:sytium_mobile/features/cash/presentation/compta_caisse_view.dart';
 import 'package:sytium_mobile/features/documents/presentation/compta_docs_view.dart';
+import 'package:sytium_mobile/features/home/application/home_refresh.dart';
 import 'package:sytium_mobile/features/home/presentation/widgets/activity_ring_card.dart';
 import 'package:sytium_mobile/features/home/presentation/widgets/approvals_alert_card.dart';
 import 'package:sytium_mobile/features/home/presentation/widgets/home_ca_trend_card.dart';
@@ -76,116 +77,124 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                ProfileHeaderCard(
-                  user: widget.user,
-                  onAvatarTap: widget.onExplorer,
-                ),
-                if (showCompta) ...[
-                  const SizedBox(height: Tokens.space16),
-                  SegmentedButton<HomeTab>(
-                    showSelectedIcon: false,
-                    segments: const [
-                      ButtonSegment(
-                        value: HomeTab.stats,
-                        label: Text('Stats'),
-                        icon: Icon(Icons.insights_outlined, size: 18),
-                      ),
-                      ButtonSegment(
-                        value: HomeTab.caisse,
-                        label: Text('Caisse'),
-                        icon: Icon(Icons.point_of_sale_outlined, size: 18),
-                      ),
-                      ButtonSegment(
-                        value: HomeTab.docs,
-                        label: Text('Docs'),
-                        icon: Icon(Icons.folder_outlined, size: 18),
-                      ),
-                    ],
-                    selected: {_tab},
-                    onSelectionChanged: (s) => setState(() => _tab = s.first),
+                  ProfileHeaderCard(
+                    user: widget.user,
+                    onAvatarTap: widget.onExplorer,
                   ),
+                  if (showCompta) ...[
+                    const SizedBox(height: Tokens.space16),
+                    SegmentedButton<HomeTab>(
+                      showSelectedIcon: false,
+                      segments: const [
+                        ButtonSegment(
+                          value: HomeTab.stats,
+                          label: Text('Stats'),
+                          icon: Icon(Icons.insights_outlined, size: 18),
+                        ),
+                        ButtonSegment(
+                          value: HomeTab.caisse,
+                          label: Text('Caisse'),
+                          icon: Icon(Icons.point_of_sale_outlined, size: 18),
+                        ),
+                        ButtonSegment(
+                          value: HomeTab.docs,
+                          label: Text('Docs'),
+                          icon: Icon(Icons.folder_outlined, size: 18),
+                        ),
+                      ],
+                      selected: {_tab},
+                      onSelectionChanged: (s) => setState(() => _tab = s.first),
+                    ),
+                  ],
+                  const SizedBox(height: Tokens.space12),
                 ],
-                const SizedBox(height: Tokens.space12),
-              ],
-            ),
-          ),
-        ),
-      ],
-      body: switch (_tab) {
-        HomeTab.stats => _StatsTab(
-            capabilities: caps,
-            onPointer: widget.onPointer,
-            onStats: widget.onStats,
-          ),
-        HomeTab.caisse => const ComptaCaisseView(),
-        HomeTab.docs => const ComptaDocsView(),
-      },
-    );
-  }
-}
-
-/// The Stats pane — profile, today status, approvals, org-stats preview + CA
-/// trend, personal activity, « À faire » and quick actions.
-class _StatsTab extends ConsumerWidget {
-  const _StatsTab({
-    required this.capabilities,
-    required this.onPointer,
-    required this.onStats,
-  });
-
-  final MobileCapabilities capabilities;
-  final VoidCallback onPointer;
-  final VoidCallback onStats;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final colors = context.colors;
-    final theme = Theme.of(context).textTheme;
-
-    final statusAsync = ref.watch(pointageStatusProvider);
-    final notPointed = statusAsync.maybeWhen(
-      data: (s) => s.hasEmployee && !s.dayClosed && s.todayCount == 0,
-      orElse: () => false,
-    );
-
-    return ListView(
-      padding: const EdgeInsets.all(Tokens.space16),
-      children: [
-        const TodayStatusCard(),
-        const SizedBox(height: Tokens.space24),
-        if (capabilities.approvals) const ApprovalsAlertCard(),
-        if (capabilities.dashboard) ...[
-          StatsPreviewCard(onSeeAll: onStats),
-          const SizedBox(height: Tokens.space16),
-          const HomePulseCard(),
-          const HomeDailyRevenueCard(),
-          const SizedBox(height: Tokens.space16),
-          HomeCaTrendCard(onSeeAll: onStats),
-          const SizedBox(height: Tokens.space24),
-        ],
-        const ActivityRingCard(),
-        Text('À faire', style: theme.titleSmall),
-        const SizedBox(height: Tokens.space12),
-        if (notPointed)
-          Card(
-            child: ListTile(
-              leading: Icon(Icons.qr_code_scanner, color: colors.brand),
-              title: const Text('Pointer votre arrivée'),
-              subtitle: const Text("Vous n'avez pas encore pointé."),
-              onTap: onPointer,
-            ),
-          )
-        else
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(Tokens.space16),
-              child: Text(
-                'Rien à faire pour le moment.',
-                style: theme.bodySmall?.copyWith(color: colors.textMuted),
               ),
             ),
           ),
-      ],
+        ],
+        body: switch (_tab) {
+          HomeTab.stats => _StatsTab(
+              capabilities: caps,
+              onPointer: widget.onPointer,
+              onStats: widget.onStats,
+            ),
+          HomeTab.caisse => const ComptaCaisseView(),
+          HomeTab.docs => const ComptaDocsView(),
+        },
+      );
+    }
+  }
+
+  /// The Stats pane — profile, today status, approvals, org-stats preview + CA
+  /// trend, personal activity, « À faire » and quick actions.
+  class _StatsTab extends ConsumerWidget {
+    const _StatsTab({
+      required this.capabilities,
+      required this.onPointer,
+      required this.onStats,
+    });
+
+    final MobileCapabilities capabilities;
+    final VoidCallback onPointer;
+    final VoidCallback onStats;
+
+    @override
+    Widget build(BuildContext context, WidgetRef ref) {
+      final colors = context.colors;
+      final theme = Theme.of(context).textTheme;
+
+      final statusAsync = ref.watch(pointageStatusProvider);
+      final notPointed = statusAsync.maybeWhen(
+        data: (s) => s.hasEmployee && !s.dayClosed && s.todayCount == 0,
+        orElse: () => false,
+      );
+
+      // Tirer pour rafraîchir : les volets Caisse et Docs ont déjà le leur, le
+      // volet Stats restait la seule zone qu'on ne pouvait pas recharger à la
+      // main.
+      return RefreshIndicator(
+        onRefresh: () => refreshHomeAndWait(ref),
+        child: ListView(
+          padding: const EdgeInsets.all(Tokens.space16),
+          // Le geste doit partir même quand le contenu tient dans l'écran.
+          physics: const AlwaysScrollableScrollPhysics(),
+          children: [
+          const TodayStatusCard(),
+          const SizedBox(height: Tokens.space24),
+          if (capabilities.approvals) const ApprovalsAlertCard(),
+          if (capabilities.dashboard) ...[
+            StatsPreviewCard(onSeeAll: onStats),
+            const SizedBox(height: Tokens.space16),
+            const HomePulseCard(),
+            const HomeDailyRevenueCard(),
+            const SizedBox(height: Tokens.space16),
+            HomeCaTrendCard(onSeeAll: onStats),
+            const SizedBox(height: Tokens.space24),
+          ],
+          const ActivityRingCard(),
+          Text('À faire', style: theme.titleSmall),
+          const SizedBox(height: Tokens.space12),
+          if (notPointed)
+            Card(
+              child: ListTile(
+                leading: Icon(Icons.qr_code_scanner, color: colors.brand),
+                title: const Text('Pointer votre arrivée'),
+                subtitle: const Text("Vous n'avez pas encore pointé."),
+                onTap: onPointer,
+              ),
+            )
+          else
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(Tokens.space16),
+                child: Text(
+                  'Rien à faire pour le moment.',
+                  style: theme.bodySmall?.copyWith(color: colors.textMuted),
+                ),
+              ),
+            ),
+        ],
+      ),
     );
   }
 }

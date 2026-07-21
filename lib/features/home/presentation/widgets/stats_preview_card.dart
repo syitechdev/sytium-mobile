@@ -50,13 +50,20 @@ class StatsPreviewCard extends ConsumerWidget {
             message: 'Stats indisponibles.',
             onRetry: () => ref.invalidate(dashboardProvider(_kPreviewPeriod)),
           ),
-          data: (k) => Column(
-            children: [
-              _PreviewGrid(kpis: k),
-              const SizedBox(height: Tokens.space12),
-              PresenceStrip(presence: k.presence),
-            ],
-          ),
+          data: (k) {
+            final presence = k.presence;
+            return Column(
+              children: [
+                _PreviewGrid(kpis: k),
+                // Bloc absent de la reponse : on n'affiche rien plutot que
+                // d'annoncer un effectif nul qui serait faux.
+                if (presence != null) ...[
+                  const SizedBox(height: Tokens.space12),
+                  PresenceStrip(presence: presence),
+                ],
+              ],
+            );
+          },
         ),
       ],
     );

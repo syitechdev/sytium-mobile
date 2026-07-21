@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:sytium_mobile/core/error/failure.dart';
 import 'package:sytium_mobile/core/result/result.dart';
 import 'package:sytium_mobile/core/utils/money.dart';
+import 'package:sytium_mobile/features/home/presentation/widgets/presence_strip.dart';
 import 'package:sytium_mobile/features/home/presentation/widgets/stats_preview_card.dart';
 import 'package:sytium_mobile/features/stats/application/stats_providers.dart';
 import 'package:sytium_mobile/features/stats/domain/dashboard_models.dart';
@@ -132,13 +133,37 @@ void main() {
   ) async {
     await tester.pumpWidget(
       _host(
-        const _OkRepo(DashboardKpis(period: 'annee', periodLabel: 'Année')),
+        const _OkRepo(
+          DashboardKpis(
+            period: 'annee',
+            periodLabel: 'Année',
+            presence: PresenceSnapshot(),
+          ),
+        ),
       ),
     );
     await tester.pump();
 
     expect(find.text('Aucun employé actif.'), findsOneWidget);
     expect(find.text('Présents'), findsNothing);
+  });
+
+  testWidgets('un serveur qui n’envoie pas la présence n’affiche rien', (
+    tester,
+  ) async {
+    // Un backend anterieur ne renvoie pas le bloc. Le rendre par defaut a zero
+    // afficherait « Aucun employe actif. » — une affirmation fausse.
+    await tester.pumpWidget(
+      _host(
+        const _OkRepo(DashboardKpis(period: 'annee', periodLabel: 'Année')),
+      ),
+    );
+    await tester.pump();
+
+    expect(find.byType(PresenceStrip), findsNothing);
+    expect(find.text('Aucun employé actif.'), findsNothing);
+    // Les KPI, eux, restent affiches.
+    expect(find.byType(KpiCard), findsNWidgets(2));
   });
 
   testWidgets('tapping "Voir tout" calls onSeeAll', (tester) async {

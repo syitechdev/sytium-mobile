@@ -48,7 +48,7 @@ class DashboardKpis {
     this.dettesSalaires = 0,
     this.masseSalarialeNet = 0,
     this.effectifActif = 0,
-    this.presence = const PresenceSnapshot(),
+    this.presence,
     this.deltaCaGlobal,
     this.deltaRecettes,
     this.deltaCharges,
@@ -66,7 +66,9 @@ class DashboardKpis {
   final num dettesSalaires;
   final num masseSalarialeNet;
   final int effectifActif;
-  final PresenceSnapshot presence;
+  /// Nul quand le serveur ne renvoie pas le bloc : un backend anterieur ne doit
+  /// pas se lire comme une organisation sans employe.
+  final PresenceSnapshot? presence;
 
   /// Period-over-period % change (null = no comparable base → hide the trend).
   final num? deltaCaGlobal;

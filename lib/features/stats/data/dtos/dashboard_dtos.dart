@@ -39,7 +39,7 @@ class DashboardKpisDto with _$DashboardKpisDto {
     @JsonKey(name: 'period_label') @Default('') String periodLabel,
     @Default(DashboardKpiValuesDto()) DashboardKpiValuesDto kpis,
     @Default(DashboardKpiDeltasDto()) DashboardKpiDeltasDto deltas,
-    @Default(PresenceSnapshotDto()) PresenceSnapshotDto presence,
+    PresenceSnapshotDto? presence,
   }) = _DashboardKpisDto;
 
   factory DashboardKpisDto.fromJson(Map<String, dynamic> json) =>

@@ -26,7 +26,7 @@ mixin _$DashboardKpisDto {
   String get periodLabel => throw _privateConstructorUsedError;
   DashboardKpiValuesDto get kpis => throw _privateConstructorUsedError;
   DashboardKpiDeltasDto get deltas => throw _privateConstructorUsedError;
-  PresenceSnapshotDto get presence => throw _privateConstructorUsedError;
+  PresenceSnapshotDto? get presence => throw _privateConstructorUsedError;
 
   /// Serializes this DashboardKpisDto to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -50,12 +50,12 @@ abstract class $DashboardKpisDtoCopyWith<$Res> {
     @JsonKey(name: 'period_label') String periodLabel,
     DashboardKpiValuesDto kpis,
     DashboardKpiDeltasDto deltas,
-    PresenceSnapshotDto presence,
+    PresenceSnapshotDto? presence,
   });
 
   $DashboardKpiValuesDtoCopyWith<$Res> get kpis;
   $DashboardKpiDeltasDtoCopyWith<$Res> get deltas;
-  $PresenceSnapshotDtoCopyWith<$Res> get presence;
+  $PresenceSnapshotDtoCopyWith<$Res>? get presence;
 }
 
 /// @nodoc
@@ -77,7 +77,7 @@ class _$DashboardKpisDtoCopyWithImpl<$Res, $Val extends DashboardKpisDto>
     Object? periodLabel = null,
     Object? kpis = null,
     Object? deltas = null,
-    Object? presence = null,
+    Object? presence = freezed,
   }) {
     return _then(
       _value.copyWith(
@@ -97,10 +97,10 @@ class _$DashboardKpisDtoCopyWithImpl<$Res, $Val extends DashboardKpisDto>
                 ? _value.deltas
                 : deltas // ignore: cast_nullable_to_non_nullable
                       as DashboardKpiDeltasDto,
-            presence: null == presence
+            presence: freezed == presence
                 ? _value.presence
                 : presence // ignore: cast_nullable_to_non_nullable
-                      as PresenceSnapshotDto,
+                      as PresenceSnapshotDto?,
           )
           as $Val,
     );
@@ -130,8 +130,12 @@ class _$DashboardKpisDtoCopyWithImpl<$Res, $Val extends DashboardKpisDto>
   /// with the given fields replaced by the non-null parameter values.
   @override
   @pragma('vm:prefer-inline')
-  $PresenceSnapshotDtoCopyWith<$Res> get presence {
-    return $PresenceSnapshotDtoCopyWith<$Res>(_value.presence, (value) {
+  $PresenceSnapshotDtoCopyWith<$Res>? get presence {
+    if (_value.presence == null) {
+      return null;
+    }
+
+    return $PresenceSnapshotDtoCopyWith<$Res>(_value.presence!, (value) {
       return _then(_value.copyWith(presence: value) as $Val);
     });
   }
@@ -151,7 +155,7 @@ abstract class _$$DashboardKpisDtoImplCopyWith<$Res>
     @JsonKey(name: 'period_label') String periodLabel,
     DashboardKpiValuesDto kpis,
     DashboardKpiDeltasDto deltas,
-    PresenceSnapshotDto presence,
+    PresenceSnapshotDto? presence,
   });
 
   @override
@@ -159,7 +163,7 @@ abstract class _$$DashboardKpisDtoImplCopyWith<$Res>
   @override
   $DashboardKpiDeltasDtoCopyWith<$Res> get deltas;
   @override
-  $PresenceSnapshotDtoCopyWith<$Res> get presence;
+  $PresenceSnapshotDtoCopyWith<$Res>? get presence;
 }
 
 /// @nodoc
@@ -180,7 +184,7 @@ class __$$DashboardKpisDtoImplCopyWithImpl<$Res>
     Object? periodLabel = null,
     Object? kpis = null,
     Object? deltas = null,
-    Object? presence = null,
+    Object? presence = freezed,
   }) {
     return _then(
       _$DashboardKpisDtoImpl(
@@ -200,10 +204,10 @@ class __$$DashboardKpisDtoImplCopyWithImpl<$Res>
             ? _value.deltas
             : deltas // ignore: cast_nullable_to_non_nullable
                   as DashboardKpiDeltasDto,
-        presence: null == presence
+        presence: freezed == presence
             ? _value.presence
             : presence // ignore: cast_nullable_to_non_nullable
-                  as PresenceSnapshotDto,
+                  as PresenceSnapshotDto?,
       ),
     );
   }
@@ -217,7 +221,7 @@ class _$DashboardKpisDtoImpl implements _DashboardKpisDto {
     @JsonKey(name: 'period_label') this.periodLabel = '',
     this.kpis = const DashboardKpiValuesDto(),
     this.deltas = const DashboardKpiDeltasDto(),
-    this.presence = const PresenceSnapshotDto(),
+    this.presence,
   });
 
   factory _$DashboardKpisDtoImpl.fromJson(Map<String, dynamic> json) =>
@@ -236,8 +240,7 @@ class _$DashboardKpisDtoImpl implements _DashboardKpisDto {
   @JsonKey()
   final DashboardKpiDeltasDto deltas;
   @override
-  @JsonKey()
-  final PresenceSnapshotDto presence;
+  final PresenceSnapshotDto? presence;
 
   @override
   String toString() {
@@ -286,7 +289,7 @@ abstract class _DashboardKpisDto implements DashboardKpisDto {
     @JsonKey(name: 'period_label') final String periodLabel,
     final DashboardKpiValuesDto kpis,
     final DashboardKpiDeltasDto deltas,
-    final PresenceSnapshotDto presence,
+    final PresenceSnapshotDto? presence,
   }) = _$DashboardKpisDtoImpl;
 
   factory _DashboardKpisDto.fromJson(Map<String, dynamic> json) =
@@ -302,7 +305,7 @@ abstract class _DashboardKpisDto implements DashboardKpisDto {
   @override
   DashboardKpiDeltasDto get deltas;
   @override
-  PresenceSnapshotDto get presence;
+  PresenceSnapshotDto? get presence;
 
   /// Create a copy of DashboardKpisDto
   /// with the given fields replaced by the non-null parameter values.

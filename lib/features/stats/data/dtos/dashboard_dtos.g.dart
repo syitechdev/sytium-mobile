@@ -18,7 +18,7 @@ _$DashboardKpisDtoImpl _$$DashboardKpisDtoImplFromJson(
       ? const DashboardKpiDeltasDto()
       : DashboardKpiDeltasDto.fromJson(json['deltas'] as Map<String, dynamic>),
   presence: json['presence'] == null
-      ? const PresenceSnapshotDto()
+      ? null
       : PresenceSnapshotDto.fromJson(json['presence'] as Map<String, dynamic>),
 );
 

@@ -4,6 +4,7 @@ import 'package:sytium_mobile/features/auth/application/auth_controller.dart';
 import 'package:sytium_mobile/features/auth/domain/auth_user.dart';
 import 'package:sytium_mobile/features/auth/domain/mobile_capabilities.dart';
 import 'package:sytium_mobile/features/explorer/presentation/explorer_screen.dart';
+import 'package:sytium_mobile/features/home/application/home_refresh.dart';
 import 'package:sytium_mobile/features/home/presentation/home_screen.dart';
 import 'package:sytium_mobile/features/notifications/presentation/widgets/notification_bell.dart';
 import 'package:sytium_mobile/features/pointage/presentation/pointer_screen.dart';
@@ -28,6 +29,9 @@ class HomeShell extends ConsumerStatefulWidget {
   @override
   ConsumerState<HomeShell> createState() => _HomeShellState();
 }
+
+/// Rang de l'accueil dans la barre de navigation.
+const _kHomeTab = 0;
 
 class _HomeShellState extends ConsumerState<HomeShell> {
   int _index = 0;
@@ -62,6 +66,22 @@ class _HomeShellState extends ConsumerState<HomeShell> {
       label: 'Explorer',
     ),
   ];
+
+  /// Ouvre un onglet et, pour l'accueil, relance ses données en arrière-plan.
+  ///
+  /// Les onglets restent montés (IndexedStack) pour que le retour soit
+  /// instantané ; sans ce rappel, l'accueil affichait indéfiniment l'état du
+  /// premier chargement — pointage de la veille, demandes déjà traitées.
+  void _openTab(int i) {
+    final revisitingHome = i == _kHomeTab && _visited.contains(_kHomeTab);
+
+    setState(() {
+      _index = i;
+      _visited.add(i);
+    });
+
+    if (revisitingHome) refreshHome(ref);
+  }
 
   Widget _tabBody(int i, AuthUser? user, MobileCapabilities caps) => switch (i) {
     0 => HomeScreen(
@@ -131,10 +151,7 @@ class _HomeShellState extends ConsumerState<HomeShell> {
       bottomNavigationBar: AppBottomNav(
         items: navItems,
         currentIndex: _index,
-        onTap: (i) => setState(() {
-          _index = i;
-          _visited.add(i);
-        }),
+        onTap: _openTab,
         onCenterTap: () => openQuickActions(context, capabilities: caps),
       ),
     );
