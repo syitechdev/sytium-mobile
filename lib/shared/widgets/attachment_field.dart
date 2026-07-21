@@ -6,8 +6,12 @@ import 'package:sytium_mobile/theme/tokens.dart';
 
 /// Fichier choisi par l'employé, avant tout envoi au serveur.
 @immutable
-class PickedProof {
-  const PickedProof({required this.path, required this.name, this.mime});
+class PickedAttachment {
+  const PickedAttachment({
+    required this.path,
+    required this.name,
+    this.mime,
+  });
 
   final String path;
   final String name;
@@ -16,22 +20,30 @@ class PickedProof {
   final String? mime;
 }
 
-/// Champ « preuve de paiement » : prise de vue, photothèque ou fichier.
+/// Champ de pièce jointe : prise de vue, photothèque ou fichier.
 ///
-/// Le justificatif est exigé par le serveur, comme au web — un décaissement
-/// sans pièce n'est pas recevable. Le champ le dit avant l'envoi plutôt que de
-/// laisser l'employé découvrir le refus après coup.
-class PaymentProofField extends StatelessWidget {
-  const PaymentProofField({
+/// Sert partout où le serveur attend un document scanné ou photographié —
+/// justificatif de paiement, preuve de validation. Il dit ce qui manque avant
+/// l'envoi plutôt que de laisser découvrir le refus après coup.
+class AttachmentField extends StatelessWidget {
+  const AttachmentField({
     required this.value,
     required this.onChanged,
+    this.label = 'Pièce jointe',
+    this.actionLabel = 'Joindre un fichier',
     this.errorText,
+    this.allowedExtensions = const ['jpg', 'jpeg', 'png', 'webp', 'pdf'],
     super.key,
   });
 
-  final PickedProof? value;
-  final ValueChanged<PickedProof?> onChanged;
+  final PickedAttachment? value;
+  final ValueChanged<PickedAttachment?> onChanged;
+  final String label;
+  final String actionLabel;
   final String? errorText;
+
+  /// Extensions proposées au sélecteur de fichiers ; le serveur tranche.
+  final List<String> allowedExtensions;
 
   Future<void> _pick(BuildContext context) async {
     final source = await showModalBottomSheet<_ProofSource>(
@@ -55,17 +67,21 @@ class PaymentProofField extends StatelessWidget {
         );
         if (shot != null) {
           onChanged(
-            PickedProof(path: shot.path, name: shot.name, mime: shot.mimeType),
+            PickedAttachment(
+              path: shot.path,
+              name: shot.name,
+              mime: shot.mimeType,
+            ),
           );
         }
       case _ProofSource.file:
         final picked = await FilePicker.platform.pickFiles(
           type: FileType.custom,
-          allowedExtensions: const ['jpg', 'jpeg', 'png', 'webp', 'pdf'],
+          allowedExtensions: allowedExtensions,
         );
         final file = picked?.files.singleOrNull;
         if (file?.path != null) {
-          onChanged(PickedProof(path: file!.path!, name: file.name));
+          onChanged(PickedAttachment(path: file!.path!, name: file.name));
         }
     }
   }
@@ -79,13 +95,13 @@ class PaymentProofField extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Text('Preuve de paiement', style: theme.labelLarge),
+        Text(label, style: theme.labelLarge),
         const SizedBox(height: Tokens.space8),
         if (proof == null)
           OutlinedButton.icon(
             onPressed: () => _pick(context),
             icon: const Icon(Icons.attach_file),
-            label: const Text('Joindre un justificatif'),
+            label: Text(actionLabel),
             style: OutlinedButton.styleFrom(
               minimumSize: const Size.fromHeight(52),
               side: BorderSide(
@@ -116,7 +132,7 @@ class PaymentProofField extends StatelessWidget {
                 IconButton(
                   onPressed: () => onChanged(null),
                   icon: const Icon(Icons.close),
-                  tooltip: 'Retirer le justificatif',
+                  tooltip: 'Retirer la pièce jointe',
                 ),
               ],
             ),
@@ -146,7 +162,7 @@ class _SourceSheet extends StatelessWidget {
         children: [
           ListTile(
             leading: const Icon(Icons.photo_camera_outlined),
-            title: const Text('Photographier le reçu'),
+            title: const Text('Photographier le document'),
             onTap: () => Navigator.of(context).pop(_ProofSource.camera),
           ),
           ListTile(

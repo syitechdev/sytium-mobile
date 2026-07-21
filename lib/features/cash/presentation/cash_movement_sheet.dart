@@ -9,11 +9,11 @@ import 'package:sytium_mobile/core/utils/money.dart';
 import 'package:sytium_mobile/features/cash/application/cash_providers.dart';
 import 'package:sytium_mobile/features/cash/domain/beneficiary.dart';
 import 'package:sytium_mobile/features/cash/domain/cash_models.dart';
-import 'package:sytium_mobile/features/cash/presentation/widgets/payment_proof_field.dart';
 import 'package:sytium_mobile/features/finance/application/finance_providers.dart';
 import 'package:sytium_mobile/shared/widgets/app_primary_button.dart';
 import 'package:sytium_mobile/shared/widgets/app_sheet.dart';
 import 'package:sytium_mobile/shared/widgets/app_text_field.dart';
+import 'package:sytium_mobile/shared/widgets/attachment_field.dart';
 import 'package:sytium_mobile/shared/widgets/error_state.dart';
 import 'package:sytium_mobile/shared/widgets/search_picker_sheet.dart';
 import 'package:sytium_mobile/theme/sytium_colors.dart';
@@ -44,7 +44,7 @@ class _CashMovementSheetState extends ConsumerState<_CashMovementSheet> {
   CashMovementType _type = CashMovementType.entree;
   CashAccount? _account;
   DateTime _date = DateTime.now();
-  PickedProof? _proof;
+  PickedAttachment? _proof;
   BeneficiaryType _beneficiaryType = BeneficiaryType.autre;
   Beneficiary? _beneficiary;
   String? _filiale;
@@ -343,7 +343,9 @@ class _CashMovementSheetState extends ConsumerState<_CashMovementSheet> {
               maxLines: 2,
             ),
             const SizedBox(height: Tokens.space16),
-            PaymentProofField(
+            AttachmentField(
+              label: 'Preuve de paiement',
+              actionLabel: 'Joindre un justificatif',
               value: _proof,
               errorText: _proofError,
               onChanged: (p) => setState(() {

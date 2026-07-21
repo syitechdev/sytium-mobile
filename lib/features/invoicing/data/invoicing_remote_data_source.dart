@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:sytium_mobile/core/upload/uploaded_file.dart';
 import 'package:sytium_mobile/features/invoicing/data/dtos/proforma_dtos.dart';
 import 'package:sytium_mobile/features/invoicing/domain/invoicing_models.dart';
 
@@ -73,6 +74,25 @@ class InvoicingRemoteDataSource {
                 'reference': it.reference,
             },
         ],
+      },
+    );
+  }
+
+  Future<void> acceptProforma(
+    String id, {
+    String? note,
+    UploadedFile? attachment,
+  }) async {
+    await _dio.patch<Map<String, dynamic>>(
+      '/proforma-invoices/$id',
+      data: {
+        'statut': 'accepte',
+        if (note != null && note.isNotEmpty) 'validation_note': note,
+        if (attachment != null) ...{
+          'validation_attachment_path': attachment.path,
+          'validation_attachment_name': attachment.name,
+          'validation_attachment_mime': attachment.mime,
+        },
       },
     );
   }

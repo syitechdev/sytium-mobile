@@ -27,7 +27,10 @@ class UploadedFile {
 /// d'extensions et de taille, et le serveur refuse un bucket inconnu.
 enum UploadBucket {
   /// Justificatifs de paiement : jpg, png, webp, pdf, 10 Mo maximum.
-  paymentProofs('payment-proofs');
+  paymentProofs('payment-proofs'),
+
+  /// Preuves de validation d'une proforma : images, pdf et bureautique.
+  proformaValidations('proforma-validations');
 
   const UploadBucket(this.wire);
 

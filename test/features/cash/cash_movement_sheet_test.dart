@@ -11,7 +11,7 @@ import 'package:sytium_mobile/features/cash/domain/beneficiary.dart';
 import 'package:sytium_mobile/features/cash/domain/cash_models.dart';
 import 'package:sytium_mobile/features/cash/domain/cash_repository.dart';
 import 'package:sytium_mobile/features/cash/presentation/cash_movement_sheet.dart';
-import 'package:sytium_mobile/features/cash/presentation/widgets/payment_proof_field.dart';
+import 'package:sytium_mobile/shared/widgets/attachment_field.dart';
 import 'package:sytium_mobile/theme/theme.dart';
 
 const _kAccount = CashAccount(
@@ -143,8 +143,8 @@ Future<void> _selectAccount(WidgetTester tester) async {
 /// Le sélecteur de fichier touche la plateforme : on injecte le résultat.
 Future<void> _pickProof(WidgetTester tester) async {
   tester
-      .widget<PaymentProofField>(find.byType(PaymentProofField))
-      .onChanged(const PickedProof(path: '/tmp/recu.pdf', name: 'recu.pdf'));
+      .widget<AttachmentField>(find.byType(AttachmentField))
+      .onChanged(const PickedAttachment(path: '/tmp/recu.pdf', name: 'recu.pdf'));
   await tester.pumpAndSettle();
 }
 
@@ -192,8 +192,8 @@ void main() {
 
     // Le sélecteur de fichier touche la plateforme : on injecte le résultat.
     tester
-        .widget<PaymentProofField>(find.byType(PaymentProofField))
-        .onChanged(const PickedProof(path: '/tmp/recu.pdf', name: 'recu.pdf'));
+        .widget<AttachmentField>(find.byType(AttachmentField))
+        .onChanged(const PickedAttachment(path: '/tmp/recu.pdf', name: 'recu.pdf'));
     await tester.pumpAndSettle();
 
     await _tapSubmit(tester);
@@ -215,8 +215,8 @@ void main() {
     await _fillMinimum(tester);
 
     tester
-        .widget<PaymentProofField>(find.byType(PaymentProofField))
-        .onChanged(const PickedProof(path: '/tmp/recu.pdf', name: 'recu.pdf'));
+        .widget<AttachmentField>(find.byType(AttachmentField))
+        .onChanged(const PickedAttachment(path: '/tmp/recu.pdf', name: 'recu.pdf'));
     await tester.pumpAndSettle();
 
     await _tapSubmit(tester);

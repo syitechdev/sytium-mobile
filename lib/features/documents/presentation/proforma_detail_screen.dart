@@ -5,6 +5,7 @@ import 'package:sytium_mobile/core/utils/money.dart';
 import 'package:sytium_mobile/features/documents/application/documents_providers.dart';
 import 'package:sytium_mobile/features/documents/domain/document_models.dart';
 import 'package:sytium_mobile/features/documents/presentation/widgets/detail_blocks.dart';
+import 'package:sytium_mobile/features/invoicing/presentation/accept_proforma_sheet.dart';
 import 'package:sytium_mobile/features/invoicing/presentation/sales_doc_form_sheet.dart';
 import 'package:sytium_mobile/shared/widgets/error_state.dart';
 import 'package:sytium_mobile/theme/sytium_colors.dart';
@@ -45,12 +46,24 @@ class _Body extends ConsumerWidget {
 
   Future<void> _edit(BuildContext context, WidgetRef ref) async {
     final saved = await showSalesDocSheet(context, editing: detail);
-    if (saved ?? false) {
-      ref
-        ..invalidate(proformaDetailProvider(detail.id))
-        ..invalidate(documentsProvider);
-    }
+    if (saved ?? false) _reload(ref);
   }
+
+  Future<void> _accept(BuildContext context, WidgetRef ref) async {
+    final accepted = await showAcceptProformaSheet(
+      context,
+      id: detail.id,
+      numero: detail.numero,
+    );
+    if (accepted ?? false) _reload(ref);
+  }
+
+  void _reload(WidgetRef ref) => ref
+    ..invalidate(proformaDetailProvider(detail.id))
+    ..invalidate(documentsProvider);
+
+  /// Un devis déjà accepté ou facturé ne se valide plus.
+  bool get _canAccept => !detail.converti && detail.statut != 'accepte';
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -165,17 +178,29 @@ class _Body extends ConsumerWidget {
               ],
             ),
           )
-        else
-          FilledButton.icon(
+        else ...[
+          if (_canAccept) ...[
+            FilledButton.icon(
+              onPressed: () => _accept(context, ref),
+              icon: const Icon(Icons.check_circle_outline),
+              label: const Text('Accepter la proforma'),
+              style: FilledButton.styleFrom(
+                backgroundColor: colors.success,
+                foregroundColor: Colors.white,
+                minimumSize: const Size.fromHeight(52),
+              ),
+            ),
+            const SizedBox(height: Tokens.space12),
+          ],
+          OutlinedButton.icon(
             onPressed: () => _edit(context, ref),
             icon: const Icon(Icons.edit_outlined),
             label: const Text('Modifier'),
-            style: FilledButton.styleFrom(
-              backgroundColor: colors.brand,
-              foregroundColor: colors.onBrand,
+            style: OutlinedButton.styleFrom(
               minimumSize: const Size.fromHeight(52),
             ),
           ),
+        ],
       ],
     );
   }

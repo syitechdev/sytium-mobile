@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sytium_mobile/core/result/result.dart';
+import 'package:sytium_mobile/core/upload/uploaded_file.dart';
 import 'package:sytium_mobile/features/auth/application/auth_controller.dart';
 import 'package:sytium_mobile/features/auth/domain/auth_session.dart';
 import 'package:sytium_mobile/features/auth/domain/auth_user.dart';
@@ -32,6 +33,22 @@ class _FakeInvoicing implements InvoicingRepository {
   SalesDocInput? sent;
   SalesDocInput? updated;
   String? updatedId;
+
+  String? acceptedId;
+  String? acceptedNote;
+  UploadedFile? acceptedAttachment;
+
+  @override
+  Future<Result<void>> acceptProforma(
+    String id, {
+    String? note,
+    UploadedFile? attachment,
+  }) async {
+    acceptedId = id;
+    acceptedNote = note;
+    acceptedAttachment = attachment;
+    return const Ok(null);
+  }
 
   @override
   Future<Result<void>> updateProforma(String id, SalesDocInput input) async {

@@ -4,6 +4,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:sytium_mobile/core/error/failure.dart';
 import 'package:sytium_mobile/core/result/result.dart';
+import 'package:sytium_mobile/core/upload/upload_providers.dart';
+import 'package:sytium_mobile/core/upload/upload_repository.dart';
+import 'package:sytium_mobile/core/upload/uploaded_file.dart';
 import 'package:sytium_mobile/features/auth/application/auth_controller.dart';
 import 'package:sytium_mobile/features/auth/domain/auth_session.dart';
 import 'package:sytium_mobile/features/auth/domain/auth_user.dart';
@@ -17,6 +20,7 @@ import 'package:sytium_mobile/features/invoicing/data/catalogue_remote_data_sour
 import 'package:sytium_mobile/features/invoicing/domain/catalogue.dart';
 import 'package:sytium_mobile/features/invoicing/domain/invoicing_models.dart';
 import 'package:sytium_mobile/features/invoicing/domain/invoicing_repository.dart';
+import 'package:sytium_mobile/shared/widgets/app_primary_button.dart';
 import 'package:sytium_mobile/theme/theme.dart';
 
 ProformaDetail _detail({bool converti = false}) => ProformaDetail(
@@ -71,6 +75,22 @@ class _FakeInvoicing implements InvoicingRepository {
   SalesDocInput? updated;
   String? updatedId;
 
+  String? acceptedId;
+  String? acceptedNote;
+  UploadedFile? acceptedAttachment;
+
+  @override
+  Future<Result<void>> acceptProforma(
+    String id, {
+    String? note,
+    UploadedFile? attachment,
+  }) async {
+    acceptedId = id;
+    acceptedNote = note;
+    acceptedAttachment = attachment;
+    return const Ok(null);
+  }
+
   @override
   Future<Result<void>> updateProforma(String id, SalesDocInput input) async {
     updatedId = id;
@@ -81,6 +101,29 @@ class _FakeInvoicing implements InvoicingRepository {
   @override
   Future<Result<SalesDocResult>> createDocument(SalesDocInput input) async =>
       const Err(UnknownFailure());
+}
+
+/// Dépôt de fichiers scriptable : le vrai passe par le réseau.
+class _FakeUpload implements UploadRepository {
+  int calls = 0;
+
+  @override
+  Future<Result<UploadedFile>> upload({
+    required String filePath,
+    required String fileName,
+    required UploadBucket bucket,
+    String? mimeType,
+  }) async {
+    calls++;
+    return const Ok(
+      UploadedFile(
+        path: 'uploads/org/proforma-validations/bon.pdf',
+        name: 'bon.pdf',
+        mime: 'application/pdf',
+        size: 2048,
+      ),
+    );
+  }
 }
 
 class _FakeCatalogue implements CatalogueRemoteDataSource {
@@ -105,6 +148,7 @@ Future<void> _pump(
   WidgetTester tester, {
   required ProformaDetail detail,
   InvoicingRepository? invoicing,
+  UploadRepository? upload,
 }) async {
   tester.view.physicalSize = const Size(390 * 3, 2400 * 3);
   tester.view.devicePixelRatio = 3;
@@ -119,6 +163,7 @@ Future<void> _pump(
           invoicing ?? _FakeInvoicing(),
         ),
         catalogueProvider.overrideWithValue(_FakeCatalogue()),
+        uploadRepositoryProvider.overrideWithValue(upload ?? _FakeUpload()),
       ],
       child: MaterialApp(
         theme: AppTheme.light(),
@@ -181,5 +226,72 @@ void main() {
     expect(sent.items.single.quantite, 2);
     expect(sent.items.single.productId, 'prod-1');
     expect(sent.dateEcheance, DateTime(2026, 7, 25));
+  });
+
+  testWidgets('accepter exige une trace de l’accord', (tester) async {
+    // Le serveur refuse une acceptation nue ; le dire ici évite un aller-retour
+    // pour rien et un message obscur.
+    final invoicing = _FakeInvoicing();
+    await _pump(tester, detail: _detail(), invoicing: invoicing);
+
+    await tester.tap(find.text('Accepter la proforma'));
+    await tester.pumpAndSettle();
+
+    // Deux boutons portent ce libellé : celui de la fiche et celui de la
+    // feuille. On vise le second.
+    await tester.tap(find.byType(AppPrimaryButton));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text('Ajoutez un mot de validation ou une preuve.'),
+      findsOneWidget,
+    );
+    expect(invoicing.acceptedId, isNull);
+  });
+
+  testWidgets('un mot de validation suffit à accepter', (tester) async {
+    final invoicing = _FakeInvoicing();
+    final upload = _FakeUpload();
+    await _pump(
+      tester,
+      detail: _detail(),
+      invoicing: invoicing,
+      upload: upload,
+    );
+
+    await tester.tap(find.text('Accepter la proforma'));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(
+      find.widgetWithText(TextField, 'Ex : accord par téléphone du 21/07, M. Koffi'),
+      'Accord par téléphone, M. Koffi',
+    );
+    // Deux boutons portent ce libellé : celui de la fiche et celui de la
+    // feuille. On vise le second.
+    await tester.tap(find.byType(AppPrimaryButton));
+    await tester.pumpAndSettle();
+
+    expect(invoicing.acceptedId, 'p1');
+    expect(invoicing.acceptedNote, 'Accord par téléphone, M. Koffi');
+    // Sans pièce jointe, rien ne part sur le stockage.
+    expect(upload.calls, 0);
+    expect(invoicing.acceptedAttachment, isNull);
+  });
+
+  testWidgets('une proforma déjà acceptée ne se valide plus', (tester) async {
+    await _pump(
+      tester,
+      detail: const ProformaDetail(
+        id: 'p1',
+        numero: 'PRO-2026-018',
+        clientNom: 'ABEL OUYABE',
+        statut: 'accepte',
+        items: [],
+      ),
+    );
+
+    expect(find.text('Accepter la proforma'), findsNothing);
+    // Elle reste modifiable tant qu'aucune facture n'en est née.
+    expect(find.text('Modifier'), findsOneWidget);
   });
 }

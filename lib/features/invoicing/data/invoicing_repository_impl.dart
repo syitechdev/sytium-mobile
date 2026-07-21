@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:sytium_mobile/core/error/failure.dart';
 import 'package:sytium_mobile/core/network/error_mapper.dart';
 import 'package:sytium_mobile/core/result/result.dart';
+import 'package:sytium_mobile/core/upload/uploaded_file.dart';
 import 'package:sytium_mobile/features/invoicing/data/invoicing_remote_data_source.dart';
 import 'package:sytium_mobile/features/invoicing/domain/invoicing_models.dart';
 import 'package:sytium_mobile/features/invoicing/domain/invoicing_repository.dart';
@@ -31,6 +32,22 @@ class InvoicingRepositoryImpl implements InvoicingRepository {
   Future<Result<void>> updateProforma(String id, SalesDocInput input) async {
     try {
       await _remote.updateProforma(id, input);
+      return const Ok(null);
+    } on DioException catch (e) {
+      return Err(mapDioError(e));
+    } catch (_) {
+      return const Err(UnknownFailure());
+    }
+  }
+
+  @override
+  Future<Result<void>> acceptProforma(
+    String id, {
+    String? note,
+    UploadedFile? attachment,
+  }) async {
+    try {
+      await _remote.acceptProforma(id, note: note, attachment: attachment);
       return const Ok(null);
     } on DioException catch (e) {
       return Err(mapDioError(e));
