@@ -10,7 +10,9 @@ int _intFrom(Object? v) {
   if (v == null) return 0;
   if (v is int) return v;
   if (v is num) return v.toInt();
-  if (v is String) return int.tryParse(v.trim()) ?? num.tryParse(v.trim())?.toInt() ?? 0;
+  if (v is String) {
+    return int.tryParse(v.trim()) ?? num.tryParse(v.trim())?.toInt() ?? 0;
+  }
   return 0;
 }
 
@@ -31,8 +33,12 @@ class ChannelDto with _$ChannelDto {
     @Default('public') String type,
     @JsonKey(name: 'is_archived') @Default(false) bool isArchived,
     @JsonKey(name: 'is_system') @Default(false) bool isSystem,
-    @JsonKey(name: 'unread_count', fromJson: _intFrom) @Default(0) int unreadCount,
-    @JsonKey(name: 'member_count', fromJson: _intFrom) @Default(0) int memberCount,
+    @JsonKey(name: 'unread_count', fromJson: _intFrom)
+    @Default(0)
+    int unreadCount,
+    @JsonKey(name: 'member_count', fromJson: _intFrom)
+    @Default(0)
+    int memberCount,
     @JsonKey(name: 'is_member') @Default(true) bool isMember,
     @JsonKey(name: 'created_at', fromJson: _dateFrom) DateTime? createdAt,
     @JsonKey(name: 'updated_at', fromJson: _dateFrom) DateTime? updatedAt,
@@ -142,10 +148,31 @@ class MessageDto with _$MessageDto {
     ParentMessageDto? parent,
     @Default(<ReactionDto>[]) List<ReactionDto> reactions,
     @Default(<AttachmentDto>[]) List<AttachmentDto> attachments,
+    @JsonKey(name: 'delivery_summary') DeliverySummaryDto? deliverySummary,
   }) = _MessageDto;
 
   factory MessageDto.fromJson(Map<String, dynamic> json) =>
       _$MessageDtoFromJson(json);
+}
+
+/// Aggregated read receipts for one of MY messages (`workspace_message_receipts`
+/// rolled up server-side). Absent on other people's messages. `state` is the
+/// weakest state across recipients: `sent` → `delivered` → `read`.
+@freezed
+class DeliverySummaryDto with _$DeliverySummaryDto {
+  const factory DeliverySummaryDto({
+    @Default('sent') String state,
+    @JsonKey(name: 'recipients_count', fromJson: _intFrom)
+    @Default(0)
+    int recipientsCount,
+    @JsonKey(name: 'delivered_count', fromJson: _intFrom)
+    @Default(0)
+    int deliveredCount,
+    @JsonKey(name: 'read_count', fromJson: _intFrom) @Default(0) int readCount,
+  }) = _DeliverySummaryDto;
+
+  factory DeliverySummaryDto.fromJson(Map<String, dynamic> json) =>
+      _$DeliverySummaryDtoFromJson(json);
 }
 
 /// Reply preview: the parent message a message answers to. `content` is empty

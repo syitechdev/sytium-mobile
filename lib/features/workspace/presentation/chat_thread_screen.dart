@@ -9,8 +9,10 @@ import 'package:intl/intl.dart';
 import 'package:sytium_mobile/features/auth/application/auth_controller.dart';
 import 'package:sytium_mobile/features/calls/application/call_controller.dart';
 import 'package:sytium_mobile/features/calls/domain/call_models.dart';
+import 'package:sytium_mobile/features/workspace/application/outgoing_messages.dart';
 import 'package:sytium_mobile/features/workspace/application/workspace_providers.dart';
 import 'package:sytium_mobile/features/workspace/domain/workspace_models.dart';
+import 'package:sytium_mobile/features/workspace/domain/workspace_repository.dart';
 import 'package:sytium_mobile/features/workspace/presentation/attachment_preview.dart';
 import 'package:sytium_mobile/features/workspace/realtime/workspace_realtime.dart';
 import 'package:sytium_mobile/features/workspace/realtime/workspace_realtime_provider.dart';
@@ -30,12 +32,96 @@ const _kSkeletonBarHeight = 36.0;
 /// Curated quick-reaction emojis (a full keyboard is overkill on mobile chat).
 const _kQuickReactions = ['👍', '❤️', '😂', '🎉', '✅', '🙏'];
 
+/// Two messages from the same author closer than this read as one block: the
+/// author name is printed once and the bubbles sit tight against each other.
+const _kGroupWindow = Duration(minutes: 5);
+
+/// How far up the thread must be scrolled before the "back to bottom" button
+/// appears. Roughly two bubbles — below that, the button would be noise.
+const _kScrollUpThreshold = 300.0;
+
+/// Size of the delivery tick next to the timestamp.
+const _kTickSize = 14.0;
+
 String _timeLabel(DateTime? at) =>
     at == null ? '' : DateFormat('HH:mm', 'fr_FR').format(at);
 
+/// Human day marker for a thread separator: « Aujourd'hui », « Hier », the
+/// weekday within the last week, else the full date. [now] is injected so the
+/// label is testable without freezing the clock.
+String dayLabel(DateTime day, DateTime now) {
+  final today = DateTime(now.year, now.month, now.day);
+  final that = DateTime(day.year, day.month, day.day);
+  final days = today.difference(that).inDays;
+  if (days == 0) return 'Aujourd’hui';
+  if (days == 1) return 'Hier';
+  if (days > 1 && days < 7) return DateFormat('EEEE', 'fr_FR').format(that);
+  return DateFormat('d MMMM y', 'fr_FR').format(that);
+}
+
+/// One row of the rendered thread: a day marker, or a message carrying its
+/// already-computed grouping flag.
+sealed class ThreadRow {
+  const ThreadRow();
+}
+
+class DayRow extends ThreadRow {
+  const DayRow(this.day);
+  final DateTime day;
+}
+
+class MessageRow extends ThreadRow {
+  const MessageRow({required this.message, required this.startsGroup});
+  final Message message;
+
+  /// First message of a block: it prints the author name and gets the wider
+  /// top margin. False for a follow-up from the same author.
+  final bool startsGroup;
+}
+
+bool _sameDay(DateTime a, DateTime b) =>
+    a.year == b.year && a.month == b.month && a.day == b.day;
+
+/// Turns a chronological message list into display rows — inserting a day
+/// marker whenever the date changes and flagging the first message of each
+/// author block. Messages without a timestamp never get a marker and always
+/// start their own block (we cannot place them in time).
+List<ThreadRow> buildThreadRows(List<Message> messages) {
+  final rows = <ThreadRow>[];
+  Message? previous;
+  for (final message in messages) {
+    final at = message.createdAt;
+    final previousAt = previous?.createdAt;
+    final newDay =
+        previous == null ||
+        at == null ||
+        previousAt == null ||
+        !_sameDay(previousAt, at);
+    if (newDay && at != null) {
+      rows.add(DayRow(DateTime(at.year, at.month, at.day)));
+    }
+
+    // Past `newDay`, the three nullable operands above are already promoted to
+    // non-null — a false `newDay` means none of them was null.
+    final startsGroup =
+        newDay ||
+        previous.authorId != message.authorId ||
+        previous.isSystem != message.isSystem ||
+        at.difference(previousAt) > _kGroupWindow;
+
+    rows.add(MessageRow(message: message, startsGroup: startsGroup));
+    previous = message;
+  }
+  return rows;
+}
+
 /// A file the user picked but hasn't sent yet.
 class _PendingAttachment {
-  const _PendingAttachment({required this.path, required this.name, required this.isImage});
+  const _PendingAttachment({
+    required this.path,
+    required this.name,
+    required this.isImage,
+  });
   final String path;
   final String name;
   final bool isImage;
@@ -86,14 +172,24 @@ class ChatThreadScreenState extends ConsumerState<ChatThreadScreen> {
   /// The message being replied to (null when composing a fresh message).
   Message? _replyTo;
 
-  /// True while a send is in flight (disables the send button + shows spinner).
-  bool _sending = false;
+  /// Drives the "back to bottom" button. `reverse: true` puts the newest
+  /// message at offset 0, so "scrolled up" means a positive offset.
+  final ScrollController _scroll = ScrollController();
+  bool _scrolledUp = false;
+
+  /// Messages that landed while the user was reading further up — surfaced as
+  /// a count on the "back to bottom" button so nothing is missed silently.
+  int _newSinceScroll = 0;
+
+  /// Id of the newest server message already accounted for in [_newSinceScroll].
+  String? _newestSeenId;
 
   String get _channelId => widget.conversation.id;
 
   @override
   void initState() {
     super.initState();
+    _scroll.addListener(_onScroll);
     // Mark the channel read on open (purges the unread badge); refresh the
     // conversations list so the badge updates.
     WidgetsBinding.instance.addPostFrameCallback((_) async {
@@ -119,12 +215,59 @@ class ChatThreadScreenState extends ConsumerState<ChatThreadScreen> {
     }
     _poll?.cancel();
     _composer.dispose();
+    _scroll
+      ..removeListener(_onScroll)
+      ..dispose();
     super.dispose();
+  }
+
+  /// Flips [_scrolledUp] only when it actually changes, so a scroll gesture
+  /// does not rebuild the whole thread on every pixel.
+  void _onScroll() {
+    if (!_scroll.hasClients) return;
+    final up = _scroll.offset > _kScrollUpThreshold;
+    if (up == _scrolledUp) return;
+    setState(() {
+      _scrolledUp = up;
+      if (!up) _newSinceScroll = 0;
+    });
+  }
+
+  void _scrollToBottom() {
+    if (_newSinceScroll != 0) setState(() => _newSinceScroll = 0);
+    if (!_scroll.hasClients) return;
+    unawaited(
+      _scroll.animateTo(
+        0,
+        duration: const Duration(milliseconds: 250),
+        curve: Curves.easeOut,
+      ),
+    );
+  }
+
+  /// Counts messages that arrived since the last page while the user was
+  /// reading further up. Own messages never count — sending scrolls to bottom.
+  void _countArrivals(List<Message> messages) {
+    if (messages.isEmpty) return;
+    final newestId = messages.last.id;
+    final previousId = _newestSeenId;
+    _newestSeenId = newestId;
+    if (previousId == null || previousId == newestId || !_scrolledUp) return;
+
+    final me = ref.read(currentUserIdProvider);
+    final index = messages.indexWhere((m) => m.id == previousId);
+    final arrived = index < 0
+        ? messages.where((m) => !m.isMine(me)).length
+        : messages.skip(index + 1).where((m) => !m.isMine(me)).length;
+    if (arrived <= 0 || !mounted) return;
+    setState(() => _newSinceScroll += arrived);
   }
 
   void _subscribeRealtime() {
     final auth = ref.read(authControllerProvider).valueOrNull;
-    final orgId = auth is Authenticated ? auth.session.user.organizationId : null;
+    final orgId = auth is Authenticated
+        ? auth.session.user.organizationId
+        : null;
     if (orgId == null || orgId.isEmpty) return;
     final channel = 'private-org.$orgId.workspace.$_channelId';
     final realtime = ref.read(workspaceRealtimeProvider);
@@ -135,7 +278,8 @@ class ChatThreadScreenState extends ConsumerState<ChatThreadScreen> {
   }
 
   void _onRealtimeEvent(RealtimeEvent e) {
-    final isMessage = e.event == 'workspace.message.created' ||
+    final isMessage =
+        e.event == 'workspace.message.created' ||
         e.event == 'workspace.message.updated';
     if (!isMessage) return;
     if (e.data['channel_id'] != _channelId) return;
@@ -183,9 +327,11 @@ class ChatThreadScreenState extends ConsumerState<ChatThreadScreen> {
         maxHeight: 1920,
       );
       if (file == null || !mounted) return;
-      setState(() => _pending.add(
-            _PendingAttachment(path: file.path, name: file.name, isImage: true),
-          ));
+      setState(
+        () => _pending.add(
+          _PendingAttachment(path: file.path, name: file.name, isImage: true),
+        ),
+      );
     } catch (_) {
       if (mounted) _toast("Impossible d'ouvrir la galerie.");
     }
@@ -200,7 +346,9 @@ class ChatThreadScreenState extends ConsumerState<ChatThreadScreen> {
           final path = f.path;
           if (path == null) continue;
           final isImage = _looksLikeImage(f.extension);
-          _pending.add(_PendingAttachment(path: path, name: f.name, isImage: isImage));
+          _pending.add(
+            _PendingAttachment(path: path, name: f.name, isImage: isImage),
+          );
         }
       });
     } catch (_) {
@@ -245,29 +393,89 @@ class ChatThreadScreenState extends ConsumerState<ChatThreadScreen> {
     );
   }
 
+  /// Optimistic send: the bubble appears immediately and the composer empties,
+  /// exactly like WhatsApp. Nothing is lost on failure — the message stays in
+  /// the thread in a `failed` state with a retry, rather than being stuffed
+  /// back into the input.
   Future<void> _send() async {
     final text = _composer.text.trim();
     if (text.isEmpty && _pending.isEmpty) return;
-    setState(() => _sending = true);
-    final result = await ref.read(workspaceRepositoryProvider).sendMessage(
-          _channelId,
+    final me = ref.read(currentUserIdProvider);
+    if (me == null) {
+      _toast('Session expirée, reconnectez-vous.');
+      return;
+    }
+
+    final attachments = [
+      for (final p in _pending)
+        OutgoingAttachment(path: p.path, name: p.name, isImage: p.isImage),
+    ];
+    final replyTo = _replyTo;
+
+    _composer.clear();
+    setState(() {
+      _pending.clear();
+      _replyTo = null;
+    });
+    _scrollToBottom();
+
+    await ref
+        .read(outgoingMessagesProvider(_channelId).notifier)
+        .send(
+          authorId: me,
           content: text,
-          attachmentPaths: _pending.map((p) => p.path).toList(),
-          parentId: _replyTo?.id,
+          attachments: attachments,
+          replyTo: replyTo,
         );
     if (!mounted) return;
-    setState(() => _sending = false);
-    if (result.isOk) {
-      _composer.clear();
-      setState(() {
-        _pending.clear();
-        _replyTo = null;
-      });
-      _refresh();
-    } else {
-      // Keep the typed text + attachments on failure so nothing is lost.
-      _toast(result.failureOrNull?.message ?? "Échec de l'envoi.");
-    }
+    _refresh();
+  }
+
+  /// Actions offered on a message whose send failed.
+  void _showFailedActions(Message message) {
+    final notifier = ref.read(outgoingMessagesProvider(_channelId).notifier);
+    final reason = notifier.failureFor(message.id);
+    showAppSheet<void>(
+      context,
+      builder: (sheetContext) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (reason != null && reason.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  Tokens.space16,
+                  Tokens.space12,
+                  Tokens.space16,
+                  Tokens.space4,
+                ),
+                child: Text(
+                  reason,
+                  style: Theme.of(sheetContext).textTheme.bodySmall?.copyWith(
+                    color: sheetContext.colors.danger,
+                  ),
+                ),
+              ),
+            ListTile(
+              leading: const Icon(Icons.refresh),
+              title: const Text('Réessayer l’envoi'),
+              onTap: () {
+                Navigator.of(sheetContext).pop();
+                unawaited(notifier.retry(message.id));
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.delete_outline),
+              title: const Text('Supprimer'),
+              onTap: () {
+                Navigator.of(sheetContext).pop();
+                notifier.discard(message.id);
+              },
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   // ---- Message actions -----------------------------------------------------
@@ -341,8 +549,9 @@ class ChatThreadScreenState extends ConsumerState<ChatThreadScreen> {
   }
 
   Future<void> _toggleReaction(Message message, String emoji) async {
-    final result =
-        await ref.read(workspaceRepositoryProvider).toggleReaction(message.id, emoji);
+    final result = await ref
+        .read(workspaceRepositoryProvider)
+        .toggleReaction(message.id, emoji);
     if (!mounted) return;
     if (result.isOk) {
       _refresh();
@@ -371,7 +580,8 @@ class ChatThreadScreenState extends ConsumerState<ChatThreadScreen> {
               child: const Text('Annuler'),
             ),
             TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(controller.text.trim()),
+              onPressed: () =>
+                  Navigator.of(dialogContext).pop(controller.text.trim()),
               child: const Text('Enregistrer'),
             ),
           ],
@@ -383,7 +593,9 @@ class ChatThreadScreenState extends ConsumerState<ChatThreadScreen> {
       WidgetsBinding.instance.addPostFrameCallback((_) => controller.dispose());
     }
     if (newText == null || newText.isEmpty || !mounted) return;
-    final result = await ref.read(workspaceRepositoryProvider).editMessage(message.id, newText);
+    final result = await ref
+        .read(workspaceRepositoryProvider)
+        .editMessage(message.id, newText);
     if (!mounted) return;
     if (result.isOk) {
       _refresh();
@@ -393,7 +605,9 @@ class ChatThreadScreenState extends ConsumerState<ChatThreadScreen> {
   }
 
   Future<void> _deleteForMe(Message message) async {
-    final result = await ref.read(workspaceRepositoryProvider).deleteForMe(message.id);
+    final result = await ref
+        .read(workspaceRepositoryProvider)
+        .deleteForMe(message.id);
     if (!mounted) return;
     if (result.isOk) {
       _refresh();
@@ -403,14 +617,18 @@ class ChatThreadScreenState extends ConsumerState<ChatThreadScreen> {
   }
 
   Future<void> _deleteForEveryone(Message message) async {
-    final result = await ref.read(workspaceRepositoryProvider).deleteForEveryone(message.id);
+    final result = await ref
+        .read(workspaceRepositoryProvider)
+        .deleteForEveryone(message.id);
     if (!mounted) return;
     if (result.isOk) {
       _refresh();
     } else {
       // 422 → past the 24h window; surface the server message clearly.
-      _toast(result.failureOrNull?.message ??
-          'Suppression impossible (délai de 24 h dépassé).');
+      _toast(
+        result.failureOrNull?.message ??
+            'Suppression impossible (délai de 24 h dépassé).',
+      );
     }
   }
 
@@ -420,22 +638,34 @@ class ChatThreadScreenState extends ConsumerState<ChatThreadScreen> {
     final name = peer?.fullName.isNotEmpty ?? false
         ? peer!.fullName
         : widget.conversation.title;
-    await ref.read(callControllerProvider.notifier).startOutgoing(
-          channelId: _channelId,
-          kind: kind,
-          peerName: name,
-        );
+    await ref
+        .read(callControllerProvider.notifier)
+        .startOutgoing(channelId: _channelId, kind: kind, peerName: name);
   }
 
   void _toast(String message) {
-    ScaffoldMessenger.of(context)
-        .showSnackBar(SnackBar(content: Text(message)));
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 
   @override
   Widget build(BuildContext context) {
     final me = ref.watch(currentUserIdProvider);
     final async = ref.watch(channelMessagesProvider(_channelId));
+    final outgoing = ref.watch(outgoingMessagesProvider(_channelId));
+
+    // A landed page both confirms optimistic messages (drop the local copy so
+    // nothing renders twice) and tells us how much arrived while scrolled up.
+    ref.listen(channelMessagesProvider(_channelId), (_, next) {
+      final page = next.valueOrNull;
+      if (page == null) return;
+      ref.read(outgoingMessagesProvider(_channelId).notifier).pruneConfirmed({
+        for (final m in page.messages) m.id,
+      });
+      _countArrivals(page.messages);
+    });
+
     return Scaffold(
       appBar: AppBar(
         titleSpacing: 0,
@@ -456,79 +686,48 @@ class ChatThreadScreenState extends ConsumerState<ChatThreadScreen> {
       body: Column(
         children: [
           Expanded(
-            child: RefreshIndicator(
-              onRefresh: () async => ref.invalidate(channelMessagesProvider(_channelId)),
-              child: async.when(
-                loading: () => const _ThreadSkeleton(),
-                error: (e, _) => ListView(
-                  children: [
-                    const SizedBox(height: Tokens.space48),
-                    ErrorState(
-                      message: 'Impossible de charger les messages.',
-                      onRetry: () => ref.invalidate(channelMessagesProvider(_channelId)),
-                    ),
-                  ],
-                ),
-                data: (page) {
-                  // Sync pagination cursor from the live first page (only seed once,
-                  // when we have not paginated yet, so polling doesn't reset it).
-                  if (_older.isEmpty && _cursor == null && !_loadingOlder) {
-                    _cursor = page.nextCursor;
-                    _hasMore = page.hasMore;
-                  }
-                  final all = [..._older, ...page.messages];
-                  if (all.isEmpty) {
-                    return ListView(
-                      children: const [
-                        SizedBox(height: Tokens.space48),
-                        Center(child: Text('Aucun message, démarrez la conversation')),
-                      ],
-                    );
-                  }
-                  // reverse:true → newest at the bottom; index 0 is the newest.
-                  final reversed = all.reversed.toList();
-                  return ListView.builder(
-                    reverse: true,
-                    padding: const EdgeInsets.all(Tokens.space12),
-                    itemCount: reversed.length + (_hasMore ? 1 : 0),
-                    itemBuilder: (context, i) {
-                      if (_hasMore && i == reversed.length) {
-                        // "load older" trigger lives at the visual top (last index).
-                        return Padding(
-                          padding: const EdgeInsets.symmetric(vertical: Tokens.space12),
-                          child: Center(
-                            child: _loadingOlder
-                                ? const CircularProgressIndicator()
-                                : TextButton(
-                                    onPressed: _loadOlder,
-                                    child: const Text('Charger les messages précédents'),
-                                  ),
+            child: Stack(
+              children: [
+                RefreshIndicator(
+                  onRefresh: () async =>
+                      ref.invalidate(channelMessagesProvider(_channelId)),
+                  child: async.when(
+                    loading: () => const _ThreadSkeleton(),
+                    error: (e, _) => ListView(
+                      children: [
+                        const SizedBox(height: Tokens.space48),
+                        ErrorState(
+                          message: 'Impossible de charger les messages.',
+                          onRetry: () => ref.invalidate(
+                            channelMessagesProvider(_channelId),
                           ),
-                        );
-                      }
-                      final m = reversed[i];
-                      final mine = m.isMine(me);
-                      return _MessageBubble(
-                        message: m,
-                        isMine: mine,
-                        currentUserId: me,
-                        showAuthor: widget.conversation.isGroup,
-                        onLongPress: (m.isDeleted || m.isSystem)
-                            ? null
-                            : () => _showActions(m, mine),
-                        onReactionTap: (emoji) => _toggleReaction(m, emoji),
-                      );
-                    },
-                  );
-                },
-              ),
+                        ),
+                      ],
+                    ),
+                    data: (page) => _buildThread(
+                      context,
+                      page: page,
+                      outgoing: outgoing,
+                      me: me,
+                    ),
+                  ),
+                ),
+                if (_scrolledUp)
+                  Positioned(
+                    right: Tokens.space16,
+                    bottom: Tokens.space16,
+                    child: _ScrollToBottomButton(
+                      newCount: _newSinceScroll,
+                      onTap: _scrollToBottom,
+                    ),
+                  ),
+              ],
             ),
           ),
           _Composer(
             controller: _composer,
             pending: _pending,
             replyTo: _replyTo,
-            sending: _sending,
             onSend: _send,
             onAttach: _showAttachMenu,
             onRemovePending: (i) => setState(() => _pending.removeAt(i)),
@@ -537,6 +736,89 @@ class ChatThreadScreenState extends ConsumerState<ChatThreadScreen> {
         ],
       ),
     );
+  }
+
+  /// The message list itself: older pages + the live page + the optimistic
+  /// tail, laid out with day separators and author blocks.
+  Widget _buildThread(
+    BuildContext context, {
+    required MessagesPage page,
+    required List<Message> outgoing,
+    required String? me,
+  }) {
+    // Sync pagination cursor from the live first page (only seed once, when we
+    // have not paginated yet, so polling doesn't reset it).
+    if (_older.isEmpty && _cursor == null && !_loadingOlder) {
+      _cursor = page.nextCursor;
+      _hasMore = page.hasMore;
+    }
+
+    // Belt and braces against a double render: `pruneConfirmed` drops a
+    // confirmed entry on the next frame, so filter here too.
+    final serverIds = {for (final m in page.messages) m.id};
+    final tail = outgoing.where((m) => !serverIds.contains(m.id));
+    final all = [..._older, ...page.messages, ...tail];
+
+    if (all.isEmpty) {
+      return ListView(
+        children: const [
+          SizedBox(height: Tokens.space48),
+          Center(child: Text('Aucun message, démarrez la conversation')),
+        ],
+      );
+    }
+
+    // reverse:true → newest at the bottom; index 0 is the newest row.
+    final rows = buildThreadRows(all).reversed.toList();
+    final now = DateTime.now();
+
+    return ListView.builder(
+      controller: _scroll,
+      reverse: true,
+      padding: const EdgeInsets.all(Tokens.space12),
+      itemCount: rows.length + (_hasMore ? 1 : 0),
+      itemBuilder: (context, i) {
+        if (_hasMore && i == rows.length) {
+          // "load older" trigger lives at the visual top (last index).
+          return Padding(
+            padding: const EdgeInsets.symmetric(vertical: Tokens.space12),
+            child: Center(
+              child: _loadingOlder
+                  ? const CircularProgressIndicator()
+                  : TextButton(
+                      onPressed: _loadOlder,
+                      child: const Text('Charger les messages précédents'),
+                    ),
+            ),
+          );
+        }
+        return switch (rows[i]) {
+          DayRow(:final day) => _DaySeparator(label: dayLabel(day, now)),
+          MessageRow(:final message, :final startsGroup) => _MessageBubble(
+            message: message,
+            isMine: message.isMine(me),
+            currentUserId: me,
+            startsGroup: startsGroup,
+            showAuthor: widget.conversation.isGroup,
+            onLongPress: _longPressFor(message, message.isMine(me)),
+            onReactionTap: message.isPending
+                ? null
+                : (emoji) => _toggleReaction(message, emoji),
+          ),
+        };
+      },
+    );
+  }
+
+  /// Long-press handler for a bubble: retry sheet on a failed send, nothing
+  /// while a send is in flight or on a deleted/system message, the usual
+  /// actions otherwise (a `local-…` id cannot be edited or reacted to).
+  VoidCallback? _longPressFor(Message message, bool isMine) {
+    if (message.deliveryState == DeliveryState.failed) {
+      return () => _showFailedActions(message);
+    }
+    if (message.isPending || message.isDeleted || message.isSystem) return null;
+    return () => _showActions(message, isMine);
   }
 }
 
@@ -581,7 +863,8 @@ class _ThreadHeader extends ConsumerWidget {
     }
 
     final peer = ref.watch(dmPeerProvider(conversation.id)).valueOrNull;
-    final online = peer != null &&
+    final online =
+        peer != null &&
         ((ref.watch(onlineByUserProvider).valueOrNull ??
                 const <String, bool>{})[peer.userId] ??
             false);
@@ -638,12 +921,139 @@ class _ThreadHeader extends ConsumerWidget {
   }
 }
 
+/// Centered day marker between two days of conversation.
+class _DaySeparator extends StatelessWidget {
+  const _DaySeparator({required this.label});
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: Tokens.space12),
+      child: Center(
+        child: Container(
+          padding: const EdgeInsets.symmetric(
+            horizontal: Tokens.space12,
+            vertical: Tokens.space4,
+          ),
+          decoration: BoxDecoration(
+            color: colors.card,
+            borderRadius: BorderRadius.circular(Tokens.radiusPill),
+            border: Border.all(color: colors.border),
+          ),
+          child: Text(
+            label.toUpperCase(),
+            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+              color: colors.textMuted,
+              letterSpacing: 1,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Floating "back to bottom" affordance, badged with how many messages landed
+/// while the user was reading further up.
+class _ScrollToBottomButton extends StatelessWidget {
+  const _ScrollToBottomButton({required this.newCount, required this.onTap});
+
+  final int newCount;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    final hasNew = newCount > 0;
+    return Semantics(
+      button: true,
+      label: hasNew
+          ? '$newCount nouveaux messages, revenir en bas'
+          : 'Revenir en bas',
+      child: Material(
+        color: hasNew ? colors.brand : colors.card,
+        shape: const StadiumBorder(),
+        elevation: 2,
+        child: InkWell(
+          customBorder: const StadiumBorder(),
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: Tokens.space12,
+              vertical: Tokens.space8,
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.keyboard_arrow_down_rounded,
+                  color: hasNew ? colors.onBrand : colors.textMuted,
+                ),
+                if (hasNew) ...[
+                  const SizedBox(width: Tokens.space4),
+                  Text(
+                    newCount > 99 ? '99+' : '$newCount',
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                      color: colors.onBrand,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Delivery ticks on MY messages: a clock while queued, ✓ once the server has
+/// it, ✓✓ once every recipient's device has it, ✓✓ coloured once they read it.
+/// Other people's messages never carry a tick.
+class _DeliveryTick extends StatelessWidget {
+  const _DeliveryTick({required this.state});
+  final DeliveryState state;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    final (IconData icon, Color color, String label) = switch (state) {
+      DeliveryState.sending => (
+        Icons.schedule,
+        colors.textMuted,
+        'Envoi en cours',
+      ),
+      DeliveryState.failed => (
+        Icons.error_outline,
+        colors.danger,
+        'Échec de l’envoi',
+      ),
+      DeliveryState.sent => (Icons.check, colors.textMuted, 'Envoyé'),
+      DeliveryState.delivered => (
+        Icons.done_all,
+        colors.textMuted,
+        'Distribué',
+      ),
+      DeliveryState.read => (Icons.done_all, colors.info, 'Lu'),
+    };
+    return Semantics(
+      label: label,
+      child: Icon(icon, size: _kTickSize, color: color),
+    );
+  }
+}
+
 class _MessageBubble extends StatelessWidget {
   const _MessageBubble({
     required this.message,
     required this.isMine,
     required this.showAuthor,
     required this.currentUserId,
+    required this.startsGroup,
     this.onLongPress,
     this.onReactionTap,
   });
@@ -652,6 +1062,10 @@ class _MessageBubble extends StatelessWidget {
   final bool isMine;
   final bool showAuthor;
   final String? currentUserId;
+
+  /// First bubble of an author block — prints the name and takes the wider
+  /// top margin. Follow-ups sit tight underneath.
+  final bool startsGroup;
   final VoidCallback? onLongPress;
   final void Function(String emoji)? onReactionTap;
 
@@ -677,78 +1091,98 @@ class _MessageBubble extends StatelessWidget {
             child: Text(
               message.content,
               textAlign: TextAlign.center,
-              style: Theme.of(context)
-                  .textTheme
-                  .labelSmall
-                  ?.copyWith(color: colors.textMuted),
+              style: Theme.of(
+                context,
+              ).textTheme.labelSmall?.copyWith(color: colors.textMuted),
             ),
           ),
         ),
       );
     }
 
+    final failed = message.deliveryState == DeliveryState.failed;
     final bg = isMine ? colors.brand : colors.card;
     final fg = isMine ? colors.onBrand : colors.textPrimary;
     final align = isMine ? CrossAxisAlignment.end : CrossAxisAlignment.start;
     final hasText = message.content.isNotEmpty;
 
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: Tokens.space4),
+      padding: EdgeInsets.only(
+        top: startsGroup ? Tokens.space12 : Tokens.space4,
+        bottom: Tokens.space4,
+      ),
       child: Column(
         crossAxisAlignment: align,
         children: [
-          if (showAuthor && !isMine && (message.authorName?.isNotEmpty ?? false))
+          if (startsGroup &&
+              showAuthor &&
+              !isMine &&
+              (message.authorName?.isNotEmpty ?? false))
             Padding(
-              padding: const EdgeInsets.only(left: Tokens.space8, bottom: Tokens.space4),
+              padding: const EdgeInsets.only(
+                left: Tokens.space8,
+                bottom: Tokens.space4,
+              ),
               child: Text(
                 message.authorName!,
-                style: Theme.of(context)
-                    .textTheme
-                    .labelSmall
-                    ?.copyWith(color: colors.textMuted, fontWeight: FontWeight.w600),
+                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                  color: colors.textMuted,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
           GestureDetector(
             onLongPress: onLongPress,
-            child: Container(
-              constraints: BoxConstraints(
-                maxWidth: MediaQuery.of(context).size.width * 0.78,
-              ),
-              padding: const EdgeInsets.symmetric(
-                horizontal: Tokens.space12,
-                vertical: Tokens.space8,
-              ),
-              decoration: BoxDecoration(
-                color: bg,
-                borderRadius: BorderRadius.circular(Tokens.radiusMd),
-                border: isMine ? null : Border.all(color: colors.border),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (message.replyTo != null) ...[
-                    _ReplyQuote(reply: message.replyTo!, onBrand: isMine),
-                    const SizedBox(height: Tokens.space8),
+            // A failed bubble is also tappable: long-press alone would hide the
+            // only way to recover the message.
+            onTap: failed ? onLongPress : null,
+            child: Opacity(
+              // Queued messages sit back visually until the server confirms.
+              opacity: message.deliveryState == DeliveryState.sending
+                  ? 0.65
+                  : 1,
+              child: Container(
+                constraints: BoxConstraints(
+                  maxWidth: MediaQuery.of(context).size.width * 0.78,
+                ),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: Tokens.space12,
+                  vertical: Tokens.space8,
+                ),
+                decoration: BoxDecoration(
+                  color: bg,
+                  borderRadius: BorderRadius.circular(Tokens.radiusMd),
+                  border: failed
+                      ? Border.all(color: colors.danger)
+                      : (isMine ? null : Border.all(color: colors.border)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (message.replyTo != null) ...[
+                      _ReplyQuote(reply: message.replyTo!, onBrand: isMine),
+                      const SizedBox(height: Tokens.space8),
+                    ],
+                    if (message.attachments.isNotEmpty) ...[
+                      for (final a in message.attachments)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: Tokens.space4),
+                          child: AttachmentView(attachment: a, onBrand: isMine),
+                        ),
+                      if (hasText) const SizedBox(height: Tokens.space4),
+                    ],
+                    if (message.isDeleted)
+                      Text(
+                        'Message supprimé',
+                        style: TextStyle(
+                          fontStyle: FontStyle.italic,
+                          color: isMine ? colors.onBrand : colors.textMuted,
+                        ),
+                      )
+                    else if (hasText)
+                      Text(message.content, style: TextStyle(color: fg)),
                   ],
-                  if (message.attachments.isNotEmpty) ...[
-                    for (final a in message.attachments)
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: Tokens.space4),
-                        child: AttachmentView(attachment: a, onBrand: isMine),
-                      ),
-                    if (hasText) const SizedBox(height: Tokens.space4),
-                  ],
-                  if (message.isDeleted)
-                    Text(
-                      'Message supprimé',
-                      style: TextStyle(
-                        fontStyle: FontStyle.italic,
-                        color: isMine ? colors.onBrand : colors.textMuted,
-                      ),
-                    )
-                  else if (hasText)
-                    Text(message.content, style: TextStyle(color: fg)),
-                ],
+                ),
               ),
             ),
           ),
@@ -762,16 +1196,31 @@ class _MessageBubble extends StatelessWidget {
               ),
             ),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: Tokens.space8, vertical: Tokens.space4),
-            child: Text(
-              [
-                _timeLabel(message.createdAt),
-                if (message.isEdited && !message.isDeleted) 'modifié',
-              ].where((s) => s.isNotEmpty).join(' · '),
-              style: Theme.of(context)
-                  .textTheme
-                  .labelSmall
-                  ?.copyWith(color: colors.textMuted),
+            padding: const EdgeInsets.symmetric(
+              horizontal: Tokens.space8,
+              vertical: Tokens.space4,
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  [
+                    _timeLabel(message.createdAt),
+                    if (message.isEdited && !message.isDeleted) 'modifié',
+                  ].where((s) => s.isNotEmpty).join(' · '),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.labelSmall?.copyWith(color: colors.textMuted),
+                ),
+                // Ticks belong to the sender only: on someone else's message
+                // the state would be meaningless.
+                if (isMine &&
+                    message.deliveryState != null &&
+                    !message.isDeleted) ...[
+                  const SizedBox(width: Tokens.space4),
+                  _DeliveryTick(state: message.deliveryState!),
+                ],
+              ],
             ),
           ),
         ],
@@ -797,7 +1246,9 @@ class _ReplyQuote extends StatelessWidget {
         vertical: Tokens.space4,
       ),
       decoration: BoxDecoration(
-        color: (onBrand ? colors.onBrand : colors.brand).withValues(alpha: 0.10),
+        color: (onBrand ? colors.onBrand : colors.brand).withValues(
+          alpha: 0.10,
+        ),
         borderRadius: BorderRadius.circular(Tokens.radiusSm),
         border: Border(left: BorderSide(color: accent, width: 3)),
       ),
@@ -806,9 +1257,9 @@ class _ReplyQuote extends StatelessWidget {
         maxLines: 2,
         overflow: TextOverflow.ellipsis,
         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: onBrand ? colors.onBrand : colors.textMuted,
-              fontStyle: reply.isDeleted ? FontStyle.italic : FontStyle.normal,
-            ),
+          color: onBrand ? colors.onBrand : colors.textMuted,
+          fontStyle: reply.isDeleted ? FontStyle.italic : FontStyle.normal,
+        ),
       ),
     );
   }
@@ -871,16 +1322,14 @@ class _ReactionChip extends StatelessWidget {
         decoration: BoxDecoration(
           color: mine ? colors.brand.withValues(alpha: 0.14) : colors.card,
           borderRadius: BorderRadius.circular(Tokens.radiusPill),
-          border: Border.all(
-            color: mine ? colors.brand : colors.border,
-          ),
+          border: Border.all(color: mine ? colors.brand : colors.border),
         ),
         child: Text(
           '${reaction.emoji} ${reaction.count}',
           style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                color: mine ? colors.brand : colors.textPrimary,
-                fontWeight: FontWeight.w600,
-              ),
+            color: mine ? colors.brand : colors.textPrimary,
+            fontWeight: FontWeight.w600,
+          ),
         ),
       ),
     );
@@ -937,7 +1386,6 @@ class _Composer extends StatelessWidget {
     required this.controller,
     required this.pending,
     required this.replyTo,
-    required this.sending,
     required this.onSend,
     required this.onAttach,
     required this.onRemovePending,
@@ -947,7 +1395,6 @@ class _Composer extends StatelessWidget {
   final TextEditingController controller;
   final List<_PendingAttachment> pending;
   final Message? replyTo;
-  final bool sending;
   final VoidCallback onSend;
   final VoidCallback onAttach;
   final void Function(int index) onRemovePending;
@@ -966,8 +1413,10 @@ class _Composer extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            if (replyTo != null) _ReplyBanner(replyTo: replyTo!, onCancel: onCancelReply),
-            if (pending.isNotEmpty) _PendingStrip(pending: pending, onRemove: onRemovePending),
+            if (replyTo != null)
+              _ReplyBanner(replyTo: replyTo!, onCancel: onCancelReply),
+            if (pending.isNotEmpty)
+              _PendingStrip(pending: pending, onRemove: onRemovePending),
             Padding(
               padding: const EdgeInsets.symmetric(
                 horizontal: Tokens.space8,
@@ -980,7 +1429,7 @@ class _Composer extends StatelessWidget {
                     icon: const Icon(Icons.add_circle_outline),
                     color: colors.textMuted,
                     tooltip: 'Joindre',
-                    onPressed: sending ? null : onAttach,
+                    onPressed: onAttach,
                   ),
                   Expanded(
                     child: TextField(
@@ -996,21 +1445,13 @@ class _Composer extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: Tokens.space8),
-                  if (sending)
-                    const Padding(
-                      padding: EdgeInsets.all(Tokens.space12),
-                      child: SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      ),
-                    )
-                  else
-                    IconButton(
-                      icon: const Icon(Icons.send),
-                      color: colors.brand,
-                      onPressed: onSend,
-                    ),
+                  // Always enabled: the send is optimistic, so queuing several
+                  // messages in a row must never be blocked by one in flight.
+                  IconButton(
+                    icon: const Icon(Icons.send),
+                    color: colors.brand,
+                    onPressed: onSend,
+                  ),
                 ],
               ),
             ),
@@ -1050,18 +1491,17 @@ class _ReplyBanner extends StatelessWidget {
                 Text(
                   'Réponse à ${replyTo.authorName ?? 'un message'}',
                   style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                        color: colors.brand,
-                        fontWeight: FontWeight.w600,
-                      ),
+                    color: colors.brand,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
                 Text(
                   label,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: Theme.of(context)
-                      .textTheme
-                      .bodySmall
-                      ?.copyWith(color: colors.textMuted),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodySmall?.copyWith(color: colors.textMuted),
                 ),
               ],
             ),
@@ -1104,7 +1544,12 @@ class _PendingStrip extends StatelessWidget {
               ClipRRect(
                 borderRadius: BorderRadius.circular(Tokens.radiusSm),
                 child: p.isImage
-                    ? Image.file(File(p.path), width: 72, height: 72, fit: BoxFit.cover)
+                    ? Image.file(
+                        File(p.path),
+                        width: 72,
+                        height: 72,
+                        fit: BoxFit.cover,
+                      )
                     : Container(
                         width: 72,
                         height: 72,
@@ -1114,8 +1559,10 @@ class _PendingStrip extends StatelessWidget {
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(Icons.insert_drive_file_outlined,
-                                color: colors.textMuted),
+                            Icon(
+                              Icons.insert_drive_file_outlined,
+                              color: colors.textMuted,
+                            ),
                             const SizedBox(height: Tokens.space4),
                             Text(
                               p.name,
@@ -1135,7 +1582,11 @@ class _PendingStrip extends StatelessWidget {
                   child: CircleAvatar(
                     radius: 11,
                     backgroundColor: colors.danger,
-                    child: const Icon(Icons.close, size: 14, color: Colors.white),
+                    child: const Icon(
+                      Icons.close,
+                      size: 14,
+                      color: Colors.white,
+                    ),
                   ),
                 ),
               ),

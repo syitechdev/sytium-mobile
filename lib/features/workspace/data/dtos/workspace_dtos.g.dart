@@ -185,6 +185,11 @@ _$MessageDtoImpl _$$MessageDtoImplFromJson(Map<String, dynamic> json) =>
               ?.map((e) => AttachmentDto.fromJson(e as Map<String, dynamic>))
               .toList() ??
           const <AttachmentDto>[],
+      deliverySummary: json['delivery_summary'] == null
+          ? null
+          : DeliverySummaryDto.fromJson(
+              json['delivery_summary'] as Map<String, dynamic>,
+            ),
     );
 
 Map<String, dynamic> _$$MessageDtoImplToJson(_$MessageDtoImpl instance) =>
@@ -201,7 +206,30 @@ Map<String, dynamic> _$$MessageDtoImplToJson(_$MessageDtoImpl instance) =>
       'parent': instance.parent,
       'reactions': instance.reactions,
       'attachments': instance.attachments,
+      'delivery_summary': instance.deliverySummary,
     };
+
+_$DeliverySummaryDtoImpl _$$DeliverySummaryDtoImplFromJson(
+  Map<String, dynamic> json,
+) => _$DeliverySummaryDtoImpl(
+  state: json['state'] as String? ?? 'sent',
+  recipientsCount: json['recipients_count'] == null
+      ? 0
+      : _intFrom(json['recipients_count']),
+  deliveredCount: json['delivered_count'] == null
+      ? 0
+      : _intFrom(json['delivered_count']),
+  readCount: json['read_count'] == null ? 0 : _intFrom(json['read_count']),
+);
+
+Map<String, dynamic> _$$DeliverySummaryDtoImplToJson(
+  _$DeliverySummaryDtoImpl instance,
+) => <String, dynamic>{
+  'state': instance.state,
+  'recipients_count': instance.recipientsCount,
+  'delivered_count': instance.deliveredCount,
+  'read_count': instance.readCount,
+};
 
 _$ParentMessageDtoImpl _$$ParentMessageDtoImplFromJson(
   Map<String, dynamic> json,

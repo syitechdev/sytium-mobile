@@ -7,10 +7,10 @@ enum ConversationType { public, private, dm }
 /// Maps a backend channel `type` string to [ConversationType] (defaults to
 /// public so an unknown type never crashes the list).
 ConversationType conversationTypeFromApi(String raw) => switch (raw) {
-      'private' => ConversationType.private,
-      'dm' => ConversationType.dm,
-      _ => ConversationType.public,
-    };
+  'private' => ConversationType.private,
+  'dm' => ConversationType.dm,
+  _ => ConversationType.public,
+};
 
 @immutable
 class Conversation {
@@ -68,6 +68,20 @@ class Conversation {
   bool get isGroup => type != ConversationType.dm;
 }
 
+/// Où en est un message que j'ai envoyé, de la file locale à l'accusé de
+/// lecture. [sending] et [failed] sont purement locaux (envoi optimiste) ;
+/// [sent], [delivered] et [read] viennent du `delivery_summary` de l'API.
+enum DeliveryState { sending, failed, sent, delivered, read }
+
+/// Maps the backend `delivery_summary.state` to [DeliveryState]. Unknown or
+/// absent → null (no tick shown rather than a wrong one).
+DeliveryState? deliveryStateFromApi(String? raw) => switch (raw) {
+  'sent' => DeliveryState.sent,
+  'delivered' => DeliveryState.delivered,
+  'read' => DeliveryState.read,
+  _ => null,
+};
+
 @immutable
 class Message {
   const Message({
@@ -84,6 +98,7 @@ class Message {
     this.reactions = const <MessageReaction>[],
     this.attachments = const <Attachment>[],
     this.replyTo,
+    this.deliveryState,
   });
 
   final String id;
@@ -106,9 +121,46 @@ class Message {
   /// The message this one replies to (null when not a reply).
   final ReplyPreview? replyTo;
 
+  /// Delivery progress of my own message. Null on others' messages (and on
+  /// mine when the server sent no `delivery_summary`) — no tick is rendered.
+  final DeliveryState? deliveryState;
+
   /// Whether this message belongs to the connected user.
   bool isMine(String? currentUserId) =>
       currentUserId != null && authorId == currentUserId;
+
+  /// True while the message only exists locally (optimistic send in flight or
+  /// failed). Such a message has a `local-…` id the server never issued, so it
+  /// must not be edited, deleted or reacted to.
+  bool get isPending =>
+      deliveryState == DeliveryState.sending ||
+      deliveryState == DeliveryState.failed;
+
+  Message copyWith({
+    String? id,
+    String? content,
+    bool? isEdited,
+    bool? isDeleted,
+    DateTime? createdAt,
+    List<MessageReaction>? reactions,
+    List<Attachment>? attachments,
+    DeliveryState? deliveryState,
+  }) => Message(
+    id: id ?? this.id,
+    channelId: channelId,
+    authorId: authorId,
+    content: content ?? this.content,
+    authorName: authorName,
+    authorAvatarUrl: authorAvatarUrl,
+    isEdited: isEdited ?? this.isEdited,
+    isSystem: isSystem,
+    isDeleted: isDeleted ?? this.isDeleted,
+    createdAt: createdAt ?? this.createdAt,
+    reactions: reactions ?? this.reactions,
+    attachments: attachments ?? this.attachments,
+    replyTo: replyTo,
+    deliveryState: deliveryState ?? this.deliveryState,
+  );
 }
 
 /// An aggregated emoji reaction on a message.
@@ -125,8 +177,7 @@ class MessageReaction {
   final List<String> userIds;
 
   /// Whether the connected user is among those who reacted with this emoji.
-  bool reactedBy(String? userId) =>
-      userId != null && userIds.contains(userId);
+  bool reactedBy(String? userId) => userId != null && userIds.contains(userId);
 }
 
 /// A message attachment (image or generic file).
@@ -139,6 +190,7 @@ class Attachment {
     this.sizeBytes = 0,
     this.url,
     this.downloadUrl,
+    this.localPath,
   });
 
   final String id;
@@ -151,6 +203,10 @@ class Attachment {
 
   /// API download route (fresh URL each time).
   final String? downloadUrl;
+
+  /// On-device path of a file still being uploaded (optimistic send). Set only
+  /// while the message is pending; the server copy carries [url] instead.
+  final String? localPath;
 
   bool get isImage => (mimeType ?? '').startsWith('image/');
 }

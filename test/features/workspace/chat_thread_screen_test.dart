@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -17,6 +19,7 @@ import 'package:sytium_mobile/features/workspace/realtime/workspace_realtime.dar
 import 'package:sytium_mobile/features/workspace/realtime/workspace_realtime_provider.dart';
 import 'package:sytium_mobile/shared/widgets/error_state.dart';
 import 'package:sytium_mobile/theme/theme.dart';
+import 'package:sytium_mobile/theme/tokens.dart';
 
 class _FakeAuth extends AuthController {
   @override
@@ -148,6 +151,124 @@ class _ErrRepo extends _BaseRepo {
   @override
   Future<Result<MessagesPage>> messages(String channelId, {String? cursor, int limit = 50}) async =>
       const Err(ServerFailure(message: 'boom'));
+}
+
+/// Holds the send open so a test can observe the in-flight bubble.
+class _SlowSendRepo extends _BaseRepo {
+  final Completer<Result<Message>> completer = Completer<Result<Message>>();
+
+  @override
+  Future<Result<Message>> sendMessage(
+    String channelId, {
+    String content = '',
+    List<String> attachmentPaths = const <String>[],
+    String? parentId,
+  }) =>
+      completer.future;
+}
+
+/// One message per delivery state, plus a peer message that must stay tickless.
+class _DeliveryRepo extends _BaseRepo {
+  @override
+  Future<Result<MessagesPage>> messages(String channelId, {String? cursor, int limit = 50}) async =>
+      Ok(MessagesPage(
+        messages: [
+          Message(
+            id: 'd1',
+            channelId: 'c1',
+            authorId: 'me',
+            content: 'Envoyé seulement',
+            createdAt: DateTime(2026, 6, 29, 9),
+            deliveryState: DeliveryState.sent,
+          ),
+          Message(
+            id: 'd2',
+            channelId: 'c1',
+            authorId: 'me',
+            content: 'Reçu sur son téléphone',
+            createdAt: DateTime(2026, 6, 29, 9, 1),
+            deliveryState: DeliveryState.delivered,
+          ),
+          Message(
+            id: 'd3',
+            channelId: 'c1',
+            authorId: 'me',
+            content: 'Lu',
+            createdAt: DateTime(2026, 6, 29, 9, 2),
+            deliveryState: DeliveryState.read,
+          ),
+          Message(
+            id: 'd4',
+            channelId: 'c1',
+            authorId: 'peer',
+            authorName: 'Awa Diallo',
+            content: 'Sa réponse',
+            createdAt: DateTime(2026, 6, 29, 9, 3),
+            deliveryState: DeliveryState.sending,
+          ),
+        ],
+      ));
+}
+
+/// A thread long enough to scroll.
+class _LongRepo extends _BaseRepo {
+  @override
+  Future<Result<MessagesPage>> messages(String channelId, {String? cursor, int limit = 50}) async =>
+      Ok(MessagesPage(
+        messages: [
+          for (var i = 0; i < 40; i++)
+            Message(
+              id: 'l$i',
+              channelId: 'c1',
+              authorId: i.isEven ? 'peer' : 'me',
+              content: 'Message numéro $i',
+              createdAt: DateTime(2026, 6, 29, 9).add(Duration(minutes: i * 10)),
+            ),
+        ],
+      ));
+}
+
+/// Three consecutive messages from one author inside the grouping window.
+class _GroupedRepo extends _BaseRepo {
+  @override
+  Future<Result<MessagesPage>> messages(String channelId, {String? cursor, int limit = 50}) async =>
+      Ok(MessagesPage(
+        messages: [
+          for (var i = 0; i < 3; i++)
+            Message(
+              id: 'g$i',
+              channelId: 'c1',
+              authorId: 'peer',
+              authorName: 'Awa Diallo',
+              content: 'Ligne $i',
+              createdAt: DateTime(2026, 6, 29, 9, i),
+            ),
+        ],
+      ));
+}
+
+/// Two messages straddling midnight, to exercise the day separator.
+class _TwoDaysRepo extends _BaseRepo {
+  @override
+  Future<Result<MessagesPage>> messages(String channelId, {String? cursor, int limit = 50}) async =>
+      Ok(MessagesPage(
+        messages: [
+          Message(
+            id: 'a',
+            channelId: 'c1',
+            authorId: 'peer',
+            content: 'Veille',
+            createdAt: DateTime(2026, 6, 29, 18),
+          ),
+          Message(
+            id: 'b',
+            channelId: 'c1',
+            authorId: 'peer',
+            content: 'Lendemain',
+            createdAt: DateTime(2026, 6, 30, 8),
+          ),
+        ],
+      ));
 }
 
 class _RecordingRepo extends _BaseRepo {
@@ -334,7 +455,40 @@ void main() {
     await tester.pumpWidget(const SizedBox());
   });
 
-  testWidgets('failed send keeps the typed text', (tester) async {
+  // ── Envoi optimiste ──────────────────────────────────────────────────────
+
+  testWidgets('the bubble appears before the server answers, then gets a tick',
+      (tester) async {
+    final repo = _SlowSendRepo();
+    await tester.pumpWidget(_host(repo));
+    await tester.pump();
+    await tester.pump();
+
+    await tester.enterText(find.byType(TextField), 'En cours');
+    await tester.tap(find.byIcon(Icons.send));
+    await tester.pump();
+
+    // Still in flight: the message is already on screen, marked as queued.
+    expect(find.text('En cours'), findsOneWidget);
+    expect(find.byIcon(Icons.schedule), findsOneWidget);
+    // …and the composer is empty, ready for the next message.
+    expect(
+      tester.widget<TextField>(find.byType(TextField)).controller!.text,
+      isEmpty,
+    );
+
+    repo.completer.complete(
+      const Ok(Message(id: 'srv', channelId: 'c1', authorId: 'me', content: 'En cours')),
+    );
+    await tester.pump();
+    await tester.pump();
+
+    expect(find.byIcon(Icons.check), findsOneWidget);
+    await tester.pumpWidget(const SizedBox());
+  });
+
+  testWidgets('failed send clears the composer and leaves a retryable bubble',
+      (tester) async {
     final repo = _RecordingRepo()..failSend = true;
     await tester.pumpWidget(_host(repo));
     await tester.pump();
@@ -345,11 +499,134 @@ void main() {
     await tester.pump();
     await tester.pump();
 
-    // The send failed → the composer keeps the typed text (success-only clear).
+    // Optimistic contract: the composer empties and nothing is lost — the
+    // message stays in the thread, flagged as failed and recoverable.
     expect(
       tester.widget<TextField>(find.byType(TextField)).controller!.text,
-      'Message non envoyé',
+      isEmpty,
     );
+    expect(find.text('Message non envoyé'), findsOneWidget);
+    expect(find.byIcon(Icons.error_outline), findsOneWidget);
+
+    await tester.tap(find.text('Message non envoyé'));
+    await tester.pumpAndSettle();
+    expect(find.text('Réessayer l’envoi'), findsOneWidget);
+    expect(find.text('Supprimer'), findsOneWidget);
+    await tester.pumpWidget(const SizedBox());
+  });
+
+  testWidgets('retrying a failed message re-issues the send', (tester) async {
+    final repo = _RecordingRepo()..failSend = true;
+    await tester.pumpWidget(_host(repo));
+    await tester.pump();
+    await tester.pump();
+
+    await tester.enterText(find.byType(TextField), 'À renvoyer');
+    await tester.tap(find.byIcon(Icons.send));
+    await tester.pump();
+    await tester.pump();
+    expect(repo.sent, isEmpty);
+
+    repo.failSend = false;
+    await tester.tap(find.text('À renvoyer'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Réessayer l’envoi'));
+    await tester.pump();
+    await tester.pump();
+
+    expect(repo.sent, contains('À renvoyer'));
+    await tester.pumpWidget(const SizedBox());
+  });
+
+  testWidgets('discarding a failed message removes it from the thread',
+      (tester) async {
+    final repo = _RecordingRepo()..failSend = true;
+    await tester.pumpWidget(_host(repo));
+    await tester.pump();
+    await tester.pump();
+
+    await tester.enterText(find.byType(TextField), 'À jeter');
+    await tester.tap(find.byIcon(Icons.send));
+    await tester.pump();
+    await tester.pump();
+
+    await tester.tap(find.text('À jeter'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Supprimer'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('À jeter'), findsNothing);
+    await tester.pumpWidget(const SizedBox());
+  });
+
+  // ── Accusés de réception ─────────────────────────────────────────────────
+
+  testWidgets('renders a tick per delivery state, and none on others’ messages',
+      (tester) async {
+    final semantics = tester.ensureSemantics();
+    await tester.pumpWidget(_host(_DeliveryRepo()));
+    await tester.pump();
+    await tester.pump();
+
+    // ✓ sent · ✓✓ delivered · ✓✓ coloured read.
+    expect(find.byIcon(Icons.check), findsOneWidget);
+    expect(find.byIcon(Icons.done_all), findsNWidgets(2));
+    final read = tester
+        .widgetList<Icon>(find.byIcon(Icons.done_all))
+        .where((i) => i.color == Tokens.info);
+    expect(read, hasLength(1));
+    // The peer's message carries a delivery state too (the server sends one
+    // per message) but a tick there would be meaningless — never rendered.
+    expect(find.byIcon(Icons.schedule), findsNothing);
+    // Screen readers still hear the state: Flutter merges the tick label into
+    // the bubble's node, e.g. « Envoyé seulement / 09:00 / Envoyé ».
+    expect(find.bySemanticsLabel(RegExp(r'Lu$')), findsOneWidget);
+    semantics.dispose();
+    await tester.pumpWidget(const SizedBox());
+  });
+
+  // ── Séparateurs de date & blocs d'auteur ─────────────────────────────────
+
+  testWidgets('prints the author name once per block of consecutive messages',
+      (tester) async {
+    await tester.pumpWidget(_host(_GroupedRepo()));
+    await tester.pump();
+    await tester.pump();
+
+    // Three consecutive messages from Awa within the grouping window → one
+    // name, not three.
+    expect(find.text('Awa Diallo'), findsOneWidget);
+    await tester.pumpWidget(const SizedBox());
+  });
+
+  testWidgets('offers a way back down once the thread is scrolled up',
+      (tester) async {
+    await tester.pumpWidget(_host(_LongRepo()));
+    await tester.pump();
+    await tester.pump();
+
+    // At the bottom of the thread the button would be noise.
+    expect(find.byIcon(Icons.keyboard_arrow_down_rounded), findsNothing);
+
+    // `reverse: true` → dragging downwards walks back through history.
+    await tester.drag(find.byType(ListView), const Offset(0, 600));
+    await tester.pump();
+    expect(find.byIcon(Icons.keyboard_arrow_down_rounded), findsOneWidget);
+
+    await tester.tap(find.byIcon(Icons.keyboard_arrow_down_rounded));
+    await tester.pumpAndSettle();
+    expect(find.byIcon(Icons.keyboard_arrow_down_rounded), findsNothing);
+    await tester.pumpWidget(const SizedBox());
+  });
+
+  testWidgets('separates two days of conversation with a day marker',
+      (tester) async {
+    await tester.pumpWidget(_host(_TwoDaysRepo()));
+    await tester.pump();
+    await tester.pump();
+
+    expect(find.text('29 JUIN 2026'), findsOneWidget);
+    expect(find.text('30 JUIN 2026'), findsOneWidget);
     await tester.pumpWidget(const SizedBox());
   });
 

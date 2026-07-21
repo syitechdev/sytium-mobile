@@ -2003,6 +2003,8 @@ mixin _$MessageDto {
   ParentMessageDto? get parent => throw _privateConstructorUsedError;
   List<ReactionDto> get reactions => throw _privateConstructorUsedError;
   List<AttachmentDto> get attachments => throw _privateConstructorUsedError;
+  @JsonKey(name: 'delivery_summary')
+  DeliverySummaryDto? get deliverySummary => throw _privateConstructorUsedError;
 
   /// Serializes this MessageDto to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -2034,10 +2036,12 @@ abstract class $MessageDtoCopyWith<$Res> {
     ParentMessageDto? parent,
     List<ReactionDto> reactions,
     List<AttachmentDto> attachments,
+    @JsonKey(name: 'delivery_summary') DeliverySummaryDto? deliverySummary,
   });
 
   $MessageAuthorDtoCopyWith<$Res>? get author;
   $ParentMessageDtoCopyWith<$Res>? get parent;
+  $DeliverySummaryDtoCopyWith<$Res>? get deliverySummary;
 }
 
 /// @nodoc
@@ -2067,6 +2071,7 @@ class _$MessageDtoCopyWithImpl<$Res, $Val extends MessageDto>
     Object? parent = freezed,
     Object? reactions = null,
     Object? attachments = null,
+    Object? deliverySummary = freezed,
   }) {
     return _then(
       _value.copyWith(
@@ -2118,6 +2123,10 @@ class _$MessageDtoCopyWithImpl<$Res, $Val extends MessageDto>
                 ? _value.attachments
                 : attachments // ignore: cast_nullable_to_non_nullable
                       as List<AttachmentDto>,
+            deliverySummary: freezed == deliverySummary
+                ? _value.deliverySummary
+                : deliverySummary // ignore: cast_nullable_to_non_nullable
+                      as DeliverySummaryDto?,
           )
           as $Val,
     );
@@ -2150,6 +2159,20 @@ class _$MessageDtoCopyWithImpl<$Res, $Val extends MessageDto>
       return _then(_value.copyWith(parent: value) as $Val);
     });
   }
+
+  /// Create a copy of MessageDto
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @pragma('vm:prefer-inline')
+  $DeliverySummaryDtoCopyWith<$Res>? get deliverySummary {
+    if (_value.deliverySummary == null) {
+      return null;
+    }
+
+    return $DeliverySummaryDtoCopyWith<$Res>(_value.deliverySummary!, (value) {
+      return _then(_value.copyWith(deliverySummary: value) as $Val);
+    });
+  }
 }
 
 /// @nodoc
@@ -2174,12 +2197,15 @@ abstract class _$$MessageDtoImplCopyWith<$Res>
     ParentMessageDto? parent,
     List<ReactionDto> reactions,
     List<AttachmentDto> attachments,
+    @JsonKey(name: 'delivery_summary') DeliverySummaryDto? deliverySummary,
   });
 
   @override
   $MessageAuthorDtoCopyWith<$Res>? get author;
   @override
   $ParentMessageDtoCopyWith<$Res>? get parent;
+  @override
+  $DeliverySummaryDtoCopyWith<$Res>? get deliverySummary;
 }
 
 /// @nodoc
@@ -2208,6 +2234,7 @@ class __$$MessageDtoImplCopyWithImpl<$Res>
     Object? parent = freezed,
     Object? reactions = null,
     Object? attachments = null,
+    Object? deliverySummary = freezed,
   }) {
     return _then(
       _$MessageDtoImpl(
@@ -2259,6 +2286,10 @@ class __$$MessageDtoImplCopyWithImpl<$Res>
             ? _value._attachments
             : attachments // ignore: cast_nullable_to_non_nullable
                   as List<AttachmentDto>,
+        deliverySummary: freezed == deliverySummary
+            ? _value.deliverySummary
+            : deliverySummary // ignore: cast_nullable_to_non_nullable
+                  as DeliverySummaryDto?,
       ),
     );
   }
@@ -2280,6 +2311,7 @@ class _$MessageDtoImpl implements _MessageDto {
     this.parent,
     final List<ReactionDto> reactions = const <ReactionDto>[],
     final List<AttachmentDto> attachments = const <AttachmentDto>[],
+    @JsonKey(name: 'delivery_summary') this.deliverySummary,
   }) : _reactions = reactions,
        _attachments = attachments;
 
@@ -2333,8 +2365,12 @@ class _$MessageDtoImpl implements _MessageDto {
   }
 
   @override
+  @JsonKey(name: 'delivery_summary')
+  final DeliverySummaryDto? deliverySummary;
+
+  @override
   String toString() {
-    return 'MessageDto(id: $id, channelId: $channelId, userId: $userId, content: $content, isEdited: $isEdited, isSystem: $isSystem, deletedAt: $deletedAt, createdAt: $createdAt, author: $author, parent: $parent, reactions: $reactions, attachments: $attachments)';
+    return 'MessageDto(id: $id, channelId: $channelId, userId: $userId, content: $content, isEdited: $isEdited, isSystem: $isSystem, deletedAt: $deletedAt, createdAt: $createdAt, author: $author, parent: $parent, reactions: $reactions, attachments: $attachments, deliverySummary: $deliverySummary)';
   }
 
   @override
@@ -2364,7 +2400,9 @@ class _$MessageDtoImpl implements _MessageDto {
             const DeepCollectionEquality().equals(
               other._attachments,
               _attachments,
-            ));
+            ) &&
+            (identical(other.deliverySummary, deliverySummary) ||
+                other.deliverySummary == deliverySummary));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
@@ -2383,6 +2421,7 @@ class _$MessageDtoImpl implements _MessageDto {
     parent,
     const DeepCollectionEquality().hash(_reactions),
     const DeepCollectionEquality().hash(_attachments),
+    deliverySummary,
   );
 
   /// Create a copy of MessageDto
@@ -2413,6 +2452,8 @@ abstract class _MessageDto implements MessageDto {
     final ParentMessageDto? parent,
     final List<ReactionDto> reactions,
     final List<AttachmentDto> attachments,
+    @JsonKey(name: 'delivery_summary')
+    final DeliverySummaryDto? deliverySummary,
   }) = _$MessageDtoImpl;
 
   factory _MessageDto.fromJson(Map<String, dynamic> json) =
@@ -2448,12 +2489,264 @@ abstract class _MessageDto implements MessageDto {
   List<ReactionDto> get reactions;
   @override
   List<AttachmentDto> get attachments;
+  @override
+  @JsonKey(name: 'delivery_summary')
+  DeliverySummaryDto? get deliverySummary;
 
   /// Create a copy of MessageDto
   /// with the given fields replaced by the non-null parameter values.
   @override
   @JsonKey(includeFromJson: false, includeToJson: false)
   _$$MessageDtoImplCopyWith<_$MessageDtoImpl> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+DeliverySummaryDto _$DeliverySummaryDtoFromJson(Map<String, dynamic> json) {
+  return _DeliverySummaryDto.fromJson(json);
+}
+
+/// @nodoc
+mixin _$DeliverySummaryDto {
+  String get state => throw _privateConstructorUsedError;
+  @JsonKey(name: 'recipients_count', fromJson: _intFrom)
+  int get recipientsCount => throw _privateConstructorUsedError;
+  @JsonKey(name: 'delivered_count', fromJson: _intFrom)
+  int get deliveredCount => throw _privateConstructorUsedError;
+  @JsonKey(name: 'read_count', fromJson: _intFrom)
+  int get readCount => throw _privateConstructorUsedError;
+
+  /// Serializes this DeliverySummaryDto to a JSON map.
+  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
+
+  /// Create a copy of DeliverySummaryDto
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  $DeliverySummaryDtoCopyWith<DeliverySummaryDto> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+abstract class $DeliverySummaryDtoCopyWith<$Res> {
+  factory $DeliverySummaryDtoCopyWith(
+    DeliverySummaryDto value,
+    $Res Function(DeliverySummaryDto) then,
+  ) = _$DeliverySummaryDtoCopyWithImpl<$Res, DeliverySummaryDto>;
+  @useResult
+  $Res call({
+    String state,
+    @JsonKey(name: 'recipients_count', fromJson: _intFrom) int recipientsCount,
+    @JsonKey(name: 'delivered_count', fromJson: _intFrom) int deliveredCount,
+    @JsonKey(name: 'read_count', fromJson: _intFrom) int readCount,
+  });
+}
+
+/// @nodoc
+class _$DeliverySummaryDtoCopyWithImpl<$Res, $Val extends DeliverySummaryDto>
+    implements $DeliverySummaryDtoCopyWith<$Res> {
+  _$DeliverySummaryDtoCopyWithImpl(this._value, this._then);
+
+  // ignore: unused_field
+  final $Val _value;
+  // ignore: unused_field
+  final $Res Function($Val) _then;
+
+  /// Create a copy of DeliverySummaryDto
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? state = null,
+    Object? recipientsCount = null,
+    Object? deliveredCount = null,
+    Object? readCount = null,
+  }) {
+    return _then(
+      _value.copyWith(
+            state: null == state
+                ? _value.state
+                : state // ignore: cast_nullable_to_non_nullable
+                      as String,
+            recipientsCount: null == recipientsCount
+                ? _value.recipientsCount
+                : recipientsCount // ignore: cast_nullable_to_non_nullable
+                      as int,
+            deliveredCount: null == deliveredCount
+                ? _value.deliveredCount
+                : deliveredCount // ignore: cast_nullable_to_non_nullable
+                      as int,
+            readCount: null == readCount
+                ? _value.readCount
+                : readCount // ignore: cast_nullable_to_non_nullable
+                      as int,
+          )
+          as $Val,
+    );
+  }
+}
+
+/// @nodoc
+abstract class _$$DeliverySummaryDtoImplCopyWith<$Res>
+    implements $DeliverySummaryDtoCopyWith<$Res> {
+  factory _$$DeliverySummaryDtoImplCopyWith(
+    _$DeliverySummaryDtoImpl value,
+    $Res Function(_$DeliverySummaryDtoImpl) then,
+  ) = __$$DeliverySummaryDtoImplCopyWithImpl<$Res>;
+  @override
+  @useResult
+  $Res call({
+    String state,
+    @JsonKey(name: 'recipients_count', fromJson: _intFrom) int recipientsCount,
+    @JsonKey(name: 'delivered_count', fromJson: _intFrom) int deliveredCount,
+    @JsonKey(name: 'read_count', fromJson: _intFrom) int readCount,
+  });
+}
+
+/// @nodoc
+class __$$DeliverySummaryDtoImplCopyWithImpl<$Res>
+    extends _$DeliverySummaryDtoCopyWithImpl<$Res, _$DeliverySummaryDtoImpl>
+    implements _$$DeliverySummaryDtoImplCopyWith<$Res> {
+  __$$DeliverySummaryDtoImplCopyWithImpl(
+    _$DeliverySummaryDtoImpl _value,
+    $Res Function(_$DeliverySummaryDtoImpl) _then,
+  ) : super(_value, _then);
+
+  /// Create a copy of DeliverySummaryDto
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? state = null,
+    Object? recipientsCount = null,
+    Object? deliveredCount = null,
+    Object? readCount = null,
+  }) {
+    return _then(
+      _$DeliverySummaryDtoImpl(
+        state: null == state
+            ? _value.state
+            : state // ignore: cast_nullable_to_non_nullable
+                  as String,
+        recipientsCount: null == recipientsCount
+            ? _value.recipientsCount
+            : recipientsCount // ignore: cast_nullable_to_non_nullable
+                  as int,
+        deliveredCount: null == deliveredCount
+            ? _value.deliveredCount
+            : deliveredCount // ignore: cast_nullable_to_non_nullable
+                  as int,
+        readCount: null == readCount
+            ? _value.readCount
+            : readCount // ignore: cast_nullable_to_non_nullable
+                  as int,
+      ),
+    );
+  }
+}
+
+/// @nodoc
+@JsonSerializable()
+class _$DeliverySummaryDtoImpl implements _DeliverySummaryDto {
+  const _$DeliverySummaryDtoImpl({
+    this.state = 'sent',
+    @JsonKey(name: 'recipients_count', fromJson: _intFrom)
+    this.recipientsCount = 0,
+    @JsonKey(name: 'delivered_count', fromJson: _intFrom)
+    this.deliveredCount = 0,
+    @JsonKey(name: 'read_count', fromJson: _intFrom) this.readCount = 0,
+  });
+
+  factory _$DeliverySummaryDtoImpl.fromJson(Map<String, dynamic> json) =>
+      _$$DeliverySummaryDtoImplFromJson(json);
+
+  @override
+  @JsonKey()
+  final String state;
+  @override
+  @JsonKey(name: 'recipients_count', fromJson: _intFrom)
+  final int recipientsCount;
+  @override
+  @JsonKey(name: 'delivered_count', fromJson: _intFrom)
+  final int deliveredCount;
+  @override
+  @JsonKey(name: 'read_count', fromJson: _intFrom)
+  final int readCount;
+
+  @override
+  String toString() {
+    return 'DeliverySummaryDto(state: $state, recipientsCount: $recipientsCount, deliveredCount: $deliveredCount, readCount: $readCount)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$DeliverySummaryDtoImpl &&
+            (identical(other.state, state) || other.state == state) &&
+            (identical(other.recipientsCount, recipientsCount) ||
+                other.recipientsCount == recipientsCount) &&
+            (identical(other.deliveredCount, deliveredCount) ||
+                other.deliveredCount == deliveredCount) &&
+            (identical(other.readCount, readCount) ||
+                other.readCount == readCount));
+  }
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  int get hashCode => Object.hash(
+    runtimeType,
+    state,
+    recipientsCount,
+    deliveredCount,
+    readCount,
+  );
+
+  /// Create a copy of DeliverySummaryDto
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$DeliverySummaryDtoImplCopyWith<_$DeliverySummaryDtoImpl> get copyWith =>
+      __$$DeliverySummaryDtoImplCopyWithImpl<_$DeliverySummaryDtoImpl>(
+        this,
+        _$identity,
+      );
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$$DeliverySummaryDtoImplToJson(this);
+  }
+}
+
+abstract class _DeliverySummaryDto implements DeliverySummaryDto {
+  const factory _DeliverySummaryDto({
+    final String state,
+    @JsonKey(name: 'recipients_count', fromJson: _intFrom)
+    final int recipientsCount,
+    @JsonKey(name: 'delivered_count', fromJson: _intFrom)
+    final int deliveredCount,
+    @JsonKey(name: 'read_count', fromJson: _intFrom) final int readCount,
+  }) = _$DeliverySummaryDtoImpl;
+
+  factory _DeliverySummaryDto.fromJson(Map<String, dynamic> json) =
+      _$DeliverySummaryDtoImpl.fromJson;
+
+  @override
+  String get state;
+  @override
+  @JsonKey(name: 'recipients_count', fromJson: _intFrom)
+  int get recipientsCount;
+  @override
+  @JsonKey(name: 'delivered_count', fromJson: _intFrom)
+  int get deliveredCount;
+  @override
+  @JsonKey(name: 'read_count', fromJson: _intFrom)
+  int get readCount;
+
+  /// Create a copy of DeliverySummaryDto
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  _$$DeliverySummaryDtoImplCopyWith<_$DeliverySummaryDtoImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }
 

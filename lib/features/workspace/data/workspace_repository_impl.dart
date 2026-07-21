@@ -206,6 +206,7 @@ class WorkspaceRepositoryImpl implements WorkspaceRepository {
                 authorId: d.parent!.userId,
                 isDeleted: d.parent!.deletedAt != null,
               ),
+        deliveryState: deliveryStateFromApi(d.deliverySummary?.state),
       );
 
   Future<Result<T>> _guard<T>(Future<T> Function() run) async {
