@@ -1,5 +1,14 @@
 import 'package:flutter/foundation.dart';
 
+/// Un pointage deja effectue dans la journee.
+@immutable
+class PointageTodayEntry {
+  const PointageTodayEntry({required this.type, this.at});
+
+  final String type;
+  final DateTime? at;
+}
+
 @immutable
 class PointageStatus {
   const PointageStatus({
@@ -7,12 +16,24 @@ class PointageStatus {
     required this.nextType,
     required this.dayClosed,
     this.todayCount = 0,
+    this.todayEntries = const [],
   });
 
   final bool hasEmployee;
   final String? nextType; // null = day closed / no employee
   final bool dayClosed;
   final int todayCount;
+
+  /// Pointages deja enregistres aujourd'hui, dans l'ordre chronologique.
+  final List<PointageTodayEntry> todayEntries;
+
+  /// Heure d'arrivee du jour, si elle a eu lieu.
+  DateTime? get arrivedAt {
+    for (final entry in todayEntries) {
+      if (entry.type == 'entree') return entry.at;
+    }
+    return null;
+  }
 }
 
 @immutable

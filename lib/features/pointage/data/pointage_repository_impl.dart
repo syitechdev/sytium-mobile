@@ -23,6 +23,14 @@ class PointageRepositoryImpl implements PointageRepository {
           nextType: dto.nextType,
           dayClosed: dto.dayClosed,
           todayCount: dto.todayEntries.length,
+          todayEntries: dto.todayEntries
+              .map(
+                (e) => PointageTodayEntry(
+                  type: e.type,
+                  at: e.heure == null ? null : DateTime.tryParse(e.heure!)?.toLocal(),
+                ),
+              )
+              .toList(),
         );
       });
 

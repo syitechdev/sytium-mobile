@@ -191,7 +191,17 @@ class _PointerScreenState extends ConsumerState<PointerScreen> {
     );
   }
 
-  Future<void> _punch(String nextType) async {
+  Future<void> _punch(String nextType, {DateTime? arrivedAt}) async {
+    // Pause demandee peu apres l'arrivee : on fait confirmer plutot que de
+    // refuser, l'employe reste maitre de sa journee.
+    if (nextType == 'pause_debut' && arrivedAt != null) {
+      final since = DateTime.now().difference(arrivedAt);
+      if (since < kMinDelayBeforePause) {
+        final go = await confirmEarlyPause(context, arrivedAt);
+        if (!go || !mounted) return;
+      }
+    }
+
     setState(() {
       _phase = const PunchScanning();
       _scanning = true;
@@ -268,7 +278,10 @@ class _PointerScreenState extends ConsumerState<PointerScreen> {
           return;
         }
         setState(() {
-          _verdict = ZoneVerdict.outside;
+          // Seul un refus geographique remet le verdict au rouge. Un double
+          // pointage ou une journee close n'a rien a voir avec la zone : le
+          // bandeau annoncait « hors de la zone » a tort.
+          if (isZoneRefusal(f)) _verdict = ZoneVerdict.outside;
           _phase = punchRefusalFor(f);
         });
       },
@@ -344,7 +357,9 @@ class _PointerScreenState extends ConsumerState<PointerScreen> {
         return PunchCard(
           phase: _phase,
           nextLabel: next == null ? '' : (_motifLabels[next] ?? next),
-          onPunch: next == null ? () {} : () => _punch(next),
+          onPunch: next == null
+              ? () {}
+              : () => _punch(next, arrivedAt: status.arrivedAt),
         );
       },
     );
@@ -383,6 +398,10 @@ class _PointerScreenState extends ConsumerState<PointerScreen> {
     final sites =
         ref.watch(pointageZonesProvider).valueOrNull ?? const <PointageZone>[];
 
+    // Le sheet masque le bas de l'ecran : sans cette reserve, le centre de
+    // recherche tomberait derriere lui et paraitrait decentre.
+    final sheetInset = MediaQuery.sizeOf(context).height * _kSheetInitial;
+
     return Stack(
       children: [
         Positioned.fill(
@@ -390,13 +409,17 @@ class _PointerScreenState extends ConsumerState<PointerScreen> {
             position: _position,
             sites: sites,
             zoneColor: _verdictColor(context),
+            bottomInset: sheetInset,
           ),
         ),
         Positioned.fill(
-          child: RadarSweepOverlay(
-            isActive: _scanning,
-            trigger: _scanTrigger,
-            color: _verdictColor(context),
+          child: Padding(
+            padding: EdgeInsets.only(bottom: sheetInset),
+            child: RadarSweepOverlay(
+              isActive: _scanning,
+              trigger: _scanTrigger,
+              color: _verdictColor(context),
+            ),
           ),
         ),
         const _BackButton(),

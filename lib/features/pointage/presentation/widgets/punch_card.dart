@@ -95,6 +95,29 @@ String _outOfZoneDetail(PointageFailure f) {
   return 'Vous êtes à ${distance.round()} m de $site$radius.';
 }
 
+/// Le refus porte-t-il sur la position, ou sur une regle metier sans rapport ?
+///
+/// Determine si le bandeau de zone doit passer au rouge. Un double pointage ou
+/// une journee close n'a rien a voir avec l'endroit ou se trouve l'employe :
+/// les confondre affichait « hors de la zone » a tort.
+bool isZoneRefusal(Failure f) =>
+    f is PointageFailure &&
+    const {
+      'OUT_OF_ZONE',
+      'NO_ACTIVE_SITE',
+      'GPS_UNAVAILABLE',
+      'GPS_LOW_ACCURACY',
+    }.contains(f.code);
+
+/// Libelle du bouton, nomme d'apres l'action reellement effectuee.
+///
+/// Un simple « Pointer » laissait croire, apres un pointage reussi, que rien
+/// n'avait ete pris en compte : le bouton etait identique avant et apres.
+String punchCtaLabel(String nextLabel) {
+  if (nextLabel.isEmpty) return 'Pointer';
+  return 'Pointer ${nextLabel[0].toLowerCase()}${nextLabel.substring(1)}';
+}
+
 /// Bloc de pointage affiche dans le sheet flottant, au-dessus de la carte.
 ///
 /// La validation est automatique — il n'y a pas d'etape de confirmation. Une
@@ -155,7 +178,7 @@ class _Idle extends StatelessWidget {
         const SizedBox(height: Tokens.space4),
         Text(label, textAlign: TextAlign.center, style: theme.titleMedium),
         const SizedBox(height: Tokens.space16),
-        AppPrimaryButton(label: 'Pointer', onPressed: onPunch),
+        AppPrimaryButton(label: punchCtaLabel(label), onPressed: onPunch),
       ],
     );
   }
@@ -280,7 +303,7 @@ class _Done extends StatelessWidget {
             style: theme.titleMedium,
           ),
           const SizedBox(height: Tokens.space16),
-          AppPrimaryButton(label: 'Pointer', onPressed: onPunch),
+          AppPrimaryButton(label: punchCtaLabel(nextLabel), onPressed: onPunch),
         ],
       ],
     );

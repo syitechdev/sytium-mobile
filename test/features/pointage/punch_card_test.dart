@@ -20,7 +20,9 @@ void main() {
       await tester.pump();
 
       expect(find.text('Arrivée'), findsOneWidget);
-      expect(find.text('Pointer'), findsOneWidget);
+      // Le bouton nomme l'action : « Pointer » seul laissait croire, apres un
+      // pointage reussi, que rien n'avait ete pris en compte.
+      expect(find.text('Pointer arrivée'), findsOneWidget);
     });
 
     testWidgets('pendant la recherche, le radar tourne et le bouton disparaît', (
@@ -31,7 +33,7 @@ void main() {
 
       expect(find.textContaining('Recherche de votre position'), findsOneWidget);
       // Pas de second appui possible pendant la recherche.
-      expect(find.text('Pointer'), findsNothing);
+      expect(find.textContaining('Pointer'), findsNothing);
     });
 
     testWidgets('un refus affiche sa raison et permet de réessayer', (
@@ -62,7 +64,8 @@ void main() {
 
       expect(find.textContaining('enregistré'), findsOneWidget);
       expect(find.text('Départ'), findsOneWidget);
-      expect(find.text('Pointer'), findsOneWidget);
+      // Le CTA a suivi la sequence : il annonce desormais l'etape suivante.
+      expect(find.text('Pointer départ'), findsOneWidget);
     });
 
     testWidgets('journée close : le succès ne propose plus rien', (
@@ -74,7 +77,54 @@ void main() {
       await tester.pump();
 
       expect(find.textContaining('enregistré'), findsOneWidget);
-      expect(find.text('Pointer'), findsNothing);
+      expect(find.textContaining('Pointer'), findsNothing);
+    });
+  });
+
+  group('isZoneRefusal — ce qui teinte le bandeau en rouge', () {
+    test('un refus geographique concerne bien la zone', () {
+      for (final code in const [
+        'OUT_OF_ZONE',
+        'NO_ACTIVE_SITE',
+        'GPS_UNAVAILABLE',
+        'GPS_LOW_ACCURACY',
+      ]) {
+        expect(isZoneRefusal(PointageFailure(code: code)), isTrue, reason: code);
+      }
+    });
+
+    test('une regle metier ne dit rien de l’endroit ou se trouve l’employe', () {
+      // Le bug corrige : apres un second appui, le bandeau annoncait « hors de
+      // la zone » alors que le serveur refusait un double pointage.
+      for (final code in const [
+        'DUPLICATE_PUNCH',
+        'DAY_CLOSED',
+        'INVALID_PUNCH_SEQUENCE',
+        'NO_EMPLOYEE',
+      ]) {
+        expect(
+          isZoneRefusal(PointageFailure(code: code)),
+          isFalse,
+          reason: code,
+        );
+      }
+    });
+
+    test('un echec reseau ne teinte pas la zone', () {
+      expect(isZoneRefusal(const NetworkFailure()), isFalse);
+    });
+  });
+
+  group('punchCtaLabel — le bouton nomme son action', () {
+    test('chaque etape de la sequence a son libelle', () {
+      expect(punchCtaLabel('Arrivée'), 'Pointer arrivée');
+      expect(punchCtaLabel('Début pause'), 'Pointer début pause');
+      expect(punchCtaLabel('Fin pause'), 'Pointer fin pause');
+      expect(punchCtaLabel('Départ'), 'Pointer départ');
+    });
+
+    test('sans etape connue, on retombe sur un libelle neutre', () {
+      expect(punchCtaLabel(''), 'Pointer');
     });
   });
 

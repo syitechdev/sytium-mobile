@@ -18,6 +18,7 @@ class PointageMap extends StatefulWidget {
     required this.position,
     required this.sites,
     required this.zoneColor,
+    this.bottomInset = 0,
     super.key,
   });
 
@@ -29,6 +30,10 @@ class PointageMap extends StatefulWidget {
 
   /// Teinte des zones — elle suit le verdict, comme le radar.
   final Color zoneColor;
+
+  /// Hauteur masquée par le sheet. Google Maps la retire de la zone utile, si
+  /// bien que la position reste centrée dans la partie réellement visible.
+  final double bottomInset;
 
   @override
   State<PointageMap> createState() => _PointageMapState();
@@ -81,6 +86,7 @@ class _PointageMapState extends State<PointageMap> {
         zoom: _kDefaultZoom,
       ),
       onMapCreated: (controller) => _controller = controller,
+      padding: EdgeInsets.only(bottom: widget.bottomInset),
       // Le point bleu natif suffit ; l'écran pilote lui-même le cadrage, donc
       // ni bouton de recentrage ni contrôles de zoom.
       myLocationEnabled: widget.position != null,

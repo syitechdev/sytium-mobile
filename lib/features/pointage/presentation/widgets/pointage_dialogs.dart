@@ -187,3 +187,45 @@ Future<void> showOutOfZoneBlocker(
     ),
   );
 }
+
+/// Delai attendu entre l'arrivee et la premiere pause.
+const kMinDelayBeforePause = Duration(hours: 3);
+
+/// Demande confirmation quand la pause arrive tot apres l'arrivee.
+///
+/// Ce n'est pas un blocage : le delai n'est pas affiche a l'employe et rien ne
+/// l'empeche de continuer. On rappelle simplement son heure d'arrivee, parce
+/// qu'une pause prise quelques minutes apres est plus souvent une erreur de
+/// manipulation qu'une intention.
+Future<bool> confirmEarlyPause(BuildContext context, DateTime arrivedAt) async {
+  final colors = context.colors;
+  final heure =
+      '${arrivedAt.hour.toString().padLeft(2, '0')}h'
+      '${arrivedAt.minute.toString().padLeft(2, '0')}';
+
+  final confirmed = await showDialog<bool>(
+    context: context,
+    builder: (context) => AlertDialog(
+      icon: Icon(Icons.schedule_outlined, color: colors.warning, size: 32),
+      title: const Text('Déjà une pause ?'),
+      content: Text(
+        'Vous êtes arrivé à $heure. Voulez-vous vraiment pointer votre début '
+        'de pause maintenant ?',
+        textAlign: TextAlign.center,
+      ),
+      actionsAlignment: MainAxisAlignment.center,
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(false),
+          child: Text('Annuler', style: TextStyle(color: colors.textMuted)),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.of(context).pop(true),
+          child: const Text('Confirmer'),
+        ),
+      ],
+    ),
+  );
+
+  return confirmed ?? false;
+}
