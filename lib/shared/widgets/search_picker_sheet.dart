@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:sytium_mobile/theme/sytium_colors.dart';
 import 'package:sytium_mobile/theme/tokens.dart';
@@ -27,12 +29,15 @@ class PickerEntry<T> {
 
 /// Feuille de sélection avec recherche.
 ///
-/// Le filtrage est local, sur une liste déjà chargée : c'est ce que fait le web,
-/// et cela garde la recherche instantanée sur un réseau capricieux.
+/// Deux modes, selon la taille du référentiel :
+/// - [entries] seul : filtrage local sur une liste déjà chargée, instantané ;
+/// - [onSearch] : interrogation du serveur à la frappe, pour les référentiels
+///   qu'on ne peut pas tenir en mémoire sans en tronquer la fin.
 Future<T?> showSearchPicker<T>(
   BuildContext context, {
   required String title,
-  required List<PickerEntry<T>> entries,
+  List<PickerEntry<T>> entries = const [],
+  Future<List<PickerEntry<T>>> Function(String query)? onSearch,
   String hint = 'Rechercher…',
   String emptyLabel = 'Aucun résultat.',
 }) {
@@ -43,6 +48,7 @@ Future<T?> showSearchPicker<T>(
     builder: (_) => _SearchPickerSheet<T>(
       title: title,
       entries: entries,
+      onSearch: onSearch,
       hint: hint,
       emptyLabel: emptyLabel,
     ),
@@ -53,12 +59,14 @@ class _SearchPickerSheet<T> extends StatefulWidget {
   const _SearchPickerSheet({
     required this.title,
     required this.entries,
+    required this.onSearch,
     required this.hint,
     required this.emptyLabel,
   });
 
   final String title;
   final List<PickerEntry<T>> entries;
+  final Future<List<PickerEntry<T>>> Function(String query)? onSearch;
   final String hint;
   final String emptyLabel;
 
@@ -69,19 +77,57 @@ class _SearchPickerSheet<T> extends StatefulWidget {
 class _SearchPickerSheetState<T> extends State<_SearchPickerSheet<T>> {
   final _query = TextEditingController();
 
+  late List<PickerEntry<T>> _remote = widget.entries;
+  Timer? _debounce;
+  bool _searching = false;
+
+  /// Numéro de la requête en cours : une réponse tardive d'une frappe
+  /// précédente ne doit pas écraser un résultat plus récent.
+  int _searchToken = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.onSearch != null) _search('');
+  }
+
   @override
   void dispose() {
+    _debounce?.cancel();
     _query.dispose();
     super.dispose();
+  }
+
+  void _onQueryChanged(String value) {
+    if (widget.onSearch == null) {
+      setState(() {});
+      return;
+    }
+    // Une requête par frappe saturerait le réseau ; on attend une pause.
+    _debounce?.cancel();
+    _debounce = Timer(const Duration(milliseconds: 300), () => _search(value));
+  }
+
+  Future<void> _search(String query) async {
+    final token = ++_searchToken;
+    setState(() => _searching = true);
+
+    final results = await widget.onSearch!(query);
+    if (!mounted || token != _searchToken) return;
+
+    setState(() {
+      _remote = results;
+      _searching = false;
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
     final theme = Theme.of(context).textTheme;
-    final visible = widget.entries
-        .where((e) => e.matches(_query.text))
-        .toList();
+    final visible = widget.onSearch != null
+        ? _remote
+        : widget.entries.where((e) => e.matches(_query.text)).toList();
 
     return Padding(
       padding: EdgeInsets.only(
@@ -119,7 +165,7 @@ class _SearchPickerSheetState<T> extends State<_SearchPickerSheet<T>> {
               child: TextField(
                 controller: _query,
                 autofocus: true,
-                onChanged: (_) => setState(() {}),
+                onChanged: _onQueryChanged,
                 decoration: InputDecoration(
                   hintText: widget.hint,
                   prefixIcon: const Icon(Icons.search),
@@ -128,8 +174,9 @@ class _SearchPickerSheetState<T> extends State<_SearchPickerSheet<T>> {
               ),
             ),
             const Divider(height: 1),
+            if (_searching) const LinearProgressIndicator(minHeight: 2),
             Expanded(
-              child: visible.isEmpty
+              child: visible.isEmpty && !_searching
                   ? Center(
                       child: Padding(
                         padding: const EdgeInsets.all(Tokens.space24),

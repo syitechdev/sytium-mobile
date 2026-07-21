@@ -7,11 +7,17 @@ class ProformaLineInput {
     required this.description,
     required this.quantite,
     required this.prixUnitaire,
+    this.productId,
+    this.reference,
   });
 
   final String description;
   final num quantite;
   final num prixUnitaire;
+
+  /// Produit du catalogue dont la ligne est issue, s'il y en a un.
+  final String? productId;
+  final String? reference;
 
   num get total => quantite * prixUnitaire;
 }
@@ -32,6 +38,8 @@ class SalesDocInput {
     required this.kind,
     required this.clientNom,
     required this.items,
+    this.clientEmail,
+    this.clientAdresse,
     this.objet,
     this.tauxTva = 18,
     this.accountId,
@@ -39,10 +47,13 @@ class SalesDocInput {
 
   final SalesDocKind kind;
   final String clientNom;
+
+  /// Renseignés depuis la fiche client choisie ; le web les reprend de même.
+  final String? clientEmail;
+  final String? clientAdresse;
+
   final String? objet;
   final num tauxTva;
-
-  /// Discount %, applied to the HT (0–100).
 
   /// Cash account crediting the payment — required when [kind] is comptant.
   final String? accountId;

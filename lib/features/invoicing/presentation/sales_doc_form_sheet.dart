@@ -1,5 +1,4 @@
 import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -10,12 +9,15 @@ import 'package:sytium_mobile/features/cash/domain/cash_models.dart';
 import 'package:sytium_mobile/features/commercial/application/commercial_providers.dart';
 import 'package:sytium_mobile/features/finance/application/finance_providers.dart';
 import 'package:sytium_mobile/features/invoicing/application/invoicing_providers.dart';
+import 'package:sytium_mobile/features/invoicing/domain/catalogue.dart';
 import 'package:sytium_mobile/features/invoicing/domain/invoicing_models.dart';
 import 'package:sytium_mobile/shared/widgets/app_primary_button.dart';
 import 'package:sytium_mobile/shared/widgets/app_sheet.dart';
 import 'package:sytium_mobile/shared/widgets/app_text_field.dart';
+import 'package:sytium_mobile/shared/widgets/search_picker_sheet.dart';
 import 'package:sytium_mobile/theme/sytium_colors.dart';
 import 'package:sytium_mobile/theme/tokens.dart';
+
 
 /// Opens « Émission de pièce commerciale ». Resolves to `true` on success.
 ///
@@ -44,6 +46,9 @@ class _Line {
   late final TextEditingController quantite;
   late final TextEditingController prix;
 
+  /// Produit du catalogue d'où viennent désignation et prix, s'il y en a un.
+  ProductRef? product;
+
   num get qte => num.tryParse(quantite.text.trim().replaceAll(',', '.')) ?? 0;
   num get pu =>
       num.tryParse(
@@ -57,6 +62,8 @@ class _Line {
     description: description.text.trim(),
     quantite: qte,
     prixUnitaire: pu,
+    productId: product?.id,
+    reference: product?.reference,
   );
 
   void dispose() {
@@ -79,6 +86,8 @@ class _SalesDocFormSheetState extends ConsumerState<_SalesDocFormSheet> {
   final _client = TextEditingController();
   final _objet = TextEditingController();
   final _lines = <_Line>[];
+
+  ClientRef? _clientRef;
 
   late SalesDocKind _kind = widget.initialKind;
   num _taux = 18;
@@ -109,6 +118,61 @@ class _SalesDocFormSheetState extends ConsumerState<_SalesDocFormSheet> {
       l.dispose();
     }
     super.dispose();
+  }
+
+  Future<void> _pickClient() async {
+    final catalogue = ref.read(catalogueProvider);
+    final picked = await showSearchPicker<ClientRef>(
+      context,
+      title: 'Client',
+      hint: 'Nom, code, e-mail ou téléphone',
+      emptyLabel: 'Aucun client trouvé.',
+      onSearch: (query) async {
+        final clients = await catalogue.searchClients(query);
+        return [
+          for (final c in clients)
+            PickerEntry(
+              value: c,
+              label: c.nom,
+              detail: c.email ?? c.telephone ?? c.adresse,
+            ),
+        ];
+      },
+    );
+    if (picked == null || !mounted) return;
+
+    setState(() {
+      _clientRef = picked;
+      _client.text = picked.nom;
+      _clientError = null;
+    });
+  }
+
+  Future<void> _pickProduct(_Line line) async {
+    final products = await ref.read(productsProvider.future);
+    if (!mounted) return;
+
+    final picked = await showSearchPicker<ProductRef>(
+      context,
+      title: 'Produit',
+      hint: 'Référence ou désignation',
+      emptyLabel: 'Aucun produit actif au catalogue.',
+      entries: [
+        for (final p in products)
+          PickerEntry(
+            value: p,
+            label: p.label,
+            detail: Money.fcfa(p.prixHt),
+          ),
+      ],
+    );
+    if (picked == null || !mounted) return;
+
+    setState(() {
+      line.product = picked;
+      line.description.text = picked.libelle;
+      line.prix.text = picked.prixHt.round().toString();
+    });
   }
 
   void _recompute() => setState(() {});
@@ -164,6 +228,8 @@ class _SalesDocFormSheetState extends ConsumerState<_SalesDocFormSheet> {
           SalesDocInput(
             kind: _kind,
             clientNom: client,
+            clientEmail: _clientRef?.email,
+            clientAdresse: _clientRef?.adresse,
             objet: _objet.text.trim().isEmpty ? null : _objet.text.trim(),
             tauxTva: _taux,
             accountId: needAccount ? _account!.id : null,
@@ -246,6 +312,14 @@ class _SalesDocFormSheetState extends ConsumerState<_SalesDocFormSheet> {
               controller: _client,
               label: 'Client',
               hint: 'Ex : SODECI, Orange CI…',
+              // Le web laisse aussi taper un nom non répertorié : le devis
+              // n'est pas lié au référentiel, il en recopie les valeurs.
+              suffix: IconButton(
+                onPressed: _pickClient,
+                icon: const Icon(Icons.search),
+                tooltip: 'Rechercher un client',
+              ),
+              onChanged: (_) => _clientRef = null,
               prefixIcon: Icons.business_outlined,
               errorText: _clientError,
             ),
@@ -281,6 +355,7 @@ class _SalesDocFormSheetState extends ConsumerState<_SalesDocFormSheet> {
                 line: _lines[i],
                 canRemove: _lines.length > 1,
                 onRemove: () => _removeLine(i),
+                onPickProduct: () => _pickProduct(_lines[i]),
               ),
             const SizedBox(height: Tokens.space16),
             _Dropdown<num>(
@@ -412,11 +487,13 @@ class _LineEditor extends StatelessWidget {
     required this.line,
     required this.canRemove,
     required this.onRemove,
+    required this.onPickProduct,
   });
 
   final _Line line;
   final bool canRemove;
   final VoidCallback onRemove;
+  final VoidCallback onPickProduct;
 
   @override
   Widget build(BuildContext context) {
@@ -436,11 +513,19 @@ class _LineEditor extends StatelessWidget {
               Expanded(
                 child: TextField(
                   controller: line.description,
+                  // Une désignation retouchée à la main ne vient plus du
+                  // catalogue : on cesse de prétendre le contraire.
+                  onChanged: (_) => line.product = null,
                   decoration: const InputDecoration(
                     isDense: true,
                     hintText: 'Désignation',
                   ),
                 ),
+              ),
+              IconButton(
+                onPressed: onPickProduct,
+                icon: const Icon(Icons.inventory_2_outlined, size: 18),
+                tooltip: 'Choisir au catalogue',
               ),
               if (canRemove)
                 IconButton(
@@ -550,10 +635,12 @@ class _TotalsCard extends StatelessWidget {
     final style = emphasize
         ? theme.titleMedium?.copyWith(fontWeight: FontWeight.w700)
         : theme.bodyMedium?.copyWith(color: color ?? colors.textMuted);
+    // Le libellé cède la place au montant : « Total net à payer (TTC) » suivi
+    // d'une somme à sept chiffres débordait sur un écran étroit.
     return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(label, style: style),
+        Expanded(child: Text(label, style: style)),
+        const SizedBox(width: Tokens.space12),
         Text(
           value,
           style: style?.copyWith(

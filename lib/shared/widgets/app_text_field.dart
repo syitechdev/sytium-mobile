@@ -15,6 +15,7 @@ class AppTextField extends StatelessWidget {
     this.suffix,
     this.textInputAction,
     this.onSubmitted,
+    this.onChanged,
     super.key,
   });
 
@@ -30,6 +31,7 @@ class AppTextField extends StatelessWidget {
   final Widget? suffix;
   final TextInputAction? textInputAction;
   final ValueChanged<String>? onSubmitted;
+  final ValueChanged<String>? onChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -45,6 +47,7 @@ class AppTextField extends StatelessWidget {
           maxLines: maxLines,
           textInputAction: textInputAction,
           onSubmitted: onSubmitted,
+          onChanged: onChanged,
           decoration: InputDecoration(
             hintText: hint,
             errorText: errorText,

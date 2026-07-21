@@ -15,6 +15,10 @@ class InvoicingRemoteDataSource {
       path,
       data: {
         'client_nom': input.clientNom,
+        if (input.clientEmail != null && input.clientEmail!.isNotEmpty)
+          'client_email': input.clientEmail,
+        if (input.clientAdresse != null && input.clientAdresse!.isNotEmpty)
+          'client_adresse': input.clientAdresse,
         if (input.objet != null && input.objet!.isNotEmpty) 'objet': input.objet,
         'taux_tva': input.tauxTva,
         if (input.isComptant) 'comptant': true,
@@ -25,6 +29,9 @@ class InvoicingRemoteDataSource {
               'description': it.description,
               'quantite': it.quantite,
               'prix_unitaire': it.prixUnitaire,
+              if (it.productId != null) 'product_id': it.productId,
+              if (it.reference != null && it.reference!.isNotEmpty)
+                'reference': it.reference,
             },
         ],
       },
