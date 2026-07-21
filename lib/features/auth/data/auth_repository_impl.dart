@@ -96,7 +96,7 @@ class AuthRepositoryImpl implements AuthRepository {
     if (raw == null) return null;
     try {
       final decoded = jsonDecode(raw) as Map<String, dynamic>;
-      return _session(BootstrapResponseDto.fromJson(decoded));
+      return _session(BootstrapResponseDto.fromJson(decoded), stale: true);
     } catch (_) {
       // Charge illisible (format changé entre deux versions) : on la jette
       // plutôt que de faire échouer chaque démarrage hors ligne.
@@ -117,7 +117,7 @@ class AuthRepositoryImpl implements AuthRepository {
     }
   }
 
-  AuthSession _session(BootstrapResponseDto boot) {
+  AuthSession _session(BootstrapResponseDto boot, {bool stale = false}) {
     final org = boot.user.organization;
     final primaryRole = boot.user.roles.isNotEmpty
         ? boot.user.roles.first.role
@@ -164,6 +164,7 @@ class AuthRepositoryImpl implements AuthRepository {
             .toList(),
       ),
       unreadCount: boot.unreadCount,
+      stale: stale,
     );
   }
 }

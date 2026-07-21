@@ -8,6 +8,7 @@ class AuthSession {
     required this.user,
     required this.capabilities,
     this.unreadCount = 0,
+    this.stale = false,
   });
 
   final AuthUser user;
@@ -15,4 +16,8 @@ class AuthSession {
 
   /// Unread notification count at bootstrap — seeds the bell badge.
   final int unreadCount;
+
+  /// Session reconstruite depuis le cache local, faute de réseau au démarrage.
+  /// Profil et habilitations peuvent dater : à rafraîchir dès que possible.
+  final bool stale;
 }
