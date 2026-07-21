@@ -442,10 +442,86 @@ void main() {
   });
 
   testWidgets('calls markRead once when the thread opens', (tester) async {
+    // Fil vide : seule l'ouverture déclare la lecture.
+    final repo = _BaseRepo();
+    await tester.pumpWidget(_host(repo));
+    await tester.pump();
+    await tester.pump();
+    expect(repo.markReadCalls, 1);
+    await tester.pumpWidget(const SizedBox());
+  });
+
+  testWidgets('déclare lu un message d’autrui arrivé sous les yeux',
+      (tester) async {
     final repo = _MessagesRepo();
     await tester.pumpWidget(_host(repo));
     await tester.pump();
     await tester.pump();
+
+    // Le serveur ne marque plus lu sur GET (mark_read=0) : c'est l'écran
+    // visible qui le dit, sinon un message lu en direct resterait non lu.
+    expect(repo.markReadCalls, 2);
+    await tester.pumpWidget(const SizedBox());
+  });
+
+  testWidgets('ne redéclare pas lu tant que rien de neuf n’arrive',
+      (tester) async {
+    final repo = _MessagesRepo();
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          authControllerProvider.overrideWith(_FakeAuth.new),
+          workspaceRepositoryProvider.overrideWithValue(repo),
+          workspaceRealtimeProvider.overrideWithValue(FakeWorkspaceRealtime()),
+        ],
+        child: MaterialApp(
+          home: Theme(
+            data: AppTheme.light(),
+            child: const ChatThreadScreen(
+              conversation: _kChannel,
+              pollInterval: Duration(milliseconds: 40),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump();
+    final after = repo.markReadCalls;
+
+    // Plusieurs tours de sondage sur le même contenu.
+    await tester.pump(const Duration(milliseconds: 130));
+    await tester.pump();
+
+    expect(repo.markReadCalls, after);
+    await tester.pumpWidget(const SizedBox());
+  });
+
+  testWidgets('ne déclare rien lu en arrière-plan', (tester) async {
+    final repo = _MessagesRepo();
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          authControllerProvider.overrideWith(_FakeAuth.new),
+          workspaceRepositoryProvider.overrideWithValue(repo),
+          workspaceRealtimeProvider.overrideWithValue(FakeWorkspaceRealtime()),
+          appForegroundProvider.overrideWith(_Background.new),
+        ],
+        child: MaterialApp(
+          home: Theme(
+            data: AppTheme.light(),
+            child: const ChatThreadScreen(
+              conversation: _kChannel,
+              pollInterval: null,
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump();
+
+    // Seule l'ouverture compte ; le contenu affiché n'est vu de personne.
     expect(repo.markReadCalls, 1);
     await tester.pumpWidget(const SizedBox());
   });

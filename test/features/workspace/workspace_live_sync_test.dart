@@ -7,6 +7,7 @@ import 'package:sytium_mobile/features/auth/application/auth_controller.dart';
 import 'package:sytium_mobile/features/auth/domain/auth_session.dart';
 import 'package:sytium_mobile/features/auth/domain/auth_user.dart';
 import 'package:sytium_mobile/features/auth/domain/mobile_capabilities.dart';
+import 'package:sytium_mobile/features/workspace/application/active_chat_channel.dart';
 import 'package:sytium_mobile/features/workspace/application/workspace_live_sync.dart';
 import 'package:sytium_mobile/features/workspace/application/workspace_providers.dart';
 import 'package:sytium_mobile/features/workspace/domain/workspace_models.dart';
@@ -141,8 +142,8 @@ void main() {
 
     container.read(workspaceLiveSyncProvider).start(pollInterval: null);
     await _settle();
-    // Someone is reading c2's thread somewhere in the app. The listener must
-    // stay open: an autoDispose provider nobody watches has nothing to refetch.
+    // L'utilisateur regarde le fil de c2 : l'écran le signale ainsi.
+    container.read(activeChatChannelProvider.notifier).enter('c2');
     final thread = container.listen(channelMessagesProvider('c2'), (_, __) {});
     addTearDown(thread.close);
     await _settle();
@@ -160,6 +161,57 @@ void main() {
 
     expect(repo.conversationCalls, greaterThan(listCallsBefore));
     expect(repo.messageCalls.length, greaterThan(threadCallsBefore));
+  });
+
+  test('ne recharge PAS un fil que personne ne regarde', () async {
+    final realtime = FakeWorkspaceRealtime();
+    final repo = _Repo();
+    final container = _container(repo, realtime);
+
+    container.read(workspaceLiveSyncProvider).start(pollInterval: null);
+    await _settle();
+    // Aucun fil ouvert : activeChatChannel reste nul.
+    final before = repo.messageCalls.length;
+
+    realtime.emit(
+      c2,
+      const RealtimeEvent(
+        event: 'workspace.message.created',
+        data: {'channel_id': 'c2'},
+      ),
+    );
+    await _settle();
+
+    // En debug, `ref.invalidate` sur un provider autoDispose inexistant le CRÉE
+    // (riverpod 2.6.1, assert `_debugAssertCanDependOn`) : le GET partait et le
+    // serveur marquait la conversation lue chez quelqu'un qui n'avait rien vu.
+    expect(repo.messageCalls.length, before);
+  });
+
+  test('ne recharge pas le fil ouvert quand l’événement vise un autre canal',
+      () async {
+    final realtime = FakeWorkspaceRealtime();
+    final repo = _Repo();
+    final container = _container(repo, realtime);
+
+    container.read(workspaceLiveSyncProvider).start(pollInterval: null);
+    await _settle();
+    container.read(activeChatChannelProvider.notifier).enter('c1');
+    final thread = container.listen(channelMessagesProvider('c1'), (_, __) {});
+    addTearDown(thread.close);
+    await _settle();
+    final before = repo.messageCalls.length;
+
+    realtime.emit(
+      c2,
+      const RealtimeEvent(
+        event: 'workspace.message.created',
+        data: {'channel_id': 'c2'},
+      ),
+    );
+    await _settle();
+
+    expect(repo.messageCalls.length, before);
   });
 
   test('ignores events that are not about a message', () async {

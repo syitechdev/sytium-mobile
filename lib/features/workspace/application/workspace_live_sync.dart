@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:sytium_mobile/app/lifecycle/app_foreground.dart';
 import 'package:sytium_mobile/features/auth/application/auth_controller.dart';
+import 'package:sytium_mobile/features/workspace/application/active_chat_channel.dart';
 import 'package:sytium_mobile/features/workspace/application/workspace_providers.dart';
 import 'package:sytium_mobile/features/workspace/domain/workspace_models.dart';
 import 'package:sytium_mobile/features/workspace/realtime/workspace_realtime.dart';
@@ -169,15 +170,20 @@ class WorkspaceLiveSync {
     // Refreshing the list is free of side effects, so it happens either way.
     _ref.invalidate(conversationsProvider);
 
-    // Refetching a thread is NOT free: the backend marks the channel read on
-    // every `GET /messages`. Doing that while the app sits in the background
-    // wiped the unread badge and told the sender their message had been read,
-    // with nobody having looked at anything.
-    if (!_isForeground) return;
+    // Only the thread the user is actually looking at gets refetched.
+    //
+    // Two reasons, and both bit us. (1) Fetching a channel nobody is reading is
+    // wasted network. (2) `Ref.invalidate` on an autoDispose provider that does
+    // NOT exist is a no-op in release — but in DEBUG, riverpod 2.6.1 runs
+    // `assert(_debugAssertCanDependOn(...))`, which calls `readProviderElement`
+    // and therefore CREATES and builds the provider (riverpod-2.6.1
+    // `framework/element.dart:286` and `:624`). The `GET /messages` fired, and
+    // the server marked the channel read — badge gone, sender told "read".
     final channelId = event.data['channel_id'];
-    if (channelId is String && channelId.isNotEmpty) {
-      _ref.invalidate(channelMessagesProvider(channelId));
-    }
+    if (channelId == null || channelId is! String || channelId.isEmpty) return;
+    if (!_isForeground) return;
+    if (_ref.read(activeChatChannelProvider) != channelId) return;
+    _ref.invalidate(channelMessagesProvider(channelId));
   }
 
   void _refreshConversations() {

@@ -258,6 +258,33 @@ class ChatThreadScreenState extends ConsumerState<ChatThreadScreen> {
 
   /// Counts messages that arrived since the last page while the user was
   /// reading further up. Own messages never count — sending scrolls to bottom.
+  /// Id du dernier message d'autrui déjà déclaré lu au serveur.
+  String? _lastReadUpTo;
+
+  /// Déclare la conversation lue quand un message d'autrui arrive alors que
+  /// l'utilisateur la regarde vraiment.
+  ///
+  /// Le serveur ne marque plus lu tout seul sur `GET /messages` (`mark_read=0`)
+  /// — c'est ce qui effaçait la pastille de non-lus de gens qui n'avaient rien
+  /// ouvert. La contrepartie est ici : c'est l'écran visible qui le dit.
+  void _markReadIfNeeded(List<Message> messages) {
+    if (!mounted || !ref.read(appForegroundProvider)) return;
+
+    final me = ref.read(currentUserIdProvider);
+    final incoming = messages.where((m) => !m.isMine(me) && !m.isSystem);
+    if (incoming.isEmpty) return;
+
+    final newest = incoming.last.id;
+    if (newest == _lastReadUpTo) return;
+    _lastReadUpTo = newest;
+
+    unawaited(
+      ref.read(workspaceRepositoryProvider).markRead(_channelId).then((_) {
+        if (mounted) ref.invalidate(conversationsProvider);
+      }),
+    );
+  }
+
   void _countArrivals(List<Message> messages) {
     if (messages.isEmpty) return;
     final newestId = messages.last.id;
@@ -649,6 +676,7 @@ class ChatThreadScreenState extends ConsumerState<ChatThreadScreen> {
         for (final m in page.messages) m.id,
       });
       _countArrivals(page.messages);
+      _markReadIfNeeded(page.messages);
     });
 
     return Scaffold(

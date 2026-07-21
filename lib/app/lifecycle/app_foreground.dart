@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
@@ -18,7 +19,18 @@ class AppForeground extends _$AppForeground {
   @override
   bool build() {
     final listener = AppLifecycleListener(
-      onStateChange: (value) => state = value == AppLifecycleState.resumed,
+      onStateChange: (value) {
+        final foreground = value == AppLifecycleState.resumed;
+        // Tracé en debug : sans lui, impossible de distinguer « le sondage a
+        // bien été suspendu » de « l'app se croyait encore devant ».
+        if (kDebugMode) {
+          debugPrint(
+            '[RT] app ${foreground ? "AU PREMIER PLAN" : "EN ARRIÈRE-PLAN"} '
+            '(${value.name})',
+          );
+        }
+        state = foreground;
+      },
     );
     ref.onDispose(listener.dispose);
 

@@ -92,6 +92,11 @@ class WorkspaceRemoteDataSource {
         // Flat mode: replies come inline (with their `parent` quote) since the
         // mobile thread has no separate thread panel.
         'flat': 1,
+        // Reading a page must NOT declare the conversation read: the server
+        // used to do that on every GET, so any refresh wiped the recipient's
+        // unread badge and sent a read receipt for a message nobody opened.
+        // The thread screen posts `/read` itself when the user is looking.
+        'mark_read': 0,
       },
     );
     return MessagesPageDto.fromJson(res.data!);
