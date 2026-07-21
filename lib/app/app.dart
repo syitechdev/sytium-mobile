@@ -9,6 +9,8 @@ import 'package:sytium_mobile/app/theme/theme_mode_controller.dart';
 import 'package:sytium_mobile/core/utils/money.dart';
 import 'package:sytium_mobile/features/auth/application/auth_controller.dart';
 import 'package:sytium_mobile/features/calls/presentation/call_overlay_host.dart';
+import 'package:sytium_mobile/features/shell/application/home_tab.dart';
+import 'package:sytium_mobile/features/workspace/application/workspace_live_sync.dart';
 import 'package:sytium_mobile/features/workspace/realtime/workspace_realtime_provider.dart';
 import 'package:sytium_mobile/theme/theme.dart';
 
@@ -27,7 +29,15 @@ class App extends ConsumerWidget {
       if (isAuthed && !wasAuthed) {
         // Démarre FCM (permission, token, écouteurs) après connexion.
         coordinator.onAuthenticated();
+        // Abonne la messagerie à TOUTES les conversations : sans ça, un message
+        // reçu hors de l'écran de conversation n'apparaissait nulle part (ni
+        // pastille, ni liste) avant un rafraîchissement manuel.
+        ref.read(workspaceLiveSyncProvider).start();
       } else if (wasAuthed && !isAuthed) {
+        // L'onglet est keepAlive : sans remise à zéro, le compte suivant
+        // arriverait sur l'onglet où le précédent s'était arrêté.
+        ref.read(homeTabProvider.notifier).select(HomeTabs.accueil);
+        ref.read(workspaceLiveSyncProvider).stop();
         ref.read(workspaceRealtimeProvider).disconnect();
         coordinator.onLoggedOut();
       }

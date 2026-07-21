@@ -45,15 +45,16 @@ final currentUserIdProvider = AutoDisposeProvider<String?>.internal(
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef CurrentUserIdRef = AutoDisposeProviderRef<String?>;
-String _$conversationsHash() => r'1c9973bae26af76aa40fe7a6765e82c011a74e2d';
+String _$conversationsHash() => r'a0a23ecd0e19b2c29aa11c36c3b9b3ff2dbc3ac5';
 
 /// Conversations list. Channels keep their name; each DM resolves its peer
-/// (title + avatar) via a parallel `channelMembers` call (N+1, but the list
-/// endpoint omits the peer). The DM peer's avatar is enriched from the org
-/// roster (`orgMembers`, where `id == userId` carries the employee photo);
-/// roster photo wins, else the channel-member `profile.avatar_url`, else
-/// initials. Self is filtered out by [currentUserId]. Sorted by
-/// `lastMessageAt ?? updatedAt` descending (nulls last).
+/// (title + avatar) through [dmPeer], which the list endpoint omits.
+///
+/// PERF: the peer resolution goes through `dmPeerProvider` rather than calling
+/// `channelMembers` inline. A DM's peer never changes, so Riverpod serves it
+/// from cache on every later rebuild — otherwise each refresh of this list
+/// (poll, realtime event, pull-to-refresh) fired one request PER DM.
+/// Sorted by `lastMessageAt ?? updatedAt` descending (nulls last).
 ///
 /// Copied from [conversations].
 @ProviderFor(conversations)

@@ -761,139 +761,55 @@ void main() {
     await tester.pumpWidget(const SizedBox());
   });
 
-  // ── WS2-A: realtime subscribe / invalidate / unsubscribe ────────────────
+  // Le temps réel a quitté cet écran : `WorkspaceLiveSync` tient UN abonnement
+  // par conversation pour toute l'app (cf. workspace_live_sync_test.dart). Ici
+  // on vérifie seulement que le fil n'y touche plus — deux abonnés sur le même
+  // nom de canal se marchaient dessus.
 
-  const kRtChannel = 'private-org.org-9.workspace.c1';
-
-  testWidgets('subscribes to the org channel on open', (tester) async {
+  testWidgets('never subscribes to the realtime channel itself', (tester) async {
     final realtime = FakeWorkspaceRealtime();
-    await tester.pumpWidget(_host(_BaseRepo(), realtime: realtime, auth: _OrgAuth.new));
-    await tester.pump();
-    await tester.pump();
-
-    expect(realtime.subscribed, contains(kRtChannel));
-    expect(realtime.connected, isTrue);
-    await tester.pumpWidget(const SizedBox());
-  });
-
-  testWidgets('message.created on this channel triggers a refetch', (tester) async {
-    final repo = _BaseRepo();
-    final realtime = FakeWorkspaceRealtime();
-    await tester.pumpWidget(_host(repo, realtime: realtime, auth: _OrgAuth.new));
-    await tester.pump();
-    await tester.pump();
-    final before = repo.messageCursors.length;
-
-    realtime.emit(
-      kRtChannel,
-      const RealtimeEvent(
-        event: 'workspace.message.created',
-        data: {'channel_id': 'c1'},
-      ),
+    await tester.pumpWidget(
+      _host(_BaseRepo(), realtime: realtime, auth: _OrgAuth.new),
     );
-    await tester.pump();
-    await tester.pump();
-
-    expect(repo.messageCursors.length, greaterThan(before));
-    await tester.pumpWidget(const SizedBox());
-  });
-
-  testWidgets('message.updated on this channel triggers a refetch', (tester) async {
-    final repo = _BaseRepo();
-    final realtime = FakeWorkspaceRealtime();
-    await tester.pumpWidget(_host(repo, realtime: realtime, auth: _OrgAuth.new));
-    await tester.pump();
-    await tester.pump();
-    final before = repo.messageCursors.length;
-
-    realtime.emit(
-      kRtChannel,
-      const RealtimeEvent(
-        event: 'workspace.message.updated',
-        data: {'channel_id': 'c1'},
-      ),
-    );
-    await tester.pump();
-    await tester.pump();
-
-    expect(repo.messageCursors.length, greaterThan(before));
-    await tester.pumpWidget(const SizedBox());
-  });
-
-  testWidgets('event for a different channel_id does NOT refetch', (tester) async {
-    final repo = _BaseRepo();
-    final realtime = FakeWorkspaceRealtime();
-    await tester.pumpWidget(_host(repo, realtime: realtime, auth: _OrgAuth.new));
-    await tester.pump();
-    await tester.pump();
-    final before = repo.messageCursors.length;
-
-    realtime.emit(
-      kRtChannel,
-      const RealtimeEvent(
-        event: 'workspace.message.created',
-        data: {'channel_id': 'c2'},
-      ),
-    );
-    await tester.pump();
-    await tester.pump();
-
-    expect(repo.messageCursors.length, before);
-    await tester.pumpWidget(const SizedBox());
-  });
-
-  testWidgets('unrelated event name does NOT refetch', (tester) async {
-    final repo = _BaseRepo();
-    final realtime = FakeWorkspaceRealtime();
-    await tester.pumpWidget(_host(repo, realtime: realtime, auth: _OrgAuth.new));
-    await tester.pump();
-    await tester.pump();
-    final before = repo.messageCursors.length;
-
-    realtime.emit(
-      kRtChannel,
-      const RealtimeEvent(
-        event: 'workspace.reaction.changed',
-        data: {'channel_id': 'c1'},
-      ),
-    );
-    await tester.pump();
-    await tester.pump();
-
-    expect(repo.messageCursors.length, before);
-    await tester.pumpWidget(const SizedBox());
-  });
-
-  testWidgets('unsubscribes from the channel on dispose', (tester) async {
-    final realtime = FakeWorkspaceRealtime();
-    await tester.pumpWidget(_host(_BaseRepo(), realtime: realtime, auth: _OrgAuth.new));
-    await tester.pump();
-    await tester.pump();
-
-    await tester.pumpWidget(const SizedBox());
-    expect(realtime.unsubscribed, contains(kRtChannel));
-  });
-
-  testWidgets('null organizationId → no subscribe + dispose does not crash', (tester) async {
-    final realtime = FakeWorkspaceRealtime();
-    // _FakeAuth has a null org.
-    await tester.pumpWidget(_host(_BaseRepo(), realtime: realtime));
     await tester.pump();
     await tester.pump();
 
     expect(realtime.subscribed, isEmpty);
 
+    // …et ne désabonne donc rien en partant, ce qui aurait coupé le temps réel
+    // global pour cette conversation.
     await tester.pumpWidget(const SizedBox());
     expect(realtime.unsubscribed, isEmpty);
   });
 
-  testWidgets('unconfigured realtime → no subscribe, no crash', (tester) async {
-    final realtime = FakeWorkspaceRealtime(isConfigured: false);
-    await tester.pumpWidget(_host(_BaseRepo(), realtime: realtime, auth: _OrgAuth.new));
+  testWidgets('still refetches on its fallback poll', (tester) async {
+    final repo = _BaseRepo();
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          authControllerProvider.overrideWith(_OrgAuth.new),
+          workspaceRepositoryProvider.overrideWithValue(repo),
+          workspaceRealtimeProvider.overrideWithValue(FakeWorkspaceRealtime()),
+        ],
+        child: MaterialApp(
+          home: Theme(
+            data: AppTheme.light(),
+            child: const ChatThreadScreen(
+              conversation: _kChannel,
+              pollInterval: Duration(milliseconds: 40),
+            ),
+          ),
+        ),
+      ),
+    );
     await tester.pump();
+    await tester.pump();
+    final before = repo.messageCursors.length;
+
+    await tester.pump(const Duration(milliseconds: 50));
     await tester.pump();
 
-    expect(realtime.subscribed, isEmpty);
+    expect(repo.messageCursors.length, greaterThan(before));
     await tester.pumpWidget(const SizedBox());
   });
 }

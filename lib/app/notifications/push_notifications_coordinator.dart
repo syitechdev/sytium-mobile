@@ -20,6 +20,7 @@ import 'package:sytium_mobile/features/calls/application/call_controller.dart';
 import 'package:sytium_mobile/features/calls/domain/call_models.dart';
 import 'package:sytium_mobile/features/notifications/application/notifications_providers.dart';
 import 'package:sytium_mobile/features/notifications/presentation/notifications_screen.dart';
+import 'package:sytium_mobile/features/shell/application/home_tab.dart';
 import 'package:sytium_mobile/features/workspace/application/active_chat_channel.dart';
 import 'package:sytium_mobile/features/workspace/application/workspace_providers.dart';
 import 'package:sytium_mobile/features/workspace/domain/workspace_models.dart';
@@ -225,17 +226,27 @@ class PushNotificationsCoordinator {
     try {
       conversations = await _ref.read(conversationsProvider.future);
     } catch (_) {
-      // Réseau coupé au moment du tap : la liste des notifications reste utile.
-      _navigateWhenHome((_) => const NotificationsScreen());
+      // Réseau coupé au moment du tap : au moins poser l'utilisateur sur la
+      // messagerie, jamais sur la liste générique des notifications — il a
+      // touché un message, il attend des messages.
+      _openMessagesTab();
       return;
     }
 
     final match = conversations.where((c) => c.id == channelId).toList();
     if (match.isEmpty) {
-      _navigateWhenHome((_) => const NotificationsScreen());
+      // Canal quitté, archivé, ou droits retirés entre l'envoi et le tap.
+      _openMessagesTab();
       return;
     }
     _navigateWhenHome((_) => ChatThreadScreen(conversation: match.first));
+  }
+
+  /// Repli d'un push de message dont la conversation est introuvable : ouvrir
+  /// l'onglet Messages. Aucun écran à empiler, juste l'onglet à sélectionner.
+  void _openMessagesTab() {
+    if (!_started) return;
+    _ref.read(homeTabProvider.notifier).select(HomeTabs.messages);
   }
 
   /// Navigation différée jusqu'à l'accueil (cf. [DeferredNavigator]).

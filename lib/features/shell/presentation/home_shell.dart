@@ -8,6 +8,7 @@ import 'package:sytium_mobile/features/home/application/home_refresh.dart';
 import 'package:sytium_mobile/features/home/presentation/home_screen.dart';
 import 'package:sytium_mobile/features/notifications/presentation/widgets/notification_bell.dart';
 import 'package:sytium_mobile/features/pointage/presentation/pointer_screen.dart';
+import 'package:sytium_mobile/features/shell/application/home_tab.dart';
 import 'package:sytium_mobile/features/shell/presentation/quick_actions_sheet.dart';
 import 'package:sytium_mobile/features/stats/presentation/stats_screen.dart';
 import 'package:sytium_mobile/features/workspace/application/workspace_providers.dart';
@@ -30,16 +31,11 @@ class HomeShell extends ConsumerStatefulWidget {
   ConsumerState<HomeShell> createState() => _HomeShellState();
 }
 
-/// Rang de l'accueil dans la barre de navigation.
-const _kHomeTab = 0;
-
 class _HomeShellState extends ConsumerState<HomeShell> {
-  int _index = 0;
-
   /// Tabs already opened at least once — kept alive in the IndexedStack so
   /// re-entering them is instant (no rebuild, no data reload). Unvisited tabs
   /// stay as a cheap placeholder so the Pointer guard/GPS don't run at launch.
-  final Set<int> _visited = {0};
+  final Set<int> _visited = {HomeTabs.accueil};
 
   // Quatre onglets encadrant le bouton d'action central. « Pointer » a quitté
   // la barre : c'est désormais une action du bouton central (openQuickActions),
@@ -73,13 +69,10 @@ class _HomeShellState extends ConsumerState<HomeShell> {
   /// instantané ; sans ce rappel, l'accueil affichait indéfiniment l'état du
   /// premier chargement — pointage de la veille, demandes déjà traitées.
   void _openTab(int i) {
-    final revisitingHome = i == _kHomeTab && _visited.contains(_kHomeTab);
+    final revisitingHome =
+        i == HomeTabs.accueil && _visited.contains(HomeTabs.accueil);
 
-    setState(() {
-      _index = i;
-      _visited.add(i);
-    });
-
+    ref.read(homeTabProvider.notifier).select(i);
     if (revisitingHome) refreshHome(ref);
   }
 
@@ -88,14 +81,8 @@ class _HomeShellState extends ConsumerState<HomeShell> {
       user: user,
       capabilities: caps,
       onPointer: _openPointer,
-      onStats: () => setState(() {
-        _index = 2;
-        _visited.add(2);
-      }),
-      onExplorer: () => setState(() {
-        _index = 3;
-        _visited.add(3);
-      }),
+      onStats: () => _openTab(HomeTabs.stats),
+      onExplorer: () => _openTab(HomeTabs.explorer),
     ),
     1 => const WorkspaceScreen(),
     2 => const StatsScreen(),
@@ -111,24 +98,28 @@ class _HomeShellState extends ConsumerState<HomeShell> {
 
   @override
   Widget build(BuildContext context) {
+    final index = ref.watch(homeTabProvider);
+    // L'onglet peut aussi être choisi de l'extérieur (deep link) : marquer la
+    // visite ici garantit que l'IndexedStack le construit dans tous les cas.
+    _visited.add(index);
     final auth = ref.watch(authControllerProvider).valueOrNull;
     final user = auth is Authenticated ? auth.session.user : null;
     final caps = auth is Authenticated
         ? auth.session.capabilities
         : const MobileCapabilities.baseline();
-    final onHome = _index == 0;
+    final onHome = index == HomeTabs.accueil;
     final unread = ref.watch(workspaceUnreadProvider);
     final navItems = [
       // Messages est l'onglet 1 : c'est lui qui porte la pastille de non-lus.
       for (var i = 0; i < _items.length; i++)
-        i == 1 ? _withBadge(_items[i], unread) : _items[i],
+        i == HomeTabs.messages ? _withBadge(_items[i], unread) : _items[i],
     ];
 
     return Scaffold(
       appBar: onHome
           ? _HomeAppBar(logoUrl: user?.organizationLogoUrl)
           : AppBar(
-              title: Text(_items[_index].label),
+              title: Text(_items[index].label),
               actions: const [
                 CurrencySwitcher(),
                 NotificationBell(),
@@ -139,7 +130,7 @@ class _HomeShellState extends ConsumerState<HomeShell> {
       // Lazy IndexedStack: build a tab on first visit, then keep it mounted so
       // re-entering is instant and its providers stay alive (no reload).
       body: IndexedStack(
-        index: _index,
+        index: index,
         children: [
           for (var i = 0; i < _items.length; i++)
             if (_visited.contains(i))
@@ -150,7 +141,7 @@ class _HomeShellState extends ConsumerState<HomeShell> {
       ),
       bottomNavigationBar: AppBottomNav(
         items: navItems,
-        currentIndex: _index,
+        currentIndex: index,
         onTap: _openTab,
         onCenterTap: () => openQuickActions(context, capabilities: caps),
       ),

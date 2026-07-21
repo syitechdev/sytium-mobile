@@ -43,10 +43,11 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
     unawaited(ref.read(workspaceRepositoryProvider).heartbeat());
     final interval = widget.pollInterval;
     if (interval != null) {
+      // Présence uniquement : la liste des conversations est tenue à jour
+      // app-wide par `WorkspaceLiveSync` (temps réel + repli périodique).
+      // La rafraîchir aussi ici doublait chaque appel.
       _poll = Timer.periodic(interval, (_) {
-        ref
-          ..invalidate(conversationsProvider)
-          ..invalidate(onlineByUserProvider);
+        ref.invalidate(onlineByUserProvider);
         unawaited(ref.read(workspaceRepositoryProvider).heartbeat());
       });
     }

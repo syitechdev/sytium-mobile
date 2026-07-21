@@ -6,7 +6,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
-import 'package:sytium_mobile/features/auth/application/auth_controller.dart';
 import 'package:sytium_mobile/features/calls/application/call_controller.dart';
 import 'package:sytium_mobile/features/calls/domain/call_models.dart';
 import 'package:sytium_mobile/features/workspace/application/active_chat_channel.dart';
@@ -15,15 +14,20 @@ import 'package:sytium_mobile/features/workspace/application/workspace_providers
 import 'package:sytium_mobile/features/workspace/domain/workspace_models.dart';
 import 'package:sytium_mobile/features/workspace/domain/workspace_repository.dart';
 import 'package:sytium_mobile/features/workspace/presentation/attachment_preview.dart';
-import 'package:sytium_mobile/features/workspace/realtime/workspace_realtime.dart';
-import 'package:sytium_mobile/features/workspace/realtime/workspace_realtime_provider.dart';
 import 'package:sytium_mobile/shared/widgets/app_avatar.dart';
 import 'package:sytium_mobile/shared/widgets/app_sheet.dart';
 import 'package:sytium_mobile/shared/widgets/error_state.dart';
 import 'package:sytium_mobile/theme/sytium_colors.dart';
 import 'package:sytium_mobile/theme/tokens.dart';
 
-/// Real polling interval; tests pass `pollInterval: null` to disable it.
+/// Fallback polling interval; tests pass `pollInterval: null` to disable it.
+///
+/// The screen does NOT subscribe to the realtime channel itself:
+/// `WorkspaceLiveSync` holds ONE subscription per conversation app-wide and
+/// invalidates `channelMessagesProvider` on each event. Two subscribers on the
+/// same Pusher channel name would fight — the transport keys callbacks by name,
+/// so a second subscribe replaced the first and the screen's unsubscribe on
+/// dispose took the app-wide one down with it.
 const _kPollInterval = Duration(seconds: 7);
 
 /// Placeholder bubble dimensions for the loading skeleton.
@@ -128,7 +132,7 @@ class _PendingAttachment {
   final bool isImage;
 }
 
-/// Chat thread: bubbles + pagination + realtime/polling, plus a rich composer
+/// Chat thread: bubbles + pagination + polling, plus a rich composer
 /// (text + image/file attachments + replies) and per-message reactions.
 /// [pollInterval] null disables polling (deterministic in tests).
 class ChatThreadScreen extends ConsumerStatefulWidget {
@@ -147,15 +151,6 @@ class ChatThreadScreen extends ConsumerStatefulWidget {
 
 class ChatThreadScreenState extends ConsumerState<ChatThreadScreen> {
   Timer? _poll;
-
-  /// The realtime channel currently subscribed (null until subscribed / when
-  /// the org is missing or Reverb is unconfigured); used to unsubscribe on
-  /// dispose.
-  String? _realtimeChannel;
-
-  /// Cached transport captured at subscribe time so [dispose] can unsubscribe
-  /// without touching `ref` (which is already torn down by then).
-  WorkspaceRealtime? _realtime;
 
   /// Older pages already fetched via the cursor, oldest-first; merged in front
   /// of the live first page.
@@ -206,7 +201,6 @@ class ChatThreadScreenState extends ConsumerState<ChatThreadScreen> {
       await ref.read(workspaceRepositoryProvider).markRead(_channelId);
       if (!mounted) return;
       ref.invalidate(conversationsProvider);
-      _subscribeRealtime();
     });
     final interval = widget.pollInterval;
     if (interval != null) {
@@ -219,10 +213,6 @@ class ChatThreadScreenState extends ConsumerState<ChatThreadScreen> {
 
   @override
   void dispose() {
-    final channel = _realtimeChannel;
-    if (channel != null) {
-      _realtime?.unsubscribe(channel);
-    }
     // Same reason as [initState]: releasing the flag is a provider write, so it
     // waits for the end of the frame rather than running inside dispose.
     final active = _activeChannel;
@@ -278,32 +268,6 @@ class ChatThreadScreenState extends ConsumerState<ChatThreadScreen> {
         : messages.skip(index + 1).where((m) => !m.isMine(me)).length;
     if (arrived <= 0 || !mounted) return;
     setState(() => _newSinceScroll += arrived);
-  }
-
-  void _subscribeRealtime() {
-    final auth = ref.read(authControllerProvider).valueOrNull;
-    final orgId = auth is Authenticated
-        ? auth.session.user.organizationId
-        : null;
-    if (orgId == null || orgId.isEmpty) return;
-    final channel = 'private-org.$orgId.workspace.$_channelId';
-    final realtime = ref.read(workspaceRealtimeProvider);
-    unawaited(realtime.ensureConnected());
-    realtime.subscribe(channel, _onRealtimeEvent);
-    _realtime = realtime;
-    _realtimeChannel = channel;
-  }
-
-  void _onRealtimeEvent(RealtimeEvent e) {
-    final isMessage =
-        e.event == 'workspace.message.created' ||
-        e.event == 'workspace.message.updated';
-    if (!isMessage) return;
-    if (e.data['channel_id'] != _channelId) return;
-    if (!mounted) return;
-    ref
-      ..invalidate(channelMessagesProvider(_channelId))
-      ..invalidate(conversationsProvider);
   }
 
   Future<void> _loadOlder() async {
