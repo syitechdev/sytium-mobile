@@ -1504,6 +1504,7 @@ mixin _$BootstrapResponseDto {
   List<MobileModuleDto> get modules => throw _privateConstructorUsedError;
   @JsonKey(name: 'unread_count')
   int get unreadCount => throw _privateConstructorUsedError;
+  FiscalRuleDto? get fiscal => throw _privateConstructorUsedError;
 
   /// Serializes this BootstrapResponseDto to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -1528,11 +1529,13 @@ abstract class $BootstrapResponseDtoCopyWith<$Res> {
     MobileEmployeeDto? employee,
     List<MobileModuleDto> modules,
     @JsonKey(name: 'unread_count') int unreadCount,
+    FiscalRuleDto? fiscal,
   });
 
   $ApiUserDtoCopyWith<$Res> get user;
   $CapabilitiesDtoCopyWith<$Res> get capabilities;
   $MobileEmployeeDtoCopyWith<$Res>? get employee;
+  $FiscalRuleDtoCopyWith<$Res>? get fiscal;
 }
 
 /// @nodoc
@@ -1558,6 +1561,7 @@ class _$BootstrapResponseDtoCopyWithImpl<
     Object? employee = freezed,
     Object? modules = null,
     Object? unreadCount = null,
+    Object? fiscal = freezed,
   }) {
     return _then(
       _value.copyWith(
@@ -1581,6 +1585,10 @@ class _$BootstrapResponseDtoCopyWithImpl<
                 ? _value.unreadCount
                 : unreadCount // ignore: cast_nullable_to_non_nullable
                       as int,
+            fiscal: freezed == fiscal
+                ? _value.fiscal
+                : fiscal // ignore: cast_nullable_to_non_nullable
+                      as FiscalRuleDto?,
           )
           as $Val,
     );
@@ -1619,6 +1627,20 @@ class _$BootstrapResponseDtoCopyWithImpl<
       return _then(_value.copyWith(employee: value) as $Val);
     });
   }
+
+  /// Create a copy of BootstrapResponseDto
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @pragma('vm:prefer-inline')
+  $FiscalRuleDtoCopyWith<$Res>? get fiscal {
+    if (_value.fiscal == null) {
+      return null;
+    }
+
+    return $FiscalRuleDtoCopyWith<$Res>(_value.fiscal!, (value) {
+      return _then(_value.copyWith(fiscal: value) as $Val);
+    });
+  }
 }
 
 /// @nodoc
@@ -1636,6 +1658,7 @@ abstract class _$$BootstrapResponseDtoImplCopyWith<$Res>
     MobileEmployeeDto? employee,
     List<MobileModuleDto> modules,
     @JsonKey(name: 'unread_count') int unreadCount,
+    FiscalRuleDto? fiscal,
   });
 
   @override
@@ -1644,6 +1667,8 @@ abstract class _$$BootstrapResponseDtoImplCopyWith<$Res>
   $CapabilitiesDtoCopyWith<$Res> get capabilities;
   @override
   $MobileEmployeeDtoCopyWith<$Res>? get employee;
+  @override
+  $FiscalRuleDtoCopyWith<$Res>? get fiscal;
 }
 
 /// @nodoc
@@ -1665,6 +1690,7 @@ class __$$BootstrapResponseDtoImplCopyWithImpl<$Res>
     Object? employee = freezed,
     Object? modules = null,
     Object? unreadCount = null,
+    Object? fiscal = freezed,
   }) {
     return _then(
       _$BootstrapResponseDtoImpl(
@@ -1688,6 +1714,10 @@ class __$$BootstrapResponseDtoImplCopyWithImpl<$Res>
             ? _value.unreadCount
             : unreadCount // ignore: cast_nullable_to_non_nullable
                   as int,
+        fiscal: freezed == fiscal
+            ? _value.fiscal
+            : fiscal // ignore: cast_nullable_to_non_nullable
+                  as FiscalRuleDto?,
       ),
     );
   }
@@ -1702,6 +1732,7 @@ class _$BootstrapResponseDtoImpl implements _BootstrapResponseDto {
     this.employee,
     final List<MobileModuleDto> modules = const <MobileModuleDto>[],
     @JsonKey(name: 'unread_count') this.unreadCount = 0,
+    this.fiscal,
   }) : _modules = modules;
 
   factory _$BootstrapResponseDtoImpl.fromJson(Map<String, dynamic> json) =>
@@ -1725,10 +1756,12 @@ class _$BootstrapResponseDtoImpl implements _BootstrapResponseDto {
   @override
   @JsonKey(name: 'unread_count')
   final int unreadCount;
+  @override
+  final FiscalRuleDto? fiscal;
 
   @override
   String toString() {
-    return 'BootstrapResponseDto(user: $user, capabilities: $capabilities, employee: $employee, modules: $modules, unreadCount: $unreadCount)';
+    return 'BootstrapResponseDto(user: $user, capabilities: $capabilities, employee: $employee, modules: $modules, unreadCount: $unreadCount, fiscal: $fiscal)';
   }
 
   @override
@@ -1743,7 +1776,8 @@ class _$BootstrapResponseDtoImpl implements _BootstrapResponseDto {
                 other.employee == employee) &&
             const DeepCollectionEquality().equals(other._modules, _modules) &&
             (identical(other.unreadCount, unreadCount) ||
-                other.unreadCount == unreadCount));
+                other.unreadCount == unreadCount) &&
+            (identical(other.fiscal, fiscal) || other.fiscal == fiscal));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
@@ -1755,6 +1789,7 @@ class _$BootstrapResponseDtoImpl implements _BootstrapResponseDto {
     employee,
     const DeepCollectionEquality().hash(_modules),
     unreadCount,
+    fiscal,
   );
 
   /// Create a copy of BootstrapResponseDto
@@ -1782,6 +1817,7 @@ abstract class _BootstrapResponseDto implements BootstrapResponseDto {
     final MobileEmployeeDto? employee,
     final List<MobileModuleDto> modules,
     @JsonKey(name: 'unread_count') final int unreadCount,
+    final FiscalRuleDto? fiscal,
   }) = _$BootstrapResponseDtoImpl;
 
   factory _BootstrapResponseDto.fromJson(Map<String, dynamic> json) =
@@ -1798,6 +1834,8 @@ abstract class _BootstrapResponseDto implements BootstrapResponseDto {
   @override
   @JsonKey(name: 'unread_count')
   int get unreadCount;
+  @override
+  FiscalRuleDto? get fiscal;
 
   /// Create a copy of BootstrapResponseDto
   /// with the given fields replaced by the non-null parameter values.
@@ -1805,6 +1843,216 @@ abstract class _BootstrapResponseDto implements BootstrapResponseDto {
   @JsonKey(includeFromJson: false, includeToJson: false)
   _$$BootstrapResponseDtoImplCopyWith<_$BootstrapResponseDtoImpl>
   get copyWith => throw _privateConstructorUsedError;
+}
+
+FiscalRuleDto _$FiscalRuleDtoFromJson(Map<String, dynamic> json) {
+  return _FiscalRuleDto.fromJson(json);
+}
+
+/// @nodoc
+mixin _$FiscalRuleDto {
+  String? get regime => throw _privateConstructorUsedError;
+  @JsonKey(name: 'taux_tva')
+  num get tauxTva => throw _privateConstructorUsedError;
+  @JsonKey(name: 'tva_verrouillee')
+  bool get tvaVerrouillee => throw _privateConstructorUsedError;
+
+  /// Serializes this FiscalRuleDto to a JSON map.
+  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
+
+  /// Create a copy of FiscalRuleDto
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  $FiscalRuleDtoCopyWith<FiscalRuleDto> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+abstract class $FiscalRuleDtoCopyWith<$Res> {
+  factory $FiscalRuleDtoCopyWith(
+    FiscalRuleDto value,
+    $Res Function(FiscalRuleDto) then,
+  ) = _$FiscalRuleDtoCopyWithImpl<$Res, FiscalRuleDto>;
+  @useResult
+  $Res call({
+    String? regime,
+    @JsonKey(name: 'taux_tva') num tauxTva,
+    @JsonKey(name: 'tva_verrouillee') bool tvaVerrouillee,
+  });
+}
+
+/// @nodoc
+class _$FiscalRuleDtoCopyWithImpl<$Res, $Val extends FiscalRuleDto>
+    implements $FiscalRuleDtoCopyWith<$Res> {
+  _$FiscalRuleDtoCopyWithImpl(this._value, this._then);
+
+  // ignore: unused_field
+  final $Val _value;
+  // ignore: unused_field
+  final $Res Function($Val) _then;
+
+  /// Create a copy of FiscalRuleDto
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? regime = freezed,
+    Object? tauxTva = null,
+    Object? tvaVerrouillee = null,
+  }) {
+    return _then(
+      _value.copyWith(
+            regime: freezed == regime
+                ? _value.regime
+                : regime // ignore: cast_nullable_to_non_nullable
+                      as String?,
+            tauxTva: null == tauxTva
+                ? _value.tauxTva
+                : tauxTva // ignore: cast_nullable_to_non_nullable
+                      as num,
+            tvaVerrouillee: null == tvaVerrouillee
+                ? _value.tvaVerrouillee
+                : tvaVerrouillee // ignore: cast_nullable_to_non_nullable
+                      as bool,
+          )
+          as $Val,
+    );
+  }
+}
+
+/// @nodoc
+abstract class _$$FiscalRuleDtoImplCopyWith<$Res>
+    implements $FiscalRuleDtoCopyWith<$Res> {
+  factory _$$FiscalRuleDtoImplCopyWith(
+    _$FiscalRuleDtoImpl value,
+    $Res Function(_$FiscalRuleDtoImpl) then,
+  ) = __$$FiscalRuleDtoImplCopyWithImpl<$Res>;
+  @override
+  @useResult
+  $Res call({
+    String? regime,
+    @JsonKey(name: 'taux_tva') num tauxTva,
+    @JsonKey(name: 'tva_verrouillee') bool tvaVerrouillee,
+  });
+}
+
+/// @nodoc
+class __$$FiscalRuleDtoImplCopyWithImpl<$Res>
+    extends _$FiscalRuleDtoCopyWithImpl<$Res, _$FiscalRuleDtoImpl>
+    implements _$$FiscalRuleDtoImplCopyWith<$Res> {
+  __$$FiscalRuleDtoImplCopyWithImpl(
+    _$FiscalRuleDtoImpl _value,
+    $Res Function(_$FiscalRuleDtoImpl) _then,
+  ) : super(_value, _then);
+
+  /// Create a copy of FiscalRuleDto
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? regime = freezed,
+    Object? tauxTva = null,
+    Object? tvaVerrouillee = null,
+  }) {
+    return _then(
+      _$FiscalRuleDtoImpl(
+        regime: freezed == regime
+            ? _value.regime
+            : regime // ignore: cast_nullable_to_non_nullable
+                  as String?,
+        tauxTva: null == tauxTva
+            ? _value.tauxTva
+            : tauxTva // ignore: cast_nullable_to_non_nullable
+                  as num,
+        tvaVerrouillee: null == tvaVerrouillee
+            ? _value.tvaVerrouillee
+            : tvaVerrouillee // ignore: cast_nullable_to_non_nullable
+                  as bool,
+      ),
+    );
+  }
+}
+
+/// @nodoc
+@JsonSerializable()
+class _$FiscalRuleDtoImpl implements _FiscalRuleDto {
+  const _$FiscalRuleDtoImpl({
+    this.regime,
+    @JsonKey(name: 'taux_tva') this.tauxTva = 18,
+    @JsonKey(name: 'tva_verrouillee') this.tvaVerrouillee = false,
+  });
+
+  factory _$FiscalRuleDtoImpl.fromJson(Map<String, dynamic> json) =>
+      _$$FiscalRuleDtoImplFromJson(json);
+
+  @override
+  final String? regime;
+  @override
+  @JsonKey(name: 'taux_tva')
+  final num tauxTva;
+  @override
+  @JsonKey(name: 'tva_verrouillee')
+  final bool tvaVerrouillee;
+
+  @override
+  String toString() {
+    return 'FiscalRuleDto(regime: $regime, tauxTva: $tauxTva, tvaVerrouillee: $tvaVerrouillee)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$FiscalRuleDtoImpl &&
+            (identical(other.regime, regime) || other.regime == regime) &&
+            (identical(other.tauxTva, tauxTva) || other.tauxTva == tauxTva) &&
+            (identical(other.tvaVerrouillee, tvaVerrouillee) ||
+                other.tvaVerrouillee == tvaVerrouillee));
+  }
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  int get hashCode => Object.hash(runtimeType, regime, tauxTva, tvaVerrouillee);
+
+  /// Create a copy of FiscalRuleDto
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$FiscalRuleDtoImplCopyWith<_$FiscalRuleDtoImpl> get copyWith =>
+      __$$FiscalRuleDtoImplCopyWithImpl<_$FiscalRuleDtoImpl>(this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$$FiscalRuleDtoImplToJson(this);
+  }
+}
+
+abstract class _FiscalRuleDto implements FiscalRuleDto {
+  const factory _FiscalRuleDto({
+    final String? regime,
+    @JsonKey(name: 'taux_tva') final num tauxTva,
+    @JsonKey(name: 'tva_verrouillee') final bool tvaVerrouillee,
+  }) = _$FiscalRuleDtoImpl;
+
+  factory _FiscalRuleDto.fromJson(Map<String, dynamic> json) =
+      _$FiscalRuleDtoImpl.fromJson;
+
+  @override
+  String? get regime;
+  @override
+  @JsonKey(name: 'taux_tva')
+  num get tauxTva;
+  @override
+  @JsonKey(name: 'tva_verrouillee')
+  bool get tvaVerrouillee;
+
+  /// Create a copy of FiscalRuleDto
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  _$$FiscalRuleDtoImplCopyWith<_$FiscalRuleDtoImpl> get copyWith =>
+      throw _privateConstructorUsedError;
 }
 
 MobileModuleDto _$MobileModuleDtoFromJson(Map<String, dynamic> json) {

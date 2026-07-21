@@ -92,10 +92,24 @@ class BootstrapResponseDto with _$BootstrapResponseDto {
     MobileEmployeeDto? employee,
     @Default(<MobileModuleDto>[]) List<MobileModuleDto> modules,
     @JsonKey(name: 'unread_count') @Default(0) int unreadCount,
+    FiscalRuleDto? fiscal,
   }) = _BootstrapResponseDto;
 
   factory BootstrapResponseDto.fromJson(Map<String, dynamic> json) =>
       _$BootstrapResponseDtoFromJson(json);
+}
+
+/// Regle de TVA de l'organisation, deja tranchee par le serveur.
+@freezed
+class FiscalRuleDto with _$FiscalRuleDto {
+  const factory FiscalRuleDto({
+    String? regime,
+    @JsonKey(name: 'taux_tva') @Default(18) num tauxTva,
+    @JsonKey(name: 'tva_verrouillee') @Default(false) bool tvaVerrouillee,
+  }) = _FiscalRuleDto;
+
+  factory FiscalRuleDto.fromJson(Map<String, dynamic> json) =>
+      _$FiscalRuleDtoFromJson(json);
 }
 
 @freezed

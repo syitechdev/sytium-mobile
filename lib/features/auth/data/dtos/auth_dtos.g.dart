@@ -137,6 +137,9 @@ _$BootstrapResponseDtoImpl _$$BootstrapResponseDtoImplFromJson(
           .toList() ??
       const <MobileModuleDto>[],
   unreadCount: (json['unread_count'] as num?)?.toInt() ?? 0,
+  fiscal: json['fiscal'] == null
+      ? null
+      : FiscalRuleDto.fromJson(json['fiscal'] as Map<String, dynamic>),
 );
 
 Map<String, dynamic> _$$BootstrapResponseDtoImplToJson(
@@ -147,7 +150,22 @@ Map<String, dynamic> _$$BootstrapResponseDtoImplToJson(
   'employee': instance.employee,
   'modules': instance.modules,
   'unread_count': instance.unreadCount,
+  'fiscal': instance.fiscal,
 };
+
+_$FiscalRuleDtoImpl _$$FiscalRuleDtoImplFromJson(Map<String, dynamic> json) =>
+    _$FiscalRuleDtoImpl(
+      regime: json['regime'] as String?,
+      tauxTva: json['taux_tva'] as num? ?? 18,
+      tvaVerrouillee: json['tva_verrouillee'] as bool? ?? false,
+    );
+
+Map<String, dynamic> _$$FiscalRuleDtoImplToJson(_$FiscalRuleDtoImpl instance) =>
+    <String, dynamic>{
+      'regime': instance.regime,
+      'taux_tva': instance.tauxTva,
+      'tva_verrouillee': instance.tvaVerrouillee,
+    };
 
 _$MobileModuleDtoImpl _$$MobileModuleDtoImplFromJson(
   Map<String, dynamic> json,

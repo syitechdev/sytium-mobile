@@ -60,11 +60,16 @@ class _FakeCatalogue implements CatalogueRemoteDataSource {
 }
 
 class _FakeAuth extends AuthController {
+  _FakeAuth({this.fiscal = const FiscalRule()});
+
+  final FiscalRule fiscal;
+
   @override
-  Future<AuthState> build() async => const Authenticated(
+  Future<AuthState> build() async => Authenticated(
     AuthSession(
-      user: AuthUser(id: 'u1', name: 'Ama', email: 'a@sytium.app'),
-      capabilities: MobileCapabilities.baseline(),
+      user: const AuthUser(id: 'u1', name: 'Ama', email: 'a@sytium.app'),
+      capabilities: const MobileCapabilities.baseline(),
+      fiscal: fiscal,
     ),
   );
 }
@@ -73,15 +78,16 @@ Future<void> _pump(
   WidgetTester tester, {
   required InvoicingRepository repo,
   CatalogueRemoteDataSource? catalogue,
+  FiscalRule fiscal = const FiscalRule(),
 }) async {
-  tester.view.physicalSize = const Size(390 * 3, 1600 * 3);
+  tester.view.physicalSize = const Size(390 * 3, 2400 * 3);
   tester.view.devicePixelRatio = 3;
   addTearDown(tester.view.reset);
 
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
-        authControllerProvider.overrideWith(_FakeAuth.new),
+        authControllerProvider.overrideWith(() => _FakeAuth(fiscal: fiscal)),
         invoicingRepositoryProvider.overrideWithValue(repo),
         catalogueProvider.overrideWithValue(catalogue ?? _FakeCatalogue()),
       ],
@@ -100,6 +106,13 @@ Future<void> _pump(
   );
   await tester.tap(find.text('ouvrir'));
   await tester.pumpAndSettle();
+}
+
+Future<void> _fillObjet(WidgetTester tester) async {
+  await tester.enterText(
+    find.widgetWithText(TextField, 'Ex : Prestation, fourniture…'),
+    'Fourniture de matériel',
+  );
 }
 
 Future<void> _submit(WidgetTester tester) async {
@@ -122,6 +135,7 @@ void main() {
     await tester.tap(find.text('SODECI').last);
     await tester.pumpAndSettle();
 
+    await _fillObjet(tester);
     await tester.enterText(find.widgetWithText(TextField, 'Désignation'), 'Étude');
     await tester.enterText(
       find.widgetWithText(TextField, 'Prix unitaire (FCFA)'),
@@ -145,6 +159,7 @@ void main() {
       find.widgetWithText(TextField, 'Ex : SODECI, Orange CI…'),
       'Client de passage',
     );
+    await _fillObjet(tester);
     await tester.enterText(find.widgetWithText(TextField, 'Désignation'), 'Étude');
     await tester.enterText(
       find.widgetWithText(TextField, 'Prix unitaire (FCFA)'),
@@ -166,6 +181,7 @@ void main() {
       find.widgetWithText(TextField, 'Ex : SODECI, Orange CI…'),
       'SODECI',
     );
+    await _fillObjet(tester);
     await tester.tap(find.byTooltip('Choisir au catalogue'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('ORD-001 — Ordinateur portable').last);
@@ -192,6 +208,7 @@ void main() {
       find.widgetWithText(TextField, 'Ex : SODECI, Orange CI…'),
       'SODECI',
     );
+    await _fillObjet(tester);
     await tester.tap(find.byTooltip('Choisir au catalogue'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('ORD-001 — Ordinateur portable').last);
@@ -204,5 +221,90 @@ void main() {
     await _submit(tester);
 
     expect(repo.sent!.items.single.productId, isNull);
+  });
+
+  testWidgets('sans objet, la pièce ne part pas', (tester) async {
+    // Le web l'exige : un devis sans objet ne dit pas ce qu'il vend.
+    final repo = _FakeInvoicing();
+    await _pump(tester, repo: repo);
+
+    await tester.enterText(
+      find.widgetWithText(TextField, 'Ex : SODECI, Orange CI…'),
+      'SODECI',
+    );
+    await tester.enterText(find.widgetWithText(TextField, 'Désignation'), 'Étude');
+    await tester.enterText(
+      find.widgetWithText(TextField, 'Prix unitaire (FCFA)'),
+      '100000',
+    );
+    await _submit(tester);
+
+    expect(find.text("L'objet de la commande est requis."), findsOneWidget);
+    expect(repo.sent, isNull);
+  });
+
+  testWidgets('un régime exonéré fige la TVA à zéro', (tester) async {
+    // La loi ne se choisit pas dans un formulaire : sous TEE ou RME, aucun
+    // autre taux ne doit être proposé.
+    await _pump(
+      tester,
+      repo: _FakeInvoicing(),
+      fiscal: const FiscalRule(regime: 'RME', tauxTva: 0, verrouille: true),
+    );
+
+    expect(find.text('Régime RME — exonéré'), findsOneWidget);
+    expect(find.byType(DropdownButtonFormField<num>), findsNothing);
+  });
+
+  testWidgets('le taux de l’organisation s’applique par défaut', (tester) async {
+    final repo = _FakeInvoicing();
+    await _pump(
+      tester,
+      repo: repo,
+      fiscal: const FiscalRule(regime: 'RSI', tauxTva: 9),
+    );
+
+    await tester.enterText(
+      find.widgetWithText(TextField, 'Ex : SODECI, Orange CI…'),
+      'SODECI',
+    );
+    await _fillObjet(tester);
+    await tester.enterText(find.widgetWithText(TextField, 'Désignation'), 'Étude');
+    await tester.enterText(
+      find.widgetWithText(TextField, 'Prix unitaire (FCFA)'),
+      '100000',
+    );
+    await _submit(tester);
+
+    expect(repo.sent!.tauxTva, 9);
+  });
+
+  testWidgets('la durée de validité recale l’échéance', (tester) async {
+    final repo = _FakeInvoicing();
+    await _pump(tester, repo: repo);
+
+    await tester.tap(find.byType(DropdownButtonFormField<int?>));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('2 mois').last);
+    await tester.pumpAndSettle();
+
+    await tester.enterText(
+      find.widgetWithText(TextField, 'Ex : SODECI, Orange CI…'),
+      'SODECI',
+    );
+    await _fillObjet(tester);
+    await tester.enterText(find.widgetWithText(TextField, 'Désignation'), 'Étude');
+    await tester.enterText(
+      find.widgetWithText(TextField, 'Prix unitaire (FCFA)'),
+      '100000',
+    );
+    await _submit(tester);
+
+    final sent = repo.sent!;
+    expect(
+      sent.dateEcheance!.difference(sent.dateEmission!).inDays,
+      60,
+    );
+    expect(sent.statut, ProformaStatus.brouillon);
   });
 }

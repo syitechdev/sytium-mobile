@@ -22,6 +22,20 @@ class ProformaLineInput {
   num get total => quantite * prixUnitaire;
 }
 
+/// Étape du devis dans son cycle commercial, telle que le web la nomme.
+enum ProformaStatus {
+  brouillon('brouillon', 'Brouillon'),
+  envoye('envoye', 'Envoyé'),
+  accepte('accepte', 'Accepté'),
+  refuse('refuse', 'Refusé'),
+  expire('expire', 'Expiré');
+
+  const ProformaStatus(this.wire, this.label);
+
+  final String wire;
+  final String label;
+}
+
 /// Which sales document to emit.
 enum SalesDocKind {
   /// A quote — no accounting/treasury impact.
@@ -40,6 +54,10 @@ class SalesDocInput {
     required this.items,
     this.clientEmail,
     this.clientAdresse,
+    this.notes,
+    this.dateEmission,
+    this.dateEcheance,
+    this.statut = ProformaStatus.brouillon,
     this.objet,
     this.tauxTva = 18,
     this.accountId,
@@ -53,7 +71,16 @@ class SalesDocInput {
   final String? clientAdresse;
 
   final String? objet;
+  final String? notes;
   final num tauxTva;
+
+  /// Date d'émission ; nulle, le serveur prend aujourd'hui.
+  final DateTime? dateEmission;
+
+  /// Fin de validité du devis.
+  final DateTime? dateEcheance;
+
+  final ProformaStatus statut;
 
   /// Cash account crediting the payment — required when [kind] is comptant.
   final String? accountId;

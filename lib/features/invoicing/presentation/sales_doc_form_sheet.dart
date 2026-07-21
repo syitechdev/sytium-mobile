@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sytium_mobile/core/utils/money.dart';
 import 'package:sytium_mobile/features/auth/application/auth_controller.dart';
+import 'package:sytium_mobile/features/auth/domain/auth_session.dart';
 import 'package:sytium_mobile/features/cash/application/cash_providers.dart';
 import 'package:sytium_mobile/features/cash/domain/cash_models.dart';
 import 'package:sytium_mobile/features/commercial/application/commercial_providers.dart';
@@ -87,10 +88,21 @@ class _SalesDocFormSheetState extends ConsumerState<_SalesDocFormSheet> {
   final _objet = TextEditingController();
   final _lines = <_Line>[];
 
+  final _notes = TextEditingController();
+
   ClientRef? _clientRef;
+  DateTime _dateEmission = DateTime.now();
+
+  /// Durée de validité en jours, ou null pour une échéance choisie à la main.
+  int? _validityDays = 30;
+  DateTime _dateEcheance = DateTime.now().add(const Duration(days: 30));
+  ProformaStatus _statut = ProformaStatus.brouillon;
+  String? _objetError;
 
   late SalesDocKind _kind = widget.initialKind;
-  num _taux = 18;
+  /// Taux de TVA : celui de l'organisation tant que l'employé n'en choisit pas
+  /// un autre, et figé si le régime l'exonère.
+  num? _tauxChoisi;
   CashAccount? _account;
   bool _submitting = false;
   String? _clientError;
@@ -114,10 +126,20 @@ class _SalesDocFormSheetState extends ConsumerState<_SalesDocFormSheet> {
   void dispose() {
     _client.dispose();
     _objet.dispose();
+    _notes.dispose();
     for (final l in _lines) {
       l.dispose();
     }
     super.dispose();
+  }
+
+  /// Recale l'échéance sur la durée choisie. Une échéance fixée à la main
+  /// n'est plus touchée : c'est le sens de « personnalisée ».
+  void _applyValidity() {
+    final days = _validityDays;
+    if (days != null) {
+      _dateEcheance = _dateEmission.add(Duration(days: days));
+    }
   }
 
   Future<void> _pickClient() async {
@@ -196,6 +218,13 @@ class _SalesDocFormSheetState extends ConsumerState<_SalesDocFormSheet> {
   num get _tva => (_ht * _taux / 100).round();
   num get _ttc => _ht + _tva;
 
+  FiscalRule get _fiscal {
+    final auth = ref.read(authControllerProvider).valueOrNull;
+    return auth is Authenticated ? auth.session.fiscal : const FiscalRule();
+  }
+
+  num get _taux => _fiscal.verrouille ? 0 : (_tauxChoisi ?? _fiscal.tauxTva);
+
   bool get _canComptant {
     final auth = ref.read(authControllerProvider).valueOrNull;
     return auth is Authenticated && auth.session.capabilities.financeWrite;
@@ -207,6 +236,9 @@ class _SalesDocFormSheetState extends ConsumerState<_SalesDocFormSheet> {
     final needAccount = _kind == SalesDocKind.comptant;
     setState(() {
       _clientError = client.isEmpty ? 'Nom du client requis.' : null;
+      _objetError = _objet.text.trim().isEmpty
+          ? "L'objet de la commande est requis."
+          : null;
       _itemsError = validLines.isEmpty
           ? 'Ajoutez au moins une ligne valide.'
           : null;
@@ -216,6 +248,7 @@ class _SalesDocFormSheetState extends ConsumerState<_SalesDocFormSheet> {
       _banner = null;
     });
     if (client.isEmpty ||
+        _objet.text.trim().isEmpty ||
         validLines.isEmpty ||
         (needAccount && _account == null)) {
       return;
@@ -230,7 +263,11 @@ class _SalesDocFormSheetState extends ConsumerState<_SalesDocFormSheet> {
             clientNom: client,
             clientEmail: _clientRef?.email,
             clientAdresse: _clientRef?.adresse,
-            objet: _objet.text.trim().isEmpty ? null : _objet.text.trim(),
+            objet: _objet.text.trim(),
+            notes: _notes.text.trim().isEmpty ? null : _notes.text.trim(),
+            dateEmission: _dateEmission,
+            dateEcheance: _dateEcheance,
+            statut: _statut,
             tauxTva: _taux,
             accountId: needAccount ? _account!.id : null,
             items: validLines.map((l) => l.toInput()).toList(),
@@ -265,6 +302,11 @@ class _SalesDocFormSheetState extends ConsumerState<_SalesDocFormSheet> {
 
   @override
   Widget build(BuildContext context) {
+    // La session porte la règle de TVA de l'organisation. On la suit : une
+    // feuille ouverte avant sa résolution resterait sinon sur 18 %, y compris
+    // pour une société exonérée.
+    ref.watch(authControllerProvider);
+
     final colors = context.colors;
     final theme = Theme.of(context).textTheme;
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
@@ -326,9 +368,28 @@ class _SalesDocFormSheetState extends ConsumerState<_SalesDocFormSheet> {
             const SizedBox(height: Tokens.space16),
             AppTextField(
               controller: _objet,
-              label: 'Objet (optionnel)',
+              label: 'Objet de la commande',
               hint: 'Ex : Prestation, fourniture…',
               prefixIcon: Icons.subject,
+              errorText: _objetError,
+            ),
+            const SizedBox(height: Tokens.space16),
+            _ValidityFields(
+              emission: _dateEmission,
+              echeance: _dateEcheance,
+              days: _validityDays,
+              onEmission: (d) => setState(() {
+                _dateEmission = d;
+                _applyValidity();
+              }),
+              onDays: (d) => setState(() {
+                _validityDays = d;
+                _applyValidity();
+              }),
+              onEcheance: (d) => setState(() {
+                _dateEcheance = d;
+                _validityDays = null;
+              }),
             ),
             const SizedBox(height: Tokens.space24),
             Row(
@@ -358,11 +419,10 @@ class _SalesDocFormSheetState extends ConsumerState<_SalesDocFormSheet> {
                 onPickProduct: () => _pickProduct(_lines[i]),
               ),
             const SizedBox(height: Tokens.space16),
-            _Dropdown<num>(
-              label: 'TVA',
+            _TvaField(
               value: _taux,
-              items: const {0: '0 %', 18: '18 %'},
-              onChanged: (v) => setState(() => _taux = v),
+              rule: _fiscal,
+              onChanged: (v) => setState(() => _tauxChoisi = v),
             ),
             if (comptant) ...[
               const SizedBox(height: Tokens.space16),
@@ -372,6 +432,20 @@ class _SalesDocFormSheetState extends ConsumerState<_SalesDocFormSheet> {
                 onChanged: (a) => setState(() => _account = a),
               ),
             ],
+            const SizedBox(height: Tokens.space16),
+            if (!comptant) ...[
+              _StatusField(
+                value: _statut,
+                onChanged: (v) => setState(() => _statut = v),
+              ),
+              const SizedBox(height: Tokens.space16),
+            ],
+            AppTextField(
+              controller: _notes,
+              label: 'Notes (optionnel)',
+              hint: 'Conditions, précisions…',
+              maxLines: 2,
+            ),
             const SizedBox(height: Tokens.space24),
             _TotalsCard(
               ht: _ht,
@@ -581,6 +655,155 @@ class _LineEditor extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Date d'émission et fin de validité, avec les durées proposées par le web.
+class _ValidityFields extends StatelessWidget {
+  const _ValidityFields({
+    required this.emission,
+    required this.echeance,
+    required this.days,
+    required this.onEmission,
+    required this.onDays,
+    required this.onEcheance,
+  });
+
+  final DateTime emission;
+  final DateTime echeance;
+  final int? days;
+  final ValueChanged<DateTime> onEmission;
+  final ValueChanged<int?> onDays;
+  final ValueChanged<DateTime> onEcheance;
+
+  static const _presets = <int?, String>{
+    7: '7 jours',
+    15: '15 jours',
+    20: '20 jours',
+    30: '30 jours',
+    60: '2 mois',
+    90: '3 mois',
+    null: 'Personnalisée',
+  };
+
+  static String _label(DateTime d) =>
+      '${d.day.toString().padLeft(2, '0')}/'
+      '${d.month.toString().padLeft(2, '0')}/${d.year}';
+
+  Future<void> _pick(
+    BuildContext context,
+    DateTime current,
+    ValueChanged<DateTime> onPicked,
+  ) async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: current,
+      firstDate: DateTime(DateTime.now().year - 1),
+      lastDate: DateTime(DateTime.now().year + 3),
+    );
+    if (picked != null) onPicked(picked);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context).textTheme;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text('Date d’émission', style: theme.labelLarge),
+        const SizedBox(height: Tokens.space8),
+        OutlinedButton.icon(
+          onPressed: () => _pick(context, emission, onEmission),
+          icon: const Icon(Icons.event_outlined),
+          label: Align(
+            alignment: Alignment.centerLeft,
+            child: Text(_label(emission)),
+          ),
+          style: OutlinedButton.styleFrom(
+            minimumSize: const Size.fromHeight(52),
+            alignment: Alignment.centerLeft,
+          ),
+        ),
+        const SizedBox(height: Tokens.space16),
+        _Dropdown<int?>(
+          label: 'Durée de validité',
+          value: days,
+          items: _presets,
+          onChanged: onDays,
+        ),
+        const SizedBox(height: Tokens.space8),
+        // La date reste consultable même quand une durée la calcule : c'est
+        // elle qui figure sur le devis.
+        OutlinedButton.icon(
+          onPressed: days == null
+              ? () => _pick(context, echeance, onEcheance)
+              : null,
+          icon: const Icon(Icons.event_available_outlined),
+          label: Align(
+            alignment: Alignment.centerLeft,
+            child: Text('Valable jusqu’au ${_label(echeance)}'),
+          ),
+          style: OutlinedButton.styleFrom(
+            minimumSize: const Size.fromHeight(52),
+            alignment: Alignment.centerLeft,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// Taux de TVA. Verrouillé sous un régime exonéré : la loi ne se choisit pas
+/// dans un formulaire.
+class _TvaField extends StatelessWidget {
+  const _TvaField({
+    required this.value,
+    required this.rule,
+    required this.onChanged,
+  });
+
+  final num value;
+  final FiscalRule rule;
+  final ValueChanged<num> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context).textTheme;
+
+    if (rule.verrouille) {
+      return InputDecorator(
+        decoration: InputDecoration(
+          labelText: 'TVA',
+          border: const OutlineInputBorder(),
+          helperText: 'Régime ${rule.regime ?? ''} — exonéré',
+          enabled: false,
+        ),
+        child: Text('0 %', style: theme.bodyLarge),
+      );
+    }
+
+    return _Dropdown<num>(
+      label: 'TVA',
+      value: value,
+      items: const {0: '0 %', 9: '9 %', 18: '18 %'},
+      onChanged: onChanged,
+    );
+  }
+}
+
+class _StatusField extends StatelessWidget {
+  const _StatusField({required this.value, required this.onChanged});
+
+  final ProformaStatus value;
+  final ValueChanged<ProformaStatus> onChanged;
+
+  @override
+  Widget build(BuildContext context) => _Dropdown<ProformaStatus>(
+    label: 'Statut',
+    value: value,
+    items: {for (final s in ProformaStatus.values) s: s.label},
+    onChanged: onChanged,
+  );
 }
 
 class _TotalsCard extends StatelessWidget {

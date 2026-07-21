@@ -165,6 +165,11 @@ class AuthRepositoryImpl implements AuthRepository {
       ),
       unreadCount: boot.unreadCount,
       stale: stale,
+      fiscal: FiscalRule(
+        regime: boot.fiscal?.regime,
+        tauxTva: boot.fiscal?.tauxTva ?? 18,
+        verrouille: boot.fiscal?.tvaVerrouillee ?? false,
+      ),
     );
   }
 }
