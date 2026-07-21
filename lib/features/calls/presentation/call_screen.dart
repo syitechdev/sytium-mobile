@@ -13,14 +13,34 @@ import 'package:sytium_mobile/theme/tokens.dart';
 ///
 /// Mesh-aware: the remote area shows one tile per connected peer (a grid for
 /// group calls), with the local self-view floating on top for video calls.
-class CallScreen extends ConsumerWidget {
+class CallScreen extends ConsumerStatefulWidget {
   const CallScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<CallScreen> createState() => _CallScreenState();
+}
+
+class _CallScreenState extends ConsumerState<CallScreen> {
+  /// Vue inversee : ma camera occupe la grande zone, le correspondant passe
+  /// dans la vignette. Purement local a l'ecran, rien a signaler au pair.
+  bool _selfMain = false;
+
+  @override
+  Widget build(BuildContext context) {
     final call = ref.watch(callControllerProvider);
     final controller = ref.read(callControllerProvider.notifier);
     final title = _title(call);
+
+    // L'inversion n'a de sens qu'a deux, en video, camera allumee : au-dela
+    // d'un correspondant, promouvoir sa propre image reléguerait N personnes
+    // dans une seule vignette.
+    final canSwap = call.isVideo &&
+        call.localRenderer != null &&
+        call.camOn &&
+        call.participants.length == 1;
+    // Un participant qui rejoint annule l'inversion plutot que de laisser un
+    // affichage incoherent.
+    final selfMain = _selfMain && canSwap;
 
     return Material(
       color: Tokens.navy,
@@ -28,19 +48,49 @@ class CallScreen extends ConsumerWidget {
         child: Stack(
           fit: StackFit.expand,
           children: [
-            // Remote stage: a peer grid once connected, an avatar backdrop while
-            // the first leg is still being established.
-            if (call.participants.isEmpty)
+            // Scene principale : ma camera si l'affichage est inverse, sinon la
+            // grille des correspondants (ou un fond d'avatar tant que la
+            // premiere connexion n'est pas etablie).
+            if (selfMain)
+              RTCVideoView(
+                call.localRenderer!,
+                mirror: true,
+                objectFit: RTCVideoViewObjectFit.RTCVideoViewObjectFitCover,
+              )
+            else if (call.participants.isEmpty)
               _AvatarBackdrop(name: title)
             else
               _PeerGrid(participants: call.participants),
 
-            // Local self-view (video calls only), floating top-right.
+            // Vignette flottante : elle porte l'image qui n'est PAS en grand.
+            // Un appui dessus echange les deux.
             if (call.isVideo && call.localRenderer != null && call.camOn)
               Positioned(
                 top: Tokens.space16,
                 right: Tokens.space16,
-                child: _LocalPreview(renderer: call.localRenderer!),
+                child: Semantics(
+                  button: canSwap,
+                  label: canSwap
+                      ? (selfMain
+                          ? 'Afficher le correspondant en grand'
+                          : 'Afficher ma camera en grand')
+                      : null,
+                  child: GestureDetector(
+                    onTap: canSwap
+                        ? () => setState(() => _selfMain = !_selfMain)
+                        : null,
+                    child: _Thumbnail(
+                      child: selfMain
+                          ? _PeerTile(participant: call.participants.first)
+                          : RTCVideoView(
+                              call.localRenderer!,
+                              mirror: true,
+                              objectFit:
+                                  RTCVideoViewObjectFit.RTCVideoViewObjectFitCover,
+                            ),
+                    ),
+                  ),
+                ),
               ),
 
             // Header: title + status.
@@ -70,7 +120,7 @@ class CallScreen extends ConsumerWidget {
     );
   }
 
-  static String _title(CallSession call) {
+  String _title(CallSession call) {
     final peers = call.participants;
     if (peers.length > 1) return 'Appel de groupe';
     if (peers.length == 1 && peers.first.name.isNotEmpty) {
@@ -79,7 +129,7 @@ class CallScreen extends ConsumerWidget {
     return call.call?.peerName ?? 'Correspondant';
   }
 
-  static String _statusLabel(CallSession call) {
+  String _statusLabel(CallSession call) {
     switch (call.phase) {
       case CallPhase.outgoing:
         return 'Appel en cours…';
@@ -356,24 +406,18 @@ class _AvatarBackdrop extends StatelessWidget {
   }
 }
 
-class _LocalPreview extends StatelessWidget {
-  const _LocalPreview({required this.renderer});
+/// Cadre de la vignette flottante. Le contenu change selon le sens de
+/// l'affichage, le cadre reste identique pour que l'echange soit lisible.
+class _Thumbnail extends StatelessWidget {
+  const _Thumbnail({required this.child});
 
-  final RTCVideoRenderer renderer;
+  final Widget child;
 
   @override
   Widget build(BuildContext context) {
     return ClipRRect(
       borderRadius: BorderRadius.circular(Tokens.radiusMd),
-      child: SizedBox(
-        width: 96,
-        height: 140,
-        child: RTCVideoView(
-          renderer,
-          mirror: true,
-          objectFit: RTCVideoViewObjectFit.RTCVideoViewObjectFitCover,
-        ),
-      ),
+      child: SizedBox(width: 96, height: 140, child: child),
     );
   }
 }
@@ -395,17 +439,19 @@ class _ControlBar extends StatelessWidget {
           onTap: controller.toggleMic,
         ),
         const SizedBox(width: Tokens.space16),
-        // Speaker/earpiece toggle (mainly useful for a voice call).
-        if (!call.isVideo) ...[
-          _RoundButton(
-            icon: call.speakerOn
-                ? Icons.volume_up_rounded
-                : Icons.hearing_rounded,
-            active: call.speakerOn,
-            onTap: controller.toggleSpeaker,
-          ),
-          const SizedBox(width: Tokens.space16),
-        ],
+        // Sortie audio : haut-parleur ou ecouteur. Presente sur les DEUX types
+        // d'appel — elle n'etait offerte qu'en audio, alors qu'un appel video
+        // pose exactement la meme question des qu'on veut le prendre en main.
+        // Le routage par defaut (ecouteur en audio, haut-parleur en video) est
+        // pose a l'ouverture du flux local ; ce bouton ne fait que l'inverser.
+        _RoundButton(
+          icon: call.speakerOn
+              ? Icons.volume_up_rounded
+              : Icons.hearing_rounded,
+          active: call.speakerOn,
+          onTap: controller.toggleSpeaker,
+        ),
+        const SizedBox(width: Tokens.space16),
         if (call.isVideo) ...[
           _RoundButton(
             icon: call.camOn

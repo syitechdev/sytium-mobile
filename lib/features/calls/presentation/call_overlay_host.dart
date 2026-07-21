@@ -9,6 +9,7 @@ import 'package:sytium_mobile/features/calls/presentation/call_screen.dart';
 import 'package:sytium_mobile/features/workspace/application/workspace_providers.dart';
 import 'package:sytium_mobile/features/workspace/realtime/workspace_realtime.dart';
 import 'package:sytium_mobile/features/workspace/realtime/workspace_realtime_provider.dart';
+import 'package:sytium_mobile/theme/tokens.dart';
 
 /// App-wide host that (a) listens on the current user's call channel for
 /// incoming calls and (b) stacks the ringing/active call surfaces above the
@@ -22,9 +23,16 @@ class CallOverlayHost extends ConsumerStatefulWidget {
   ConsumerState<CallOverlayHost> createState() => _CallOverlayHostState();
 }
 
+/// Combien de temps « Appel terminé » reste affiché avant que l'écran ne se
+/// referme. Assez pour être lu, assez court pour ne pas retenir l'utilisateur.
+const kCallEndedNoticeDuration = Duration(milliseconds: 1600);
+
 class _CallOverlayHostState extends ConsumerState<CallOverlayHost> {
   WorkspaceRealtime? _realtime;
   String? _channel;
+
+  /// Minuteur de fermeture de l'écran de fin d'appel.
+  Timer? _dismiss;
 
   @override
   void initState() {
@@ -77,8 +85,24 @@ class _CallOverlayHostState extends ConsumerState<CallOverlayHost> {
     );
   }
 
+  /// Programme la fermeture de l'écran de fin. Idempotent : la phase `ended`
+  /// est rebâtie à chaque frame, et empiler un minuteur par frame ferait
+  /// disparaître l'écran avant qu'on l'ait lu.
+  void _scheduleDismiss() {
+    if (_dismiss != null) return;
+    _dismiss = Timer(kCallEndedNoticeDuration, () {
+      _dismiss = null;
+      if (!mounted) return;
+      // Un nouvel appel a pu démarrer entre-temps : ne rien remettre à zéro
+      // qui ne soit pas l'appel qu'on vient de terminer.
+      if (ref.read(callControllerProvider).phase != CallPhase.ended) return;
+      ref.read(callControllerProvider.notifier).reset();
+    });
+  }
+
   @override
   void dispose() {
+    _dismiss?.cancel();
     if (_channel != null) _realtime?.unsubscribe(_channel!);
     super.dispose();
   }
@@ -102,12 +126,12 @@ class _CallOverlayHostState extends ConsumerState<CallOverlayHost> {
       case CallPhase.idle:
         overlay = null;
       case CallPhase.ended:
-        // Tear down any native call surface, then auto-dismiss back to idle.
+        // L'écran disparaissait instantanément, sans un mot : impossible de
+        // distinguer un appel raccroché d'un plantage. On annonce la fin, puis
+        // on referme.
         unawaited(CallKitService.endAll());
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          ref.read(callControllerProvider.notifier).reset();
-        });
-        overlay = null;
+        _scheduleDismiss();
+        overlay = const _CallEndedNotice();
     }
 
     return Stack(
@@ -115,6 +139,42 @@ class _CallOverlayHostState extends ConsumerState<CallOverlayHost> {
         widget.child,
         if (overlay != null) Positioned.fill(child: overlay),
       ],
+    );
+  }
+}
+
+/// Écran de fin d'appel : même chrome que l'appel lui-même, pour que la
+/// transition se lise comme une conclusion et non comme une disparition.
+class _CallEndedNotice extends StatelessWidget {
+  const _CallEndedNotice();
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Tokens.navy,
+      child: Semantics(
+        liveRegion: true,
+        child: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(
+                Icons.call_end_rounded,
+                color: Colors.white70,
+                size: 44,
+              ),
+              const SizedBox(height: Tokens.space16),
+              Text(
+                'Appel terminé',
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
