@@ -14,4 +14,23 @@ abstract final class AppConfig {
 
   /// Request timeout for the HTTP client.
   static const Duration httpTimeout = Duration(seconds: 20);
+
+  /// Gabarit d'URL des tuiles de la carte de pointage.
+  ///
+  /// Par défaut les tuiles publiques OpenStreetMap, qui conviennent au bêta
+  /// mais **ne sont pas prévues pour un usage de production à l'échelle**
+  /// (politique d'usage OSM). Passer à un fournisseur dédié se fait sans
+  /// toucher au code :
+  ///   flutter build --dart-define=MAP_TILE_URL=https://.../{z}/{x}/{y}.png?key=...
+  static const String mapTileUrl = String.fromEnvironment(
+    'MAP_TILE_URL',
+    defaultValue: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+  );
+
+  /// Mention de source affichée sur la carte. À aligner sur [mapTileUrl] :
+  /// tout fournisseur de tuiles impose sa propre attribution.
+  static const String mapAttribution = String.fromEnvironment(
+    'MAP_ATTRIBUTION',
+    defaultValue: 'OpenStreetMap contributors',
+  );
 }
