@@ -9,8 +9,9 @@ import 'package:sytium_mobile/shared/widgets/error_state.dart';
 import 'package:sytium_mobile/theme/sytium_colors.dart';
 import 'package:sytium_mobile/theme/tokens.dart';
 
-/// « Compta & caisse » tab: month totals + account balances + the cash journal
-/// (brouillard). Read-only; refreshes on pull and after a new movement.
+/// Onglet « Caisse » : totaux du mois, soldes par compte, puis les derniers
+/// mouvements de trésorerie. En lecture seule ; se recharge au tirage et après
+/// une nouvelle écriture.
 class ComptaCaisseView extends ConsumerWidget {
   const ComptaCaisseView({super.key});
 
@@ -108,10 +109,13 @@ class _Content extends StatelessWidget {
             ),
           ),
         const SizedBox(height: Tokens.space24),
-        Text('Brouillard de caisse', style: theme.titleSmall),
+        // « Mouvements », comme au web. « Brouillard » désignait un
+        // enregistrement provisoire à valider ensuite : ici chaque écriture a
+        // déjà modifié le solde du compte, rien n'attend de validation.
+        Text('Mouvements', style: theme.titleSmall),
         const SizedBox(height: Tokens.space4),
         Text(
-          '${journal.movements.length} écritures récentes',
+          '${journal.movements.length} derniers mouvements',
           style: theme.bodySmall?.copyWith(color: colors.textMuted),
         ),
         const SizedBox(height: Tokens.space12),

@@ -44,7 +44,7 @@ class CashSummaryDto with _$CashSummaryDto {
       _$CashSummaryDtoFromJson(json);
 }
 
-/// One posted movement in the cash journal (« brouillard de caisse »).
+/// Un mouvement de trésorerie déjà comptabilisé.
 @freezed
 class CashMovementDto with _$CashMovementDto {
   const factory CashMovementDto({
