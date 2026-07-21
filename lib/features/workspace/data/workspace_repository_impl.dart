@@ -53,6 +53,7 @@ class WorkspaceRepositoryImpl implements WorkspaceRepository {
             .map((d) => Presence(
                   userId: d.userId,
                   online: d.online,
+                  lastSeenAt: d.lastSeenAt,
                   fullName: d.profile?.fullName,
                   avatarUrl: d.profile?.avatarUrl,
                 ))

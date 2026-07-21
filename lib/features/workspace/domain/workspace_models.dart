@@ -248,12 +248,18 @@ class Presence {
   const Presence({
     required this.userId,
     required this.online,
+    this.lastSeenAt,
     this.fullName,
     this.avatarUrl,
   });
 
   final String userId;
   final bool online;
+
+  /// Dernier signe de vie. Le serveur ne renvoie que les présences récentes,
+  /// donc une valeur absente signifie « pas vu depuis longtemps », pas
+  /// « jamais connecté ».
+  final DateTime? lastSeenAt;
   final String? fullName;
   final String? avatarUrl;
 }

@@ -1004,6 +1004,8 @@ mixin _$PresenceDto {
   String get userId => throw _privateConstructorUsedError;
   String get status => throw _privateConstructorUsedError;
   bool get online => throw _privateConstructorUsedError;
+  @JsonKey(name: 'last_seen_at', fromJson: _dateFrom)
+  DateTime? get lastSeenAt => throw _privateConstructorUsedError;
   MemberProfileDto? get profile => throw _privateConstructorUsedError;
 
   /// Serializes this PresenceDto to a JSON map.
@@ -1027,6 +1029,7 @@ abstract class $PresenceDtoCopyWith<$Res> {
     @JsonKey(name: 'user_id') String userId,
     String status,
     bool online,
+    @JsonKey(name: 'last_seen_at', fromJson: _dateFrom) DateTime? lastSeenAt,
     MemberProfileDto? profile,
   });
 
@@ -1051,6 +1054,7 @@ class _$PresenceDtoCopyWithImpl<$Res, $Val extends PresenceDto>
     Object? userId = null,
     Object? status = null,
     Object? online = null,
+    Object? lastSeenAt = freezed,
     Object? profile = freezed,
   }) {
     return _then(
@@ -1067,6 +1071,10 @@ class _$PresenceDtoCopyWithImpl<$Res, $Val extends PresenceDto>
                 ? _value.online
                 : online // ignore: cast_nullable_to_non_nullable
                       as bool,
+            lastSeenAt: freezed == lastSeenAt
+                ? _value.lastSeenAt
+                : lastSeenAt // ignore: cast_nullable_to_non_nullable
+                      as DateTime?,
             profile: freezed == profile
                 ? _value.profile
                 : profile // ignore: cast_nullable_to_non_nullable
@@ -1104,6 +1112,7 @@ abstract class _$$PresenceDtoImplCopyWith<$Res>
     @JsonKey(name: 'user_id') String userId,
     String status,
     bool online,
+    @JsonKey(name: 'last_seen_at', fromJson: _dateFrom) DateTime? lastSeenAt,
     MemberProfileDto? profile,
   });
 
@@ -1128,6 +1137,7 @@ class __$$PresenceDtoImplCopyWithImpl<$Res>
     Object? userId = null,
     Object? status = null,
     Object? online = null,
+    Object? lastSeenAt = freezed,
     Object? profile = freezed,
   }) {
     return _then(
@@ -1144,6 +1154,10 @@ class __$$PresenceDtoImplCopyWithImpl<$Res>
             ? _value.online
             : online // ignore: cast_nullable_to_non_nullable
                   as bool,
+        lastSeenAt: freezed == lastSeenAt
+            ? _value.lastSeenAt
+            : lastSeenAt // ignore: cast_nullable_to_non_nullable
+                  as DateTime?,
         profile: freezed == profile
             ? _value.profile
             : profile // ignore: cast_nullable_to_non_nullable
@@ -1160,6 +1174,7 @@ class _$PresenceDtoImpl implements _PresenceDto {
     @JsonKey(name: 'user_id') this.userId = '',
     this.status = 'offline',
     this.online = false,
+    @JsonKey(name: 'last_seen_at', fromJson: _dateFrom) this.lastSeenAt,
     this.profile,
   });
 
@@ -1176,11 +1191,14 @@ class _$PresenceDtoImpl implements _PresenceDto {
   @JsonKey()
   final bool online;
   @override
+  @JsonKey(name: 'last_seen_at', fromJson: _dateFrom)
+  final DateTime? lastSeenAt;
+  @override
   final MemberProfileDto? profile;
 
   @override
   String toString() {
-    return 'PresenceDto(userId: $userId, status: $status, online: $online, profile: $profile)';
+    return 'PresenceDto(userId: $userId, status: $status, online: $online, lastSeenAt: $lastSeenAt, profile: $profile)';
   }
 
   @override
@@ -1191,12 +1209,15 @@ class _$PresenceDtoImpl implements _PresenceDto {
             (identical(other.userId, userId) || other.userId == userId) &&
             (identical(other.status, status) || other.status == status) &&
             (identical(other.online, online) || other.online == online) &&
+            (identical(other.lastSeenAt, lastSeenAt) ||
+                other.lastSeenAt == lastSeenAt) &&
             (identical(other.profile, profile) || other.profile == profile));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode => Object.hash(runtimeType, userId, status, online, profile);
+  int get hashCode =>
+      Object.hash(runtimeType, userId, status, online, lastSeenAt, profile);
 
   /// Create a copy of PresenceDto
   /// with the given fields replaced by the non-null parameter values.
@@ -1217,6 +1238,8 @@ abstract class _PresenceDto implements PresenceDto {
     @JsonKey(name: 'user_id') final String userId,
     final String status,
     final bool online,
+    @JsonKey(name: 'last_seen_at', fromJson: _dateFrom)
+    final DateTime? lastSeenAt,
     final MemberProfileDto? profile,
   }) = _$PresenceDtoImpl;
 
@@ -1230,6 +1253,9 @@ abstract class _PresenceDto implements PresenceDto {
   String get status;
   @override
   bool get online;
+  @override
+  @JsonKey(name: 'last_seen_at', fromJson: _dateFrom)
+  DateTime? get lastSeenAt;
   @override
   MemberProfileDto? get profile;
 

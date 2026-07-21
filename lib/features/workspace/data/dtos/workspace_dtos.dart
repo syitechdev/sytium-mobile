@@ -84,6 +84,7 @@ class PresenceDto with _$PresenceDto {
     @JsonKey(name: 'user_id') @Default('') String userId,
     @Default('offline') String status,
     @Default(false) bool online,
+    @JsonKey(name: 'last_seen_at', fromJson: _dateFrom) DateTime? lastSeenAt,
     MemberProfileDto? profile,
   }) = _PresenceDto;
 

@@ -145,11 +145,58 @@ Future<Member?> dmPeer(Ref ref, String channelId) async {
 /// a failure yields an empty map so the team strip degrades to all-offline.
 @riverpod
 Future<Map<String, bool>> onlineByUser(Ref ref) async {
+  final byUser = await ref.watch(presenceByUserProvider.future);
+  return {for (final e in byUser.entries) e.key: e.value.online};
+}
+
+/// Présences complètes par utilisateur, `last_seen_at` compris.
+///
+/// Le serveur ne renvoie que les présences récentes (fenêtre de 5 min) : un
+/// utilisateur absent de cette table n'a donc pas été vu récemment, ce qui
+/// suffit à le classer après ceux qui l'ont été.
+///
+/// Ne lève jamais : un échec rend une table vide et l'équipe s'affiche
+/// simplement comme hors ligne.
+@riverpod
+Future<Map<String, Presence>> presenceByUser(Ref ref) async {
   final result = await ref.watch(workspaceRepositoryProvider).presence();
   return result.fold(
-    (list) => {for (final p in list) p.userId: p.online},
-    (_) => const <String, bool>{},
+    (list) => {for (final p in list) p.userId: p},
+    (_) => const <String, Presence>{},
   );
+}
+
+/// Classe le trombinoscope : en ligne d'abord, puis les plus récemment vus,
+/// puis le reste par ordre alphabétique.
+///
+/// Le tri précède TOUJOURS la troncature de la liste : couper avant triait
+/// revenait à masquer un collègue connecté au seul motif qu'il arrivait tard
+/// dans le roster.
+List<Member> sortedByPresence(
+  List<Member> roster,
+  Map<String, Presence> presences,
+) {
+  final sorted = [...roster]..sort((a, b) {
+    final pa = presences[a.userId];
+    final pb = presences[b.userId];
+
+    final onlineA = pa?.online ?? false;
+    final onlineB = pb?.online ?? false;
+    if (onlineA != onlineB) return onlineA ? -1 : 1;
+
+    final seenA = pa?.lastSeenAt;
+    final seenB = pb?.lastSeenAt;
+    if (seenA != null && seenB != null && seenA != seenB) {
+      return seenB.compareTo(seenA); // le plus récent d'abord
+    }
+    if (seenA != null && seenB == null) return -1;
+    if (seenA == null && seenB != null) return 1;
+
+    // À égalité de présence, un ordre stable vaut mieux qu'un ordre au hasard :
+    // le trombinoscope ne doit pas se réorganiser à chaque rafraîchissement.
+    return a.fullName.toLowerCase().compareTo(b.fullName.toLowerCase());
+  });
+  return sorted;
 }
 
 /// Combien de temps la première page d'un fil survit à sa fermeture.

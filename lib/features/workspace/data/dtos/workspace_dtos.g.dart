@@ -90,6 +90,7 @@ _$PresenceDtoImpl _$$PresenceDtoImplFromJson(Map<String, dynamic> json) =>
       userId: json['user_id'] as String? ?? '',
       status: json['status'] as String? ?? 'offline',
       online: json['online'] as bool? ?? false,
+      lastSeenAt: _dateFrom(json['last_seen_at']),
       profile: json['profile'] == null
           ? null
           : MemberProfileDto.fromJson(json['profile'] as Map<String, dynamic>),
@@ -100,6 +101,7 @@ Map<String, dynamic> _$$PresenceDtoImplToJson(_$PresenceDtoImpl instance) =>
       'user_id': instance.userId,
       'status': instance.status,
       'online': instance.online,
+      'last_seen_at': instance.lastSeenAt?.toIso8601String(),
       'profile': instance.profile,
     };
 

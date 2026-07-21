@@ -306,7 +306,7 @@ class _DmPeerProviderElement extends AutoDisposeFutureProviderElement<Member?>
   String get channelId => (origin as DmPeerProvider).channelId;
 }
 
-String _$onlineByUserHash() => r'6950a50f59d19ca6966fabe28288c57d41d21795';
+String _$onlineByUserHash() => r'403c1070d92ca750b1e95ee06f51c15af387d181';
 
 /// Online colleagues (userId → online) for « statuts d'équipe ». Never throws:
 /// a failure yields an empty map so the team strip degrades to all-offline.
@@ -327,6 +327,33 @@ final onlineByUserProvider =
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef OnlineByUserRef = AutoDisposeFutureProviderRef<Map<String, bool>>;
+String _$presenceByUserHash() => r'676f0ce63025fb33ed7a496c0282b49c632c081e';
+
+/// Présences complètes par utilisateur, `last_seen_at` compris.
+///
+/// Le serveur ne renvoie que les présences récentes (fenêtre de 5 min) : un
+/// utilisateur absent de cette table n'a donc pas été vu récemment, ce qui
+/// suffit à le classer après ceux qui l'ont été.
+///
+/// Ne lève jamais : un échec rend une table vide et l'équipe s'affiche
+/// simplement comme hors ligne.
+///
+/// Copied from [presenceByUser].
+@ProviderFor(presenceByUser)
+final presenceByUserProvider =
+    AutoDisposeFutureProvider<Map<String, Presence>>.internal(
+      presenceByUser,
+      name: r'presenceByUserProvider',
+      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+          ? null
+          : _$presenceByUserHash,
+      dependencies: null,
+      allTransitiveDependencies: null,
+    );
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+typedef PresenceByUserRef = AutoDisposeFutureProviderRef<Map<String, Presence>>;
 String _$channelMessagesHash() => r'3b2cfd6afa1e3442e5f1fb62cbc78cdb174db783';
 
 /// First page of a channel's messages (oldest→newest), limit 50. The thread

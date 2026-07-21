@@ -340,12 +340,18 @@ class _TeamStatusStrip extends ConsumerWidget {
     final theme = Theme.of(context).textTheme;
     final colors = context.colors;
     final membersAsync = ref.watch(orgMembersProvider);
-    final online = ref.watch(onlineByUserProvider).valueOrNull ?? const {};
+    final presences =
+        ref.watch(presenceByUserProvider).valueOrNull ?? const <String, Presence>{};
     final me = ref.watch(currentUserIdProvider);
 
     final members = membersAsync.valueOrNull ?? const <Member>[];
     if (members.isEmpty) return const SizedBox.shrink();
-    final roster = members.where((m) => m.userId != me).take(14).toList();
+    // Trier PUIS tronquer : l'inverse masquait un collègue connecté au seul
+    // motif qu'il arrivait au-delà du 14e rang du roster.
+    final roster = sortedByPresence(
+      members.where((m) => m.userId != me).toList(),
+      presences,
+    ).take(14).toList();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -377,7 +383,7 @@ class _TeamStatusStrip extends ConsumerWidget {
               final m = roster[i];
               return _TeamAvatar(
                 member: m,
-                online: online[m.userId] ?? false,
+                online: presences[m.userId]?.online ?? false,
                 onTap: () => _openDm(context, ref, m.userId),
               );
             },
