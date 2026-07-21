@@ -7,6 +7,8 @@ import 'package:sytium_mobile/features/auth/application/auth_controller.dart';
 import 'package:sytium_mobile/features/auth/domain/auth_session.dart';
 import 'package:sytium_mobile/features/auth/domain/auth_user.dart';
 import 'package:sytium_mobile/features/auth/domain/mobile_capabilities.dart';
+import 'package:sytium_mobile/features/cash/application/cash_providers.dart';
+import 'package:sytium_mobile/features/cash/domain/cash_models.dart';
 import 'package:sytium_mobile/features/invoicing/application/invoicing_providers.dart';
 import 'package:sytium_mobile/features/invoicing/data/catalogue_remote_data_source.dart';
 import 'package:sytium_mobile/features/invoicing/domain/catalogue.dart';
@@ -86,15 +88,29 @@ class _FakeCatalogue implements CatalogueRemoteDataSource {
 }
 
 class _FakeAuth extends AuthController {
-  _FakeAuth({this.fiscal = const FiscalRule()});
+  _FakeAuth({this.fiscal = const FiscalRule(), this.financeWrite = false});
 
   final FiscalRule fiscal;
+
+  /// Seul ce droit ouvre le mode comptant, donc le sélecteur de type.
+  final bool financeWrite;
 
   @override
   Future<AuthState> build() async => Authenticated(
     AuthSession(
       user: const AuthUser(id: 'u1', name: 'Ama', email: 'a@sytium.app'),
-      capabilities: const MobileCapabilities.baseline(),
+      capabilities: MobileCapabilities(
+        dashboard: false,
+        employeeSpace: true,
+        messaging: true,
+        weeklyObjectives: false,
+        leaveRequests: false,
+        permissionRequests: false,
+        approvals: false,
+        commercial: true,
+        finance: financeWrite,
+        financeWrite: financeWrite,
+      ),
       fiscal: fiscal,
     ),
   );
@@ -105,6 +121,7 @@ Future<void> _pump(
   required InvoicingRepository repo,
   CatalogueRemoteDataSource? catalogue,
   FiscalRule fiscal = const FiscalRule(),
+  bool financeWrite = false,
 }) async {
   tester.view.physicalSize = const Size(390 * 3, 2400 * 3);
   tester.view.devicePixelRatio = 3;
@@ -113,9 +130,18 @@ Future<void> _pump(
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
-        authControllerProvider.overrideWith(() => _FakeAuth(fiscal: fiscal)),
+        authControllerProvider.overrideWith(
+          () => _FakeAuth(fiscal: fiscal, financeWrite: financeWrite),
+        ),
         invoicingRepositoryProvider.overrideWithValue(repo),
         catalogueProvider.overrideWithValue(catalogue ?? _FakeCatalogue()),
+        // Le sélecteur de compte encaisseur interroge le réseau : sans cette
+        // réponse, le mode comptant reste en chargement perpétuel.
+        cashAccountsProvider.overrideWith(
+          (ref) async => const [
+            CashAccount(id: 'acc-1', nom: 'Caisse', type: 'caisse'),
+          ],
+        ),
       ],
       child: MaterialApp(
         theme: AppTheme.light(),
@@ -332,5 +358,19 @@ void main() {
       60,
     );
     expect(sent.statut, ProformaStatus.brouillon);
+  });
+
+  testWidgets('le mode comptant s’annonce avant la saisie', (tester) async {
+    // Les deux modes partagent le même formulaire : une vente au comptant
+    // comptabilise et encaisse, cela ne doit pas se découvrir après coup.
+    final repo = _FakeInvoicing();
+    await _pump(tester, repo: repo, financeWrite: true);
+
+    expect(find.textContaining('comptabilisée et encaissée'), findsNothing);
+
+    await tester.tap(find.text('Comptant'));
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('comptabilisée et encaissée'), findsOneWidget);
   });
 }

@@ -8,6 +8,7 @@ import 'package:sytium_mobile/features/auth/domain/auth_session.dart';
 import 'package:sytium_mobile/features/cash/application/cash_providers.dart';
 import 'package:sytium_mobile/features/cash/domain/cash_models.dart';
 import 'package:sytium_mobile/features/commercial/application/commercial_providers.dart';
+import 'package:sytium_mobile/features/documents/application/documents_providers.dart';
 import 'package:sytium_mobile/features/documents/domain/document_models.dart';
 import 'package:sytium_mobile/features/finance/application/finance_providers.dart';
 import 'package:sytium_mobile/features/invoicing/application/invoicing_providers.dart';
@@ -372,7 +373,10 @@ class _SalesDocFormSheetState extends ConsumerState<_SalesDocFormSheet> {
           ..invalidate(commercialDashboardProvider)
           ..invalidate(cashJournalProvider)
           ..invalidate(cashAccountsProvider)
-          ..invalidate(financeDashboardProvider);
+          ..invalidate(financeDashboardProvider)
+          // Sans cela, la pièce émise n'apparaissait ni dans l'onglet Docs ni
+          // dans les proformas du module commercial : on la croyait perdue.
+          ..invalidate(documentsProvider);
         Navigator.of(context).pop(true);
         final label = ok.kind == SalesDocKind.comptant ? 'Facture' : 'Proforma';
         ScaffoldMessenger.of(context).showSnackBar(
@@ -426,6 +430,10 @@ class _SalesDocFormSheetState extends ConsumerState<_SalesDocFormSheet> {
               style: theme.bodySmall?.copyWith(color: colors.textMuted),
             ),
             const SizedBox(height: Tokens.space24),
+            if (comptant && editing == null) ...[
+              _ComptantNotice(),
+              const SizedBox(height: Tokens.space16),
+            ],
             if (_banner != null) ...[
               _Banner(message: _banner!),
               const SizedBox(height: Tokens.space16),
@@ -972,6 +980,41 @@ class _TotalsCard extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+/// Avertissement du mode comptant.
+///
+/// Les deux modes partagent le même formulaire ; seuls le sous-titre et le
+/// bouton les distinguaient. Une vente au comptant produit une facture
+/// comptabilisée et encaissée sur-le-champ : cela ne doit pas se découvrir
+/// après coup.
+class _ComptantNotice extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+
+    return Container(
+      padding: const EdgeInsets.all(Tokens.space12),
+      decoration: BoxDecoration(
+        color: colors.warning.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(Tokens.radiusMd),
+        border: Border.all(color: colors.warning.withValues(alpha: 0.35)),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.warning_amber_rounded, size: 20, color: colors.warning),
+          const SizedBox(width: Tokens.space12),
+          Expanded(
+            child: Text(
+              'Vente au comptant : la facture sera comptabilisée et encaissée '
+              'immédiatement. Pour un simple devis, choisissez « Proforma ».',
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
