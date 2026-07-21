@@ -40,7 +40,7 @@ final sessionCacheProvider = Provider<SessionCache>.internal(
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef SessionCacheRef = ProviderRef<SessionCache>;
-String _$authDioHash() => r'3f07663874be2bdd621f9fb9134ed994ad94ba8a';
+String _$authDioHash() => r'0e01e746441197e4cf4ea8b15ae952f7ba286261';
 
 /// See also [authDio].
 @ProviderFor(authDio)

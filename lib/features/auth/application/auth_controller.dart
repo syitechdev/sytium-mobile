@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:sytium_mobile/core/error/failure.dart';
 import 'package:sytium_mobile/core/network/connectivity.dart';
+import 'package:sytium_mobile/core/network/http_cache.dart';
 import 'package:sytium_mobile/features/auth/application/auth_providers.dart';
 import 'package:sytium_mobile/features/auth/domain/auth_session.dart';
 
@@ -126,6 +127,10 @@ class AuthController extends _$AuthController {
 
   Future<void> logout() async {
     await ref.read(authRepositoryProvider).logout();
+    // Les reponses en cache sont indexees par URL, pas par utilisateur : sans
+    // ce nettoyage, le compte suivant sur cet appareil ouvrirait la messagerie
+    // et les stats du precedent, hors ligne, sans jamais s'en apercevoir.
+    await ref.read(httpCacheProvider)?.clear();
     state = const AsyncData(Unauthenticated());
   }
 }

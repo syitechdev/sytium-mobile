@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:sytium_mobile/core/network/auth_interceptor.dart';
 import 'package:sytium_mobile/core/network/dio_client.dart';
+import 'package:sytium_mobile/core/network/http_cache.dart';
 import 'package:sytium_mobile/core/notifications/device_identity.dart';
 import 'package:sytium_mobile/core/storage/secure_token_store.dart';
 import 'package:sytium_mobile/core/storage/session_cache.dart';
@@ -36,6 +37,11 @@ class SessionRevoked extends _$SessionRevoked {
 @Riverpod(keepAlive: true)
 Dio authDio(Ref ref) {
   final dio = buildDio();
+  final cache = ref.watch(httpCacheProvider);
+  // Avant l'auth : le cache doit voir la requête telle qu'elle part et la
+  // réponse telle qu'elle revient, sans dépendre de l'ordre des rejeux du
+  // rafraîchissement de jeton.
+  if (cache != null) dio.interceptors.add(cache.interceptor);
   dio.interceptors.add(
     AuthInterceptor(
       tokenStore: ref.watch(tokenStoreProvider),
@@ -44,6 +50,9 @@ Dio authDio(Ref ref) {
         // Le profil mis en cache accompagne le jeton : une session révoquée ne
         // doit laisser aucune donnée personnelle derrière elle.
         await ref.read(sessionCacheProvider).clear();
+        // Les réponses en cache aussi : elles sont indexées par URL, donc le
+        // compte suivant sur cet appareil lirait celles du précédent.
+        await cache?.clear();
         // Sans ce signal, vider le keychain laissait l'utilisateur sur un écran
         // authentifié avec un token effacé : toutes les requêtes échouaient
         // jusqu'au redémarrage de l'app.
