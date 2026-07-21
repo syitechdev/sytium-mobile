@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -158,6 +159,12 @@ class PushMessagingService {
 
     final notification = message.notification;
     if (notification == null) return; // message data-only : pas de rendu.
+
+    // iOS affiche DEJA la banniere au premier plan, via les options de
+    // presentation reglees dans initialize(). En redessiner une localement
+    // donnait deux notifications pour un seul message. Android, lui, n'affiche
+    // rien au premier plan : c'est a nous de le faire.
+    if (Platform.isIOS) return;
 
     await _localNotifications.show(
       id: notification.hashCode,
