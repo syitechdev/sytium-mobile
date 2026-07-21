@@ -6,7 +6,7 @@ part of 'app_foreground.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$appForegroundHash() => r'a0eb392fbaf0da6b5be4ea12806bd0885b008f0f';
+String _$appForegroundHash() => r'48cadfb413b88831fdf3d9dbfc3be5ab407e9d79';
 
 /// Whether the app is currently in front of the user (`resumed`).
 ///

@@ -14,6 +14,7 @@ import 'package:sytium_mobile/features/workspace/presentation/new_dm_sheet.dart'
 import 'package:sytium_mobile/shared/widgets/app_avatar.dart';
 import 'package:sytium_mobile/shared/widgets/app_sheet.dart';
 import 'package:sytium_mobile/shared/widgets/error_state.dart';
+import 'package:sytium_mobile/shared/widgets/stale_data_banner.dart';
 import 'package:sytium_mobile/theme/sytium_colors.dart';
 import 'package:sytium_mobile/theme/tokens.dart';
 
@@ -146,6 +147,7 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
   Widget build(BuildContext context) {
     final colors = context.colors;
     final async = ref.watch(conversationsProvider);
+    final convos = async.valueOrNull;
 
     return Scaffold(
       body: SafeArea(
@@ -153,12 +155,23 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
           children: [
             _Header(onCreate: _showCreateMenu),
             _SearchField(controller: _search),
+            // Un rafraîchissement raté n'efface pas ce qu'on sait déjà : la
+            // liste reste lisible, coiffée d'un bandeau. L'écran d'erreur plein
+            // est réservé au cas où l'on n'a strictement rien à montrer.
+            if (convos != null && async.hasError)
+              StaleDataBanner(onRetry: () => ref.invalidate(conversationsProvider)),
             Expanded(
               child: RefreshIndicator(
                 onRefresh: _refresh,
-                child: async.when(
-                  loading: () => const _ListSkeleton(),
-                  error: (e, _) => ListView(
+                child: switch ((convos, async.hasError)) {
+                  (final List<Conversation> list, _) => _Body(
+                    conversations: list,
+                    query: _query,
+                    onOpen: _openConversation,
+                    onCreateChannel: _createChannel,
+                    onStartDm: _startDm,
+                  ),
+                  (null, true) => ListView(
                     children: [
                       const SizedBox(height: Tokens.space48),
                       ErrorState(
@@ -167,14 +180,8 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
                       ),
                     ],
                   ),
-                  data: (convos) => _Body(
-                    conversations: convos,
-                    query: _query,
-                    onOpen: _openConversation,
-                    onCreateChannel: _createChannel,
-                    onStartDm: _startDm,
-                  ),
-                ),
+                  (null, false) => const _ListSkeleton(),
+                },
               ),
             ),
             const _UserFooter(),

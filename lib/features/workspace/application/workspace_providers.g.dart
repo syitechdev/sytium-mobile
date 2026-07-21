@@ -327,7 +327,7 @@ final onlineByUserProvider =
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef OnlineByUserRef = AutoDisposeFutureProviderRef<Map<String, bool>>;
-String _$channelMessagesHash() => r'1983c3e80a56422a348cd2790672fc4b30596304';
+String _$channelMessagesHash() => r'3b2cfd6afa1e3442e5f1fb62cbc78cdb174db783';
 
 /// First page of a channel's messages (oldest→newest), limit 50. The thread
 /// screen appends older pages itself via the cursor.

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:sytium_mobile/features/auth/application/auth_controller.dart';
@@ -150,11 +152,30 @@ Future<Map<String, bool>> onlineByUser(Ref ref) async {
   );
 }
 
+/// Combien de temps la première page d'un fil survit à sa fermeture.
+///
+/// Sans ce délai, sortir d'une conversation détruisait ses messages : y revenir
+/// rejouait un aller-retour réseau complet, squelette compris. Avec, le retour
+/// est instantané et le rafraîchissement se fait sous les yeux, sans écran
+/// d'attente. Borné dans le temps pour que la mémoire ne grossisse pas avec le
+/// nombre de conversations visitées.
+const kThreadCacheWindow = Duration(minutes: 10);
+
 /// First page of a channel's messages (oldest→newest), limit 50. The thread
 /// screen appends older pages itself via the cursor.
 @riverpod
 Future<MessagesPage> channelMessages(Ref ref, String channelId) async {
+  _keepWarm(ref, kThreadCacheWindow);
   final result =
       await ref.watch(workspaceRepositoryProvider).messages(channelId, limit: 50);
   return result.fold((v) => v, (f) => throw Exception(f.message ?? 'Erreur'));
+}
+
+/// Retient un provider `autoDispose` pendant [window] après son dernier
+/// lecteur, puis le laisse partir. Le minuteur est annulé si le provider est
+/// détruit avant (déconnexion, invalidation), pour ne rien laisser courir.
+void _keepWarm(Ref ref, Duration window) {
+  final link = ref.keepAlive();
+  final timer = Timer(window, link.close);
+  ref.onDispose(timer.cancel);
 }

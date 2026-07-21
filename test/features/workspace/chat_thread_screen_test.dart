@@ -389,7 +389,6 @@ void main() {
         workspaceRealtimeProvider.overrideWithValue(FakeWorkspaceRealtime()),
       ],
     );
-    addTearDown(container.dispose);
 
     Widget host(Widget child) => UncontrolledProviderScope(
           container: container,
@@ -409,6 +408,11 @@ void main() {
     await tester.pumpWidget(host(const SizedBox()));
     await tester.pump();
     expect(container.read(activeChatChannelProvider), isNull);
+
+    // Ce conteneur nous appartient : le liberer ici, et non en tearDown, pour
+    // que le minuteur qui garde le fil au chaud (kThreadCacheWindow) soit
+    // annule avant le controle de minuteurs en attente de flutter_test.
+    container.dispose();
   });
 
   testWidgets('renders mine vs others bubbles, author name, edited + deleted', (tester) async {

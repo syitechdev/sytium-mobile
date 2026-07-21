@@ -18,6 +18,7 @@ import 'package:sytium_mobile/features/workspace/presentation/attachment_preview
 import 'package:sytium_mobile/shared/widgets/app_avatar.dart';
 import 'package:sytium_mobile/shared/widgets/app_sheet.dart';
 import 'package:sytium_mobile/shared/widgets/error_state.dart';
+import 'package:sytium_mobile/shared/widgets/stale_data_banner.dart';
 import 'package:sytium_mobile/theme/sytium_colors.dart';
 import 'package:sytium_mobile/theme/tokens.dart';
 
@@ -199,6 +200,14 @@ class ChatThreadScreenState extends ConsumerState<ChatThreadScreen> {
       // nothing on top of it. Deferred to after the frame: Riverpod forbids
       // writing to a provider from a widget life-cycle.
       _activeChannel?.enter(_channelId);
+      // Rafraîchir SEULEMENT si une page est déjà en cache (le fil survit
+      // 10 min à sa fermeture) : on revient alors sur des messages déjà
+      // affichés, mis à jour sans écran d'attente. Invalider un premier
+      // chargement encore en vol le jetterait et rallongerait le squelette —
+      // l'exact contraire du but.
+      if (ref.read(channelMessagesProvider(_channelId)).hasValue) {
+        ref.invalidate(channelMessagesProvider(_channelId));
+      }
       await ref.read(workspaceRepositoryProvider).markRead(_channelId);
       if (!mounted) return;
       ref.invalidate(conversationsProvider);
@@ -665,6 +674,7 @@ class ChatThreadScreenState extends ConsumerState<ChatThreadScreen> {
   Widget build(BuildContext context) {
     final me = ref.watch(currentUserIdProvider);
     final async = ref.watch(channelMessagesProvider(_channelId));
+    final page = async.valueOrNull;
     final outgoing = ref.watch(outgoingMessagesProvider(_channelId));
 
     // A landed page both confirms optimistic messages (drop the local copy so
@@ -698,15 +708,27 @@ class ChatThreadScreenState extends ConsumerState<ChatThreadScreen> {
       ),
       body: Column(
         children: [
+          if (page != null && async.hasError)
+            StaleDataBanner(
+              onRetry: () => ref.invalidate(channelMessagesProvider(_channelId)),
+            ),
           Expanded(
             child: Stack(
               children: [
                 RefreshIndicator(
                   onRefresh: () async =>
                       ref.invalidate(channelMessagesProvider(_channelId)),
-                  child: async.when(
-                    loading: () => const _ThreadSkeleton(),
-                    error: (e, _) => ListView(
+                  // Mêmes règles que la liste : on montre ce qu'on a, même
+                  // périmé, plutôt qu'un écran d'erreur qui effacerait une
+                  // conversation parfaitement lisible.
+                  child: switch ((page, async.hasError)) {
+                    (final MessagesPage loaded, _) => _buildThread(
+                      context,
+                      page: loaded,
+                      outgoing: outgoing,
+                      me: me,
+                    ),
+                    (null, true) => ListView(
                       children: [
                         const SizedBox(height: Tokens.space48),
                         ErrorState(
@@ -717,13 +739,8 @@ class ChatThreadScreenState extends ConsumerState<ChatThreadScreen> {
                         ),
                       ],
                     ),
-                    data: (page) => _buildThread(
-                      context,
-                      page: page,
-                      outgoing: outgoing,
-                      me: me,
-                    ),
-                  ),
+                    (null, false) => const _ThreadSkeleton(),
+                  },
                 ),
                 if (_scrolledUp)
                   Positioned(
