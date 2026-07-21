@@ -53,7 +53,7 @@ class PointerScreen extends ConsumerStatefulWidget {
 }
 
 class _PointerScreenState extends ConsumerState<PointerScreen> {
-  final _location = LocationService();
+  LocationService get _location => ref.read(locationServiceProvider);
 
   bool _checkingGuard = true;
   bool _blocked = false;
@@ -252,10 +252,23 @@ class _PointerScreenState extends ConsumerState<PointerScreen> {
     await _settleAfter(started);
     if (!mounted) return;
 
+    // Le balayage est termine : le bandeau doit retomber sur un verdict, sinon
+    // il resterait bloque sur « recherche en cours » apres un refus.
+    final localVerdict =
+        isInsideAnyZone(
+          pos.latitude,
+          pos.longitude,
+          ref.read(pointageZonesProvider).valueOrNull ?? const <PointageZone>[],
+          accuracyM: pos.accuracy,
+        )
+        ? ZoneVerdict.inside
+        : ZoneVerdict.outside;
+
     setState(() {
       _scanning = false;
       _position = LatLng(pos.latitude, pos.longitude);
       _accuracy = pos.accuracy;
+      _verdict = localVerdict;
     });
 
     result.fold(

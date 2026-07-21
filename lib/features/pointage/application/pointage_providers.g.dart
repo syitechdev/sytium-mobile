@@ -6,6 +6,26 @@ part of 'pointage_providers.dart';
 // RiverpodGenerator
 // **************************************************************************
 
+String _$locationServiceHash() => r'5c196f0dc11a166a14bfa4e9d1af43d8a9341442';
+
+/// Acces a la localisation. Passe par un provider pour que l'ecran de pointage
+/// soit testable : les appels plateforme n'existent pas hors appareil.
+///
+/// Copied from [locationService].
+@ProviderFor(locationService)
+final locationServiceProvider = AutoDisposeProvider<LocationService>.internal(
+  locationService,
+  name: r'locationServiceProvider',
+  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+      ? null
+      : _$locationServiceHash,
+  dependencies: null,
+  allTransitiveDependencies: null,
+);
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+typedef LocationServiceRef = AutoDisposeProviderRef<LocationService>;
 String _$pointageRepositoryHash() =>
     r'12ab27bd1e11c72b2e575789e6ab56a7e0415491';
 

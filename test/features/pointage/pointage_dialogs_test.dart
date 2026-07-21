@@ -57,68 +57,6 @@ void main() {
     });
   });
 
-  group('showOutOfZoneWarning', () {
-    testWidgets('returns true when "Pointer quand même" is tapped',
-        (tester) async {
-      bool? result;
-      await tester.pumpWidget(
-        MaterialApp(
-          theme: AppTheme.light(),
-          home: Scaffold(
-            body: Builder(
-              builder: (context) => Center(
-                child: ElevatedButton(
-                  onPressed: () async {
-                    result = await showOutOfZoneWarning(context);
-                  },
-                  child: const Text('open'),
-                ),
-              ),
-            ),
-          ),
-        ),
-      );
-
-      await tester.tap(find.text('open'));
-      await tester.pumpAndSettle();
-
-      expect(find.text('Hors zone autorisée'), findsOneWidget);
-      await tester.tap(find.text('Pointer quand même'));
-      await tester.pumpAndSettle();
-
-      expect(result, isTrue);
-    });
-
-    testWidgets('returns false when "Annuler" is tapped', (tester) async {
-      bool? result;
-      await tester.pumpWidget(
-        MaterialApp(
-          theme: AppTheme.light(),
-          home: Scaffold(
-            body: Builder(
-              builder: (context) => Center(
-                child: ElevatedButton(
-                  onPressed: () async {
-                    result = await showOutOfZoneWarning(context);
-                  },
-                  child: const Text('open'),
-                ),
-              ),
-            ),
-          ),
-        ),
-      );
-
-      await tester.tap(find.text('open'));
-      await tester.pumpAndSettle();
-
-      expect(find.text('Hors zone autorisée'), findsOneWidget);
-      await tester.tap(find.text('Annuler'));
-      await tester.pumpAndSettle();
-
-      expect(result, isFalse);
-    });
-  });
 
   group('VpnWarningBanner', () {
     testWidgets('renders the VPN warning (non-blocking)', (tester) async {

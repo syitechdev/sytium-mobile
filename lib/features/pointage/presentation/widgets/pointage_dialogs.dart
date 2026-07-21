@@ -2,38 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:sytium_mobile/theme/sytium_colors.dart';
 import 'package:sytium_mobile/theme/tokens.dart';
 
-/// Out-of-zone warning before recording; returns true to proceed anyway.
-Future<bool> showOutOfZoneWarning(BuildContext context, {double? distanceM}) async {
-  final colors = context.colors;
-  final ok = await showDialog<bool>(
-    context: context,
-    builder: (_) => AlertDialog(
-      backgroundColor: colors.card,
-      title: const Text('Hors zone autorisée'),
-      content: Text(
-        distanceM == null
-            ? 'Vous semblez être hors de la zone de pointage. Une alerte sera enregistrée si vous continuez.'
-            : 'Vous êtes à ${distanceM.round()} m de la zone autorisée. Une alerte sera enregistrée si vous continuez.',
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(false),
-          child: const Text('Annuler'),
-        ),
-        FilledButton(
-          onPressed: () => Navigator.of(context).pop(true),
-          style: FilledButton.styleFrom(
-            backgroundColor: colors.warning,
-            foregroundColor: colors.onBrand,
-          ),
-          child: const Text('Pointer quand même'),
-        ),
-      ],
-    ),
-  );
-  return ok ?? false;
-}
-
 /// Non-blocking red banner warning the user a VPN is active. Updates in real
 /// time (driven by the VPN stream). It does NOT lock the user out — VPN is a
 /// best-effort signal (`vpn_suspected` is still sent to the server). Mock GPS

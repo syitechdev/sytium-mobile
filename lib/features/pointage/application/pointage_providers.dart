@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:sytium_mobile/core/location/location_service.dart';
 import 'package:sytium_mobile/features/auth/application/auth_providers.dart';
 import 'package:sytium_mobile/features/pointage/data/pointage_remote_data_source.dart';
 import 'package:sytium_mobile/features/pointage/data/pointage_repository_impl.dart';
@@ -8,6 +9,11 @@ import 'package:sytium_mobile/features/pointage/domain/pointage_repository.dart'
 import 'package:vpn_detector/vpn_detector.dart';
 
 part 'pointage_providers.g.dart';
+
+/// Acces a la localisation. Passe par un provider pour que l'ecran de pointage
+/// soit testable : les appels plateforme n'existent pas hors appareil.
+@riverpod
+LocationService locationService(Ref ref) => LocationService();
 
 @riverpod
 PointageRepository pointageRepository(Ref ref) =>
