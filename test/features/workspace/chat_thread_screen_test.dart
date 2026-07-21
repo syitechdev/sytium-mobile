@@ -415,6 +415,45 @@ void main() {
     container.dispose();
   });
 
+  testWidgets('revenir dans une conversation deja vue n’affiche plus de squelette',
+      (tester) async {
+    final container = ProviderContainer(
+      overrides: [
+        authControllerProvider.overrideWith(_FakeAuth.new),
+        workspaceRepositoryProvider.overrideWithValue(_MessagesRepo()),
+        workspaceRealtimeProvider.overrideWithValue(FakeWorkspaceRealtime()),
+      ],
+    );
+
+    Widget host(Widget child) => UncontrolledProviderScope(
+          container: container,
+          child: MaterialApp(home: Theme(data: AppTheme.light(), child: child)),
+        );
+
+    const thread = ChatThreadScreen(conversation: _kChannel, pollInterval: null);
+
+    // Première visite : le squelette est légitime, on ne sait rien.
+    await tester.pumpWidget(host(thread));
+    await tester.pump();
+    await tester.pump();
+    expect(find.text('Salut'), findsOneWidget);
+
+    // L'utilisateur ressort de la conversation…
+    await tester.pumpWidget(host(const SizedBox()));
+    await tester.pump();
+
+    // …et y revient. La page doit être là DES LA PREMIERE FRAME : c'est tout
+    // l'objet du cache de 10 min. Un squelette ici, c'est le bug signale.
+    await tester.pumpWidget(host(thread));
+    await tester.pump();
+
+    // Le squelette est prive : son absence se constate par la presence
+    // immediate du contenu, ce que l'utilisateur voit lui aussi.
+    expect(find.text('Salut'), findsOneWidget);
+
+    container.dispose();
+  });
+
   testWidgets('renders mine vs others bubbles, author name, edited + deleted', (tester) async {
     await tester.pumpWidget(_host(_MessagesRepo()));
     await tester.pump(); // auth
