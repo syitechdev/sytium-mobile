@@ -27,6 +27,7 @@ class RadarSweepOverlay extends StatefulWidget {
   const RadarSweepOverlay({
     required this.isActive,
     required this.trigger,
+    this.color,
     this.maxDuration = const Duration(seconds: 4),
     super.key,
   });
@@ -37,6 +38,10 @@ class RadarSweepOverlay extends StatefulWidget {
   /// Compteur monotone : l'incrémenter relance le balayage même s'il tourne
   /// déjà, ce qui permet de rejouer l'effet sur une nouvelle tentative.
   final int trigger;
+
+  /// Teinte du balayage. Elle porte le verdict : orange pendant la recherche,
+  /// vert dans la zone, rouge en dehors. Par défaut, la couleur de marque.
+  final Color? color;
 
   /// Garde-fou : au-delà, le balayage s'arrête même sans résultat, pour ne pas
   /// laisser une animation tourner indéfiniment si l'appel n'aboutit jamais.
@@ -105,7 +110,7 @@ class _RadarSweepOverlayState extends State<RadarSweepOverlay>
             builder: (context, _) => CustomPaint(
               painter: _RadarSweepPainter(
                 progress: _controller.value,
-                color: context.colors.brand,
+                color: widget.color ?? context.colors.brand,
                 isDark: isDark,
               ),
               size: Size.infinite,

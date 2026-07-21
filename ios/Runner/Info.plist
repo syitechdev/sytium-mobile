@@ -70,6 +70,8 @@
 	<string>L'appareil photo est utilisé pour scanner le QR de pointage et les appels vidéo.</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>Le micro est utilisé pour les appels audio et vidéo de la messagerie.</string>
+	<key>GMSApiKey</key>
+	<string>$(SYTIUM_GOOGLE_MAPS_API_KEY)</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>Votre position est utilisée pour vérifier que le pointage a lieu sur site.</string>
 	<key>NSPhotoLibraryUsageDescription</key>

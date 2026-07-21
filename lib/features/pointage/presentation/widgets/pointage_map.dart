@@ -1,33 +1,23 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_map/flutter_map.dart';
-import 'package:latlong2/latlong.dart';
-import 'package:sytium_mobile/core/config/app_config.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:sytium_mobile/features/pointage/domain/pointage_models.dart';
-import 'package:sytium_mobile/features/pointage/presentation/widgets/radar_sweep_overlay.dart';
-import 'package:sytium_mobile/theme/sytium_colors.dart';
-import 'package:sytium_mobile/theme/tokens.dart';
+import 'package:sytium_mobile/features/pointage/presentation/widgets/map_styles.dart';
 
-/// Exigé par la politique d'usage des tuiles OSM : chaque requête doit
-/// s'identifier. Doit correspondre à l'identifiant applicatif réel.
-const _kUserAgent = 'tech.sytium.mobile';
+const _kDefaultZoom = 16.5;
 
-const _kDefaultZoom = 17.0;
-
-/// Cadre de repli tant qu'aucune position n'est connue : centre d'Abidjan.
+/// Cadre de repli tant qu'aucune position ni site n'est connu : Abidjan.
 const _kFallbackCenter = LatLng(5.3599, -4.0083);
 
-/// Carte du pointage : tuiles OSM, zones autorisées de l'organisation, position
-/// de l'employé, et le balayage radar pendant la recherche.
+/// Carte plein cadre du pointage : zones autorisées de l'organisation et
+/// position de l'employé, sur fond Google Maps accordé au thème.
 ///
 /// Purement présentationnelle — elle ne décide de rien. Le verdict de zone
 /// appartient au serveur ; le cercle affiché n'est qu'une aide à la lecture.
-class PointageMap extends StatelessWidget {
+class PointageMap extends StatefulWidget {
   const PointageMap({
     required this.position,
     required this.sites,
-    required this.scanning,
-    required this.scanTrigger,
-    this.tileProvider,
+    required this.zoneColor,
     super.key,
   });
 
@@ -37,117 +27,94 @@ class PointageMap extends StatelessWidget {
   /// Zones actives de l'organisation, telles que renvoyées par l'API.
   final List<PointageZone> sites;
 
-  /// Le balayage radar tourne-t-il ?
-  final bool scanning;
+  /// Teinte des zones — elle suit le verdict, comme le radar.
+  final Color zoneColor;
 
-  /// Incrémenter pour rejouer le balayage (voir [RadarSweepOverlay.trigger]).
-  final int scanTrigger;
+  @override
+  State<PointageMap> createState() => _PointageMapState();
+}
 
-  /// Fournisseur de tuiles. Injectable pour les tests : celui par défaut met en
-  /// cache via path_provider, indisponible hors appareil.
-  final TileProvider? tileProvider;
+class _PointageMapState extends State<PointageMap> {
+  GoogleMapController? _controller;
 
-  /// Centre de la carte : la position si on l'a, sinon le premier site, sinon
-  /// un repli — la carte doit toujours pouvoir se construire.
+  /// Centre : la position si on l'a, sinon le premier site, sinon un repli —
+  /// la carte doit toujours pouvoir se construire.
   LatLng get _center {
-    if (position != null) return position!;
-    if (sites.isNotEmpty) {
-      return LatLng(sites.first.latitude, sites.first.longitude);
+    final position = widget.position;
+    if (position != null) return position;
+    if (widget.sites.isNotEmpty) {
+      final site = widget.sites.first;
+      return LatLng(site.latitude, site.longitude);
     }
     return _kFallbackCenter;
   }
 
   @override
-  Widget build(BuildContext context) {
-    final colors = context.colors;
+  void didUpdateWidget(covariant PointageMap oldWidget) {
+    super.didUpdateWidget(oldWidget);
 
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(Tokens.radiusLg),
-      child: Stack(
-        fit: StackFit.expand,
-        children: [
-          FlutterMap(
-            options: MapOptions(
-              initialCenter: _center,
-              initialZoom: _kDefaultZoom,
-              // Carte de lecture : pas de rotation, elle désoriente plus
-              // qu'elle n'aide sur un écran de pointage.
-              interactionOptions: const InteractionOptions(
-                flags: InteractiveFlag.pinchZoom | InteractiveFlag.drag,
-              ),
-            ),
-            children: [
-              TileLayer(
-                urlTemplate: AppConfig.mapTileUrl,
-                userAgentPackageName: _kUserAgent,
-                tileProvider: tileProvider ?? NetworkTileProvider(),
-              ),
-              if (sites.isNotEmpty)
-                CircleLayer(
-                  circles: [
-                    for (final site in sites)
-                      CircleMarker(
-                        point: LatLng(site.latitude, site.longitude),
-                        // En mètres, pas en pixels : le cercle doit suivre le
-                        // zoom pour représenter le vrai rayon autorisé.
-                        radius: site.radiusMeters.toDouble(),
-                        useRadiusInMeter: true,
-                        color: colors.brand.withValues(alpha: 0.12),
-                        borderColor: colors.brand.withValues(alpha: 0.45),
-                        borderStrokeWidth: 2,
-                      ),
-                  ],
-                ),
-              if (position != null)
-                MarkerLayer(
-                  markers: [
-                    Marker(
-                      point: position!,
-                      width: _PositionDot.size,
-                      height: _PositionDot.size,
-                      child: const _PositionDot(),
-                    ),
-                  ],
-                ),
-              // Attribution de la source : obligatoire, jamais masquée.
-              const RichAttributionWidget(
-                attributions: [
-                  TextSourceAttribution(AppConfig.mapAttribution),
-                ],
-              ),
-            ],
-          ),
-          RadarSweepOverlay(isActive: scanning, trigger: scanTrigger),
-        ],
-      ),
-    );
+    // La position arrive après le premier rendu : on recadre dessus plutôt que
+    // de laisser l'employé sur le cadre de repli.
+    final position = widget.position;
+    if (position != null && position != oldWidget.position) {
+      _controller?.animateCamera(CameraUpdate.newLatLng(position));
+    }
   }
-}
 
-/// Pastille de position : disque de marque cerclé de blanc, lisible sur
-/// n'importe quelle tuile.
-class _PositionDot extends StatelessWidget {
-  const _PositionDot();
-
-  static const size = 22.0;
+  @override
+  void dispose() {
+    _controller?.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    final colors = context.colors;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: colors.brand,
-        border: Border.all(color: Colors.white, width: 3),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.3),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
-          ),
-        ],
+    return GoogleMap(
+      // Force la reconstruction au changement de thème : le style ne se
+      // réapplique pas sur une carte déjà créée.
+      key: ValueKey('pointage_map_$isDark'),
+      style: isDark ? MapStyles.dark : MapStyles.light,
+      initialCameraPosition: CameraPosition(
+        target: _center,
+        zoom: _kDefaultZoom,
       ),
+      onMapCreated: (controller) => _controller = controller,
+      // Le point bleu natif suffit ; l'écran pilote lui-même le cadrage, donc
+      // ni bouton de recentrage ni contrôles de zoom.
+      myLocationEnabled: widget.position != null,
+      myLocationButtonEnabled: false,
+      zoomControlsEnabled: false,
+      mapToolbarEnabled: false,
+      compassEnabled: false,
+      // Carte de lecture : ni rotation ni inclinaison, elles désorientent plus
+      // qu'elles n'aident sur un écran de pointage.
+      rotateGesturesEnabled: false,
+      tiltGesturesEnabled: false,
+      circles: {
+        for (final site in widget.sites)
+          Circle(
+            circleId: CircleId(site.id),
+            center: LatLng(site.latitude, site.longitude),
+            // En mètres : le cercle représente le vrai rayon autorisé.
+            radius: site.radiusMeters.toDouble(),
+            fillColor: widget.zoneColor.withValues(alpha: 0.12),
+            strokeColor: widget.zoneColor.withValues(alpha: 0.55),
+            strokeWidth: 2,
+          ),
+      },
+      markers: {
+        for (final site in widget.sites)
+          Marker(
+            markerId: MarkerId('site_${site.id}'),
+            position: LatLng(site.latitude, site.longitude),
+            icon: BitmapDescriptor.defaultMarkerWithHue(
+              BitmapDescriptor.hueGreen,
+            ),
+            infoWindow: InfoWindow(title: site.nom ?? 'Site de pointage'),
+          ),
+      },
     );
   }
 }

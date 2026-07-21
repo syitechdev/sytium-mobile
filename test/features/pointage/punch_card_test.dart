@@ -1,32 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:latlong2/latlong.dart';
 import 'package:sytium_mobile/core/error/failure.dart';
-import 'package:sytium_mobile/features/pointage/domain/pointage_models.dart';
 import 'package:sytium_mobile/features/pointage/presentation/widgets/punch_card.dart';
-import 'package:sytium_mobile/features/pointage/presentation/widgets/radar_sweep_overlay.dart';
 import 'package:sytium_mobile/theme/theme.dart';
-
-const _kSite = PointageZone(
-  id: 's1',
-  nom: 'Siège',
-  latitude: 5.36,
-  longitude: -4,
-  radiusMeters: 20,
-);
 
 Widget _host(PunchPhase phase, {String nextLabel = 'Arrivée'}) => MaterialApp(
   theme: AppTheme.dark(),
   home: Scaffold(
     body: SingleChildScrollView(
-      child: PunchCard(
-        phase: phase,
-        nextLabel: nextLabel,
-        position: const LatLng(5.36, -4),
-        sites: const [_kSite],
-        scanTrigger: 0,
-        onPunch: () {},
-      ),
+      child: PunchCard(phase: phase, nextLabel: nextLabel, onPunch: () {}),
     ),
   ),
 );
@@ -39,13 +21,6 @@ void main() {
 
       expect(find.text('Arrivée'), findsOneWidget);
       expect(find.text('Pointer'), findsOneWidget);
-      // Le radar ne tourne pas tant qu'on n'a rien lancé.
-      expect(
-        tester
-            .widget<RadarSweepOverlay>(find.byType(RadarSweepOverlay))
-            .isActive,
-        isFalse,
-      );
     });
 
     testWidgets('pendant la recherche, le radar tourne et le bouton disparaît', (
@@ -57,14 +32,6 @@ void main() {
       expect(find.textContaining('Recherche de votre position'), findsOneWidget);
       // Pas de second appui possible pendant la recherche.
       expect(find.text('Pointer'), findsNothing);
-      expect(
-        tester
-            .widget<RadarSweepOverlay>(find.byType(RadarSweepOverlay))
-            .isActive,
-        isTrue,
-      );
-
-      await tester.pumpWidget(const SizedBox());
     });
 
     testWidgets('un refus affiche sa raison et permet de réessayer', (

@@ -1,3 +1,17 @@
+import java.util.Properties
+
+// Secrets hors depot : lus depuis la variable d'environnement, sinon depuis
+// android/local.properties (ignore par git). Rien n'est versionne.
+val localProperties = Properties().apply {
+    val file = rootProject.file("local.properties")
+    if (file.exists()) {
+        file.inputStream().use(::load)
+    }
+}
+
+fun resolveSecret(name: String): String =
+    providers.environmentVariable(name).orNull ?: localProperties.getProperty(name, "")
+
 plugins {
     id("com.android.application")
     id("kotlin-android")
@@ -32,6 +46,11 @@ android {
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+
+        // Injecte dans AndroidManifest.xml (com.google.android.geo.API_KEY).
+        // Sans cle, la carte affiche une tuile grise : c'est le symptome a
+        // reconnaitre si SYTIUM_GOOGLE_MAPS_API_KEY n'est pas renseigne.
+        manifestPlaceholders["googleMapsApiKey"] = resolveSecret("SYTIUM_GOOGLE_MAPS_API_KEY")
     }
 
     buildTypes {

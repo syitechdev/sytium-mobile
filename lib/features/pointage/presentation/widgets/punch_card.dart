@@ -1,14 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_map/flutter_map.dart';
-import 'package:latlong2/latlong.dart';
 import 'package:sytium_mobile/core/error/failure.dart';
-import 'package:sytium_mobile/features/pointage/domain/pointage_models.dart';
-import 'package:sytium_mobile/features/pointage/presentation/widgets/pointage_map.dart';
 import 'package:sytium_mobile/shared/widgets/app_primary_button.dart';
 import 'package:sytium_mobile/theme/sytium_colors.dart';
 import 'package:sytium_mobile/theme/tokens.dart';
-
-const _kMapHeight = 260.0;
 
 /// Étape du pointage en cours.
 sealed class PunchPhase {
@@ -101,71 +95,41 @@ String _outOfZoneDetail(PointageFailure f) {
   return 'Vous êtes à ${distance.round()} m de $site$radius.';
 }
 
-/// Bloc de pointage : la carte, puis l'action ou son verdict.
+/// Bloc de pointage affiche dans le sheet flottant, au-dessus de la carte.
 ///
-/// La validation est automatique — il n'y a pas d'étape de confirmation. Une
-/// fois dans la zone, le pointage est enregistré ; hors zone, il est refusé.
+/// La validation est automatique — il n'y a pas d'etape de confirmation. Une
+/// fois dans la zone, le pointage est enregistre ; hors zone, il est refuse.
 class PunchCard extends StatelessWidget {
   const PunchCard({
     required this.phase,
     required this.nextLabel,
-    required this.position,
-    required this.sites,
-    required this.scanTrigger,
     required this.onPunch,
-    this.tileProvider,
     super.key,
   });
 
   final PunchPhase phase;
 
-  /// Libellé du prochain pointage attendu (Arrivée, Départ…).
+  /// Libelle du prochain pointage attendu (Arrivee, Depart...).
   final String nextLabel;
 
-  final LatLng? position;
-  final List<PointageZone> sites;
-  final int scanTrigger;
   final VoidCallback onPunch;
-
-  /// Transmis à la carte. Injectable pour les tests, voir [PointageMap].
-  final TileProvider? tileProvider;
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      clipBehavior: Clip.antiAlias,
-      child: Column(
-        children: [
-          SizedBox(
-            height: _kMapHeight,
-            child: PointageMap(
-              position: position,
-              sites: sites,
-              scanning: phase is PunchScanning,
-              scanTrigger: scanTrigger,
-              tileProvider: tileProvider,
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(Tokens.space16),
-            child: switch (phase) {
-              PunchIdle() => _Idle(label: nextLabel, onPunch: onPunch),
-              PunchScanning() => const _Scanning(),
-              PunchRefused(:final title, :final detail) => _Refused(
-                title: title,
-                detail: detail,
-                onRetry: onPunch,
-              ),
-              PunchDone(:final message) => _Done(
-                message: message,
-                nextLabel: nextLabel,
-                onPunch: onPunch,
-              ),
-            },
-          ),
-        ],
+    return switch (phase) {
+      PunchIdle() => _Idle(label: nextLabel, onPunch: onPunch),
+      PunchScanning() => const _Scanning(),
+      PunchRefused(:final title, :final detail) => _Refused(
+        title: title,
+        detail: detail,
+        onRetry: onPunch,
       ),
-    );
+      PunchDone(:final message) => _Done(
+        message: message,
+        nextLabel: nextLabel,
+        onPunch: onPunch,
+      ),
+    };
   }
 }
 

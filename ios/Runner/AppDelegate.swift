@@ -2,6 +2,7 @@ import CallKit
 import Firebase
 import FirebaseMessaging
 import Flutter
+import GoogleMaps
 import PushKit
 import UIKit
 import flutter_callkit_incoming
@@ -16,6 +17,15 @@ import flutter_callkit_incoming
   ) -> Bool {
     // Firebase lit GoogleService-Info.plist ; permet FCM (alertes + Android).
     FirebaseApp.configure()
+
+    // Google Maps : la cle vient d'Info.plist, alimente par Secrets.xcconfig
+    // (hors depot). Sans elle la carte reste grise — d'ou la trace explicite.
+    if let apiKey = Bundle.main.object(forInfoDictionaryKey: "GMSApiKey") as? String,
+       !apiKey.isEmpty {
+      GMSServices.provideAPIKey(apiKey)
+    } else {
+      NSLog("[AppDelegate] GMSApiKey absente d'Info.plist : Google Maps ne s'affichera pas.")
+    }
 
     // PushKit VoIP : le seul canal fiable pour réveiller une app tuée sur un
     // appel entrant (iOS refuse les FCM data-only en arrière-plan pour ça).

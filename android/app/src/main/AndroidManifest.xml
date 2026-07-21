@@ -20,6 +20,12 @@
         android:label="Sytium Mobile"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
+        <!-- Cle Google Maps, injectee au build depuis local.properties ou la
+             variable d'environnement SYTIUM_GOOGLE_MAPS_API_KEY. Jamais versionnee. -->
+        <meta-data
+            android:name="com.google.android.geo.API_KEY"
+            android:value="${googleMapsApiKey}" />
+
         <activity
             android:name=".MainActivity"
             android:exported="true"

@@ -43,3 +43,6 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Cle Google Maps (voir ios/Flutter/Secrets.xcconfig.example)
+**/ios/Flutter/Secrets.xcconfig

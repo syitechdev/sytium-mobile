@@ -144,3 +144,46 @@ class SpoofBlockOverlay extends StatelessWidget {
     );
   }
 }
+
+/// Fenêtre bloquante affichée quand l'employé n'est pas dans une zone.
+///
+/// Bloquante au sens metier — le pointage est impossible d'ici — mais toujours
+/// refermable : enfermer l'utilisateur dans une fenêtre sans issue serait pire
+/// que le refus lui-meme.
+Future<void> showOutOfZoneBlocker(
+  BuildContext context, {
+  required bool hasSites,
+  required VoidCallback onRetry,
+  double? distanceM,
+}) {
+  final colors = context.colors;
+
+  final detail = !hasSites
+      ? "Aucun site de pointage n'est configuré pour votre organisation. "
+            'Contactez les ressources humaines.'
+      : distanceM == null
+      ? 'Rapprochez-vous de votre site de pointage puis réessayez.'
+      : 'Vous êtes à ${distanceM.round()} m de la zone autorisée. '
+            'Rapprochez-vous puis réessayez.';
+
+  return showDialog<void>(
+    context: context,
+    builder: (context) => AlertDialog(
+      icon: Icon(Icons.wrong_location_outlined, color: colors.danger, size: 32),
+      title: const Text('Hors de la zone de pointage'),
+      content: Text(detail, textAlign: TextAlign.center),
+      actionsAlignment: MainAxisAlignment.center,
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: Text('Fermer', style: TextStyle(color: colors.textMuted)),
+        ),
+        FilledButton.icon(
+          onPressed: onRetry,
+          icon: const Icon(Icons.refresh),
+          label: const Text('Réessayer'),
+        ),
+      ],
+    ),
+  );
+}

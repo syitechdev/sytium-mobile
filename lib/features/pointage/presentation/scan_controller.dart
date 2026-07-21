@@ -5,15 +5,30 @@ import 'package:sytium_mobile/core/utils/geo.dart';
 import 'package:sytium_mobile/features/pointage/application/pointage_providers.dart';
 import 'package:sytium_mobile/features/pointage/domain/pointage_models.dart';
 
+/// Plafond de tolérance de précision, en mètres. Aligné sur le serveur : au-delà
+/// le fix n'est pas jugé fiable, et une précision fantaisiste ne doit pas
+/// devenir un passe-partout.
+const kAccuracyToleranceCapM = 100.0;
+
 /// La position est-elle dans une zone autorisée ?
 ///
-/// Sert uniquement à l'affichage. Le verdict qui compte est celui du serveur,
-/// seul à décider si le pointage est enregistré ; sans zone connue on ne
-/// préjuge de rien et on le laisse trancher.
-bool isInsideAnyZone(double lat, double lng, List<PointageZone> zones) {
+/// Reproduit la règle du serveur — `distance − précision ≤ rayon`, tolérance
+/// plafonnée — pour que l'écran n'annonce pas un verdict que le serveur
+/// contredira. Le verdict qui compte reste celui du serveur, seul à décider si
+/// le pointage est enregistré ; sans zone connue on ne préjuge de rien.
+bool isInsideAnyZone(
+  double lat,
+  double lng,
+  List<PointageZone> zones, {
+  double? accuracyM,
+}) {
   if (zones.isEmpty) return true;
+
+  final tolerance = (accuracyM ?? 0).clamp(0.0, kAccuracyToleranceCapM);
   return zones.any(
-    (z) => haversineMeters(lat, lng, z.latitude, z.longitude) <= z.radiusMeters,
+    (z) =>
+        haversineMeters(lat, lng, z.latitude, z.longitude) - tolerance <=
+        z.radiusMeters,
   );
 }
 

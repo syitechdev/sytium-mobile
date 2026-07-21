@@ -2,22 +2,29 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:latlong2/latlong.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:sytium_mobile/core/error/failure.dart';
 import 'package:sytium_mobile/core/location/location_service.dart';
 import 'package:sytium_mobile/features/pointage/application/pointage_providers.dart';
 import 'package:sytium_mobile/features/pointage/domain/pointage_models.dart';
 import 'package:sytium_mobile/features/pointage/presentation/scan_controller.dart';
-import 'package:sytium_mobile/features/pointage/presentation/widgets/history_tile.dart';
 import 'package:sytium_mobile/features/pointage/presentation/widgets/pointage_dialogs.dart';
+import 'package:sytium_mobile/features/pointage/presentation/widgets/pointage_map.dart';
+import 'package:sytium_mobile/features/pointage/presentation/widgets/pointer_sheet.dart';
 import 'package:sytium_mobile/features/pointage/presentation/widgets/punch_card.dart';
+import 'package:sytium_mobile/features/pointage/presentation/widgets/radar_sweep_overlay.dart';
 import 'package:sytium_mobile/shared/widgets/error_state.dart';
 import 'package:sytium_mobile/theme/sytium_colors.dart';
 import 'package:sytium_mobile/theme/tokens.dart';
 
-/// Durée minimale d'affichage du balayage radar. Sans ce plancher, une réponse
-/// rapide ferait disparaître l'animation avant qu'on ne l'ait vue.
-const _kMinScanDuration = Duration(milliseconds: 1600);
+/// Durée minimale d'affichage du balayage. Sans ce plancher, une position
+/// acquise instantanément ferait disparaître l'animation avant qu'on la voie.
+const _kMinScanDuration = Duration(milliseconds: 1800);
+
+/// Hauteurs du sheet flottant, en fraction de l'écran.
+const _kSheetMin = 0.28;
+const _kSheetInitial = 0.36;
+const _kSheetMax = 0.85;
 
 const _motifLabels = {
   'entree': 'Arrivée',
@@ -25,6 +32,18 @@ const _motifLabels = {
   'pause_fin': 'Fin pause',
   'sortie': 'Départ',
 };
+
+/// Verdict de zone, qui donne sa couleur au radar et aux cercles.
+enum ZoneVerdict {
+  /// Recherche en cours — orange.
+  searching,
+
+  /// Dans la zone autorisée — vert.
+  inside,
+
+  /// Hors zone — rouge.
+  outside,
+}
 
 class PointerScreen extends ConsumerStatefulWidget {
   const PointerScreen({super.key});
@@ -35,6 +54,7 @@ class PointerScreen extends ConsumerStatefulWidget {
 
 class _PointerScreenState extends ConsumerState<PointerScreen> {
   final _location = LocationService();
+
   bool _checkingGuard = true;
   bool _blocked = false;
   bool _retrying = false;
@@ -42,40 +62,27 @@ class _PointerScreenState extends ConsumerState<PointerScreen> {
 
   PunchPhase _phase = const PunchIdle();
   LatLng? _position;
+  double? _accuracy;
+  ZoneVerdict _verdict = ZoneVerdict.searching;
+  bool _scanning = false;
   int _scanTrigger = 0;
 
-  late final ScrollController _scrollController;
+  /// Évite de rouvrir la fenêtre de blocage à chaque reconstruction.
+  bool _outOfZoneShown = false;
 
   @override
   void initState() {
     super.initState();
-    _scrollController = ScrollController();
-    _scrollController.addListener(_onScroll);
     _runGuard();
-  }
-
-  @override
-  void dispose() {
-    _scrollController
-      ..removeListener(_onScroll)
-      ..dispose();
-    super.dispose();
-  }
-
-  void _onScroll() {
-    final pos = _scrollController.position;
-    if (pos.pixels >= pos.maxScrollExtent - 200) {
-      ref.read(pointageHistoryProvider.notifier).loadMore();
-    }
   }
 
   Future<void> _runGuard() async {
     setState(() => _retrying = true);
     final loc = await _location.ensureUsable();
 
-    // Only a faked GPS location hard-blocks pointing. VPN suspicion is a
-    // best-effort flag sent with each scan — it must NOT lock the user out
-    // (notably iOS always exposes utun* interfaces, with or without a VPN).
+    // Seule une position simulée bloque durement. Le soupçon de VPN reste un
+    // simple drapeau envoyé au serveur : iOS expose des interfaces utun avec ou
+    // sans VPN, et bloquer dessus verrouillait des utilisateurs légitimes.
     var mock = false;
     if (loc == LocationStatus.granted) {
       try {
@@ -95,31 +102,103 @@ class _PointerScreenState extends ConsumerState<PointerScreen> {
       _retrying = false;
     });
 
+    // Le contrôle de zone démarre seul dès l'arrivée sur l'écran : l'employé
+    // sait s'il peut pointer avant même de toucher quoi que ce soit.
     if (loc == LocationStatus.granted && !mock) {
-      await _primePosition();
+      await _checkZone();
     }
   }
 
-  /// Recentre la carte dès l'entrée sur l'écran, pour qu'elle ne s'ouvre pas
-  /// sur un cadre de repli avant même le premier pointage.
-  Future<void> _primePosition() async {
+  /// Acquiert la position et tranche l'appartenance à une zone, sans appeler le
+  /// serveur : c'est un contrôle d'affichage, le pointage reste sa décision.
+  Future<void> _checkZone() async {
+    setState(() {
+      _scanning = true;
+      _verdict = ZoneVerdict.searching;
+      _outOfZoneShown = false;
+      _scanTrigger += 1;
+    });
+
+    final started = DateTime.now();
+    Position? pos;
     try {
-      final pos = await _location.current();
-      if (!mounted) return;
-      setState(() => _position = LatLng(pos.latitude, pos.longitude));
+      pos = await _location.current();
     } catch (_) {
-      // Sans position, la carte se centre sur le premier site connu.
+      pos = null;
     }
+    if (!mounted) return;
+
+    await _settleAfter(started);
+    if (!mounted) return;
+
+    if (pos == null) {
+      setState(() {
+        _scanning = false;
+        _verdict = ZoneVerdict.outside;
+        _phase = const PunchRefused(
+          title: 'Position introuvable',
+          detail: 'Activez la localisation puis réessayez.',
+        );
+      });
+      return;
+    }
+
+    if (pos.isMocked) {
+      setState(() {
+        _scanning = false;
+        _blocked = true;
+      });
+      return;
+    }
+
+    final sites =
+        ref.read(pointageZonesProvider).valueOrNull ?? const <PointageZone>[];
+    final inside = isInsideAnyZone(
+      pos.latitude,
+      pos.longitude,
+      sites,
+      accuracyM: pos.accuracy,
+    );
+
+    setState(() {
+      _scanning = false;
+      _position = LatLng(pos!.latitude, pos.longitude);
+      _accuracy = pos.accuracy;
+      _verdict = inside ? ZoneVerdict.inside : ZoneVerdict.outside;
+      if (inside && _phase is PunchRefused) _phase = const PunchIdle();
+    });
+
+    if (!inside) _showOutOfZone(sites, pos.latitude, pos.longitude);
+  }
+
+  /// Fenêtre bloquante : l'employé ne peut pas pointer d'ici, et on lui dit à
+  /// quelle distance il se trouve.
+  void _showOutOfZone(List<PointageZone> sites, double lat, double lng) {
+    if (_outOfZoneShown || !mounted) return;
+    _outOfZoneShown = true;
+
+    final distance = nearestZoneDistance(lat, lng, sites);
+    HapticFeedback.heavyImpact();
+
+    showOutOfZoneBlocker(
+      context,
+      distanceM: distance,
+      hasSites: sites.isNotEmpty,
+      onRetry: () {
+        Navigator.of(context).pop();
+        _checkZone();
+      },
+    );
   }
 
   Future<void> _punch(String nextType) async {
     setState(() {
       _phase = const PunchScanning();
+      _scanning = true;
+      _verdict = ZoneVerdict.searching;
       _scanTrigger += 1;
     });
 
-    // Le balayage doit rester lisible : sur un bon réseau la réponse arrive en
-    // quelques centaines de millisecondes, trop vite pour que l'effet se voie.
     final started = DateTime.now();
 
     final Position pos;
@@ -129,18 +208,21 @@ class _PointerScreenState extends ConsumerState<PointerScreen> {
       if (!mounted) return;
       await _settleAfter(started);
       if (!mounted) return;
-      setState(
-        () => _phase = const PunchRefused(
+      setState(() {
+        _scanning = false;
+        _verdict = ZoneVerdict.outside;
+        _phase = const PunchRefused(
           title: 'Position introuvable',
           detail: 'Activez la localisation puis réessayez.',
-        ),
-      );
+        );
+      });
       return;
     }
     if (!mounted) return;
 
     if (pos.isMocked) {
       setState(() {
+        _scanning = false;
         _blocked = true;
         _phase = const PunchIdle();
       });
@@ -160,12 +242,19 @@ class _PointerScreenState extends ConsumerState<PointerScreen> {
     await _settleAfter(started);
     if (!mounted) return;
 
-    setState(() => _position = LatLng(pos.latitude, pos.longitude));
+    setState(() {
+      _scanning = false;
+      _position = LatLng(pos.latitude, pos.longitude);
+      _accuracy = pos.accuracy;
+    });
 
     result.fold(
       (ok) {
         HapticFeedback.lightImpact();
-        setState(() => _phase = PunchDone(ok.message));
+        setState(() {
+          _verdict = ZoneVerdict.inside;
+          _phase = PunchDone(ok.message);
+        });
         ref
           ..invalidate(pointageStatusProvider)
           ..invalidate(pointageHistoryProvider);
@@ -178,7 +267,10 @@ class _PointerScreenState extends ConsumerState<PointerScreen> {
           });
           return;
         }
-        setState(() => _phase = punchRefusalFor(f));
+        setState(() {
+          _verdict = ZoneVerdict.outside;
+          _phase = punchRefusalFor(f);
+        });
       },
     );
   }
@@ -191,16 +283,84 @@ class _PointerScreenState extends ConsumerState<PointerScreen> {
     }
   }
 
+  Widget _zoneBanner(BuildContext context) {
+    final colors = context.colors;
+    final accuracy = _accuracy;
+    final precision = accuracy == null
+        ? null
+        : 'Précision ${accuracy.round()} m';
+
+    return switch (_verdict) {
+      ZoneVerdict.searching => ZoneBanner(
+        color: colors.warning,
+        icon: Icons.my_location,
+        label: 'Recherche de votre position…',
+        detail: 'Vérification de votre présence sur site.',
+      ),
+      ZoneVerdict.inside => ZoneBanner(
+        color: colors.success,
+        icon: Icons.check_circle_outline,
+        label: 'Vous êtes dans la zone',
+        detail: precision,
+      ),
+      ZoneVerdict.outside => ZoneBanner(
+        color: colors.danger,
+        icon: Icons.wrong_location_outlined,
+        label: 'Hors de la zone de pointage',
+        detail: precision,
+      ),
+    };
+  }
+
+  /// Section d'action, pilotee par le statut serveur : pas de profil employe,
+  /// journee close, ou pointage possible.
+  Widget _punchSection(BuildContext context) {
+    final statusAsync = ref.watch(pointageStatusProvider);
+
+    return statusAsync.when(
+      loading: () => const Padding(
+        padding: EdgeInsets.all(Tokens.space16),
+        child: Center(child: CircularProgressIndicator()),
+      ),
+      error: (e, _) => ErrorState(
+        message: 'Impossible de charger le statut.',
+        onRetry: () => ref.invalidate(pointageStatusProvider),
+      ),
+      data: (status) {
+        final next = status.nextType;
+        if (!status.hasEmployee) return const _NoEmployee();
+        if (next == null && _phase is! PunchDone) return const _DayClosed();
+
+        // Hors zone, l'action est remplacee par une invitation a refaire le
+        // controle : proposer « Pointer » serait promettre un refus.
+        if (_verdict == ZoneVerdict.outside && _phase is! PunchRefused) {
+          return OutlinedButton.icon(
+            onPressed: _checkZone,
+            icon: const Icon(Icons.refresh),
+            label: const Text('Vérifier à nouveau ma position'),
+          );
+        }
+
+        return PunchCard(
+          phase: _phase,
+          nextLabel: next == null ? '' : (_motifLabels[next] ?? next),
+          onPunch: next == null ? () {} : () => _punch(next),
+        );
+      },
+    );
+  }
+
+  Color _verdictColor(BuildContext context) => switch (_verdict) {
+    ZoneVerdict.searching => context.colors.warning,
+    ZoneVerdict.inside => context.colors.success,
+    ZoneVerdict.outside => context.colors.danger,
+  };
+
   @override
   Widget build(BuildContext context) {
-    // L'écran est désormais poussé comme route à part entière (il n'est plus un
-    // onglet du shell) : il porte donc son propre Scaffold et son app bar. Sans
-    // ce Scaffold, il n'y avait ni bouton retour ni ancêtre Material — les
-    // textes s'affichaient en rouge souligné de jaune (rendu de secours Flutter).
-    return Scaffold(
-      appBar: AppBar(title: const Text('Pointer')),
-      body: _buildBody(context),
-    );
+    // Plein cadre : la carte passe sous la barre d'état, le retour flotte
+    // au-dessus. Pas d'app bar, qui rognerait la carte.
+    return Scaffold(body: _buildBody(context));
   }
 
   Widget _buildBody(BuildContext context) {
@@ -220,189 +380,65 @@ class _PointerScreenState extends ConsumerState<PointerScreen> {
       );
     }
 
-    final statusAsync = ref.watch(pointageStatusProvider);
-    final historyAsync = ref.watch(pointageHistoryProvider);
-    final historyNotifier = ref.read(pointageHistoryProvider.notifier);
+    final sites =
+        ref.watch(pointageZonesProvider).valueOrNull ?? const <PointageZone>[];
 
-    return RefreshIndicator(
-      onRefresh: () async {
-        ref
-          ..invalidate(pointageStatusProvider)
-          ..invalidate(pointageHistoryProvider);
-      },
-      child: CustomScrollView(
-        controller: _scrollController,
-        slivers: [
-          SliverPadding(
-            padding: const EdgeInsets.all(Tokens.space16),
-            sliver: SliverToBoxAdapter(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (ref.watch(vpnActiveProvider).valueOrNull ?? false)
-                    const VpnWarningBanner(),
-                  statusAsync.when(
-                    loading: () => const _ScanSkeleton(),
-                    error: (e, _) => ErrorState(
-                      message: 'Impossible de charger le statut.',
-                      onRetry: () => ref.invalidate(pointageStatusProvider),
-                    ),
-                    data: (status) {
-                      final next = status.nextType;
-                      if (!status.hasEmployee) {
-                        return const _NoEmployee();
-                      }
-                      // Journée close : plus rien à pointer, sauf si l'on vient
-                      // tout juste de valider — on laisse alors la confirmation
-                      // visible plutôt que de la remplacer aussitôt.
-                      if (next == null && _phase is! PunchDone) {
-                        return const _DayClosed();
-                      }
-                      return PunchCard(
-                        phase: _phase,
-                        nextLabel: next == null
-                            ? ''
-                            : (_motifLabels[next] ?? next),
-                        position: _position,
-                        sites:
-                            ref.watch(pointageZonesProvider).valueOrNull ??
-                            const <PointageZone>[],
-                        scanTrigger: _scanTrigger,
-                        onPunch: next == null ? () {} : () => _punch(next),
-                      );
-                    },
-                  ),
-                  const SizedBox(height: Tokens.space24),
-                  Text(
-                    'Historique',
-                    style: Theme.of(context).textTheme.titleSmall,
-                  ),
-                  const SizedBox(height: Tokens.space8),
-                ],
-              ),
-            ),
+    return Stack(
+      children: [
+        Positioned.fill(
+          child: PointageMap(
+            position: _position,
+            sites: sites,
+            zoneColor: _verdictColor(context),
           ),
-          historyAsync.when(
-            loading: () => const SliverToBoxAdapter(child: _HistorySkeleton()),
-            error: (e, _) => SliverToBoxAdapter(
-              child: ErrorState(
-                message: 'Historique indisponible.',
-                onRetry: () => ref.invalidate(pointageHistoryProvider),
-              ),
-            ),
-            data: (entries) {
-              if (entries.isEmpty) {
-                return const SliverToBoxAdapter(
-                  child: Padding(
-                    padding: EdgeInsets.all(Tokens.space24),
-                    child: Center(
-                      child: Text('Aucun pointage pour le moment.'),
-                    ),
-                  ),
-                );
-              }
-              final hasMore = historyNotifier.hasMore;
-              // +1 for optional loading-more indicator
-              final itemCount = entries.length + (hasMore ? 1 : 0);
-              return SliverPadding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: Tokens.space16,
-                ),
-                sliver: SliverList.builder(
-                  itemCount: itemCount,
-                  itemBuilder: (context, index) {
-                    if (index == entries.length) {
-                      // Loading-more indicator
-                      return const Padding(
-                        padding: EdgeInsets.all(Tokens.space16),
-                        child: Center(child: CircularProgressIndicator()),
-                      );
-                    }
-                    return HistoryTile(entry: entries[index]);
-                  },
-                ),
-              );
-            },
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// Skeleton placeholder for the scan card while the status loads (first visit).
-class _ScanSkeleton extends StatelessWidget {
-  const _ScanSkeleton();
-
-  @override
-  Widget build(BuildContext context) {
-    final fill = context.colors.border.withValues(alpha: 0.55);
-    BoxDecoration deco(double r) =>
-        BoxDecoration(color: fill, borderRadius: BorderRadius.circular(r));
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(Tokens.space24),
-        child: Column(
-          children: [
-            AspectRatio(
-              aspectRatio: 1,
-              child: DecoratedBox(decoration: deco(Tokens.radiusLg)),
-            ),
-            const SizedBox(height: Tokens.space16),
-            Container(height: 12, width: 120, decoration: deco(Tokens.radiusSm)),
-            const SizedBox(height: Tokens.space8),
-            Container(height: 18, width: 160, decoration: deco(Tokens.radiusSm)),
-            const SizedBox(height: Tokens.space16),
-            Container(
-              height: 52,
-              width: double.infinity,
-              decoration: deco(Tokens.radiusMd),
-            ),
-          ],
         ),
-      ),
+        Positioned.fill(
+          child: RadarSweepOverlay(
+            isActive: _scanning,
+            trigger: _scanTrigger,
+            color: _verdictColor(context),
+          ),
+        ),
+        const _BackButton(),
+        PointerSheet(
+          minSize: _kSheetMin,
+          initialSize: _kSheetInitial,
+          maxSize: _kSheetMax,
+          header: _zoneBanner(context),
+          punch: _punchSection(context),
+        ),
+      ],
     );
   }
 }
 
-/// Skeleton rows for the history list while it loads (first visit).
-class _HistorySkeleton extends StatelessWidget {
-  const _HistorySkeleton();
+/// Retour flottant : la carte etant plein cadre, il n'y a plus d'app bar.
+class _BackButton extends StatelessWidget {
+  const _BackButton();
 
   @override
   Widget build(BuildContext context) {
-    final fill = context.colors.border.withValues(alpha: 0.55);
-    BoxDecoration line() =>
-        BoxDecoration(color: fill, borderRadius: BorderRadius.circular(Tokens.radiusSm));
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: Tokens.space16),
-      child: Column(
-        children: [
-          for (var i = 0; i < 4; i++)
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: Tokens.space8),
-              child: Row(
-                children: [
-                  Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(color: fill, shape: BoxShape.circle),
-                  ),
-                  const SizedBox(width: Tokens.space12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Container(height: 12, width: 120, decoration: line()),
-                        const SizedBox(height: Tokens.space8),
-                        Container(height: 10, width: 80, decoration: line()),
-                      ],
-                    ),
-                  ),
-                ],
+    final colors = context.colors;
+
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.all(Tokens.space12),
+        child: Align(
+          alignment: Alignment.topLeft,
+          child: Material(
+            color: colors.card,
+            shape: const CircleBorder(),
+            elevation: 3,
+            child: InkWell(
+              customBorder: const CircleBorder(),
+              onTap: () => Navigator.of(context).maybePop(),
+              child: Padding(
+                padding: const EdgeInsets.all(Tokens.space8),
+                child: Icon(Icons.arrow_back, color: colors.textPrimary),
               ),
             ),
-        ],
+          ),
+        ),
       ),
     );
   }
