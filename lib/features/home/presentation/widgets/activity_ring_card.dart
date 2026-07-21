@@ -7,9 +7,14 @@ import 'package:sytium_mobile/shared/charts/stat_ring.dart';
 import 'package:sytium_mobile/theme/sytium_colors.dart';
 import 'package:sytium_mobile/theme/tokens.dart';
 
-/// Accueil « Mon activité » card: this month's presence gauge + hours figures,
-/// from the monthly attendance summary. Hides itself when the profile has no
-/// attendance data for the current month (keeps the home uncluttered).
+/// Carte « Mon activité » de l'accueil : jauge de présence du mois et heures,
+/// depuis le récapitulatif mensuel de pointage.
+///
+/// Affichée dès que l'utilisateur a une fiche employé, même sans heure encore
+/// faite : tout le monde est employé, et un mois qui commence à zéro reste une
+/// information. Elle n'attend plus d'avoir des heures travaillées — le serveur
+/// ne juge désormais que les journées terminées, un début de mois n'affiche
+/// donc plus le mois entier en absence.
 class ActivityRingCard extends ConsumerWidget {
   const ActivityRingCard({super.key});
 
@@ -23,10 +28,9 @@ class ActivityRingCard extends ConsumerWidget {
     final async = ref.watch(monthlyAttendanceProvider(monthKey));
 
     return async.maybeWhen(
-      // Show only once there is real activity this month: a not-yet-elapsed
-      // month reports its full expected hours as "absence", which would be
-      // alarming and wrong. `heuresTravaillees > 0` gates on genuine data.
-      data: (a) => a.hasData && a.heuresTravaillees > 0
+      // Sans fiche employé le serveur ne renvoie aucune ligne : il n'y a rien à
+      // montrer, et « Statut du jour » dit déjà que le profil RH n'est pas lié.
+      data: (a) => a.hasData
           ? Padding(
               padding: const EdgeInsets.only(bottom: Tokens.space24),
               child: _Card(month: now, data: a, hours: _h),
@@ -47,9 +51,12 @@ class _Card extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = context.colors;
     final theme = Theme.of(context).textTheme;
-    final presence = data.heuresAttendues > 0
-        ? (data.heuresTravaillees / data.heuresAttendues).clamp(0.0, 1.0)
-        : 0.0;
+    // Rien d'attendu encore (début de mois, ou mois à venir) : un taux de 0 %
+    // se lirait comme une absence totale alors qu'il n'y a rien à comparer.
+    final nothingExpected = data.heuresAttendues <= 0;
+    final presence = nothingExpected
+        ? 0.0
+        : (data.heuresTravaillees / data.heuresAttendues).clamp(0.0, 1.0);
     final pct = (presence * 100).round();
     final monthLabel = toBeginningOfSentenceCase(
       DateFormat('MMMM yyyy', 'fr_FR').format(month),
@@ -76,7 +83,7 @@ class _Card extends StatelessWidget {
                 StatRing(
                   percent: presence,
                   color: colors.brand,
-                  centerLabel: '$pct %',
+                  centerLabel: nothingExpected ? '—' : '$pct %',
                   caption: 'Présence',
                 ),
                 const SizedBox(width: Tokens.space24),
