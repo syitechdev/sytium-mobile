@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:sytium_mobile/core/upload/uploaded_file.dart';
 
 /// Direction of a cash movement, matching the backend `type` enum.
 enum CashMovementType {
@@ -40,6 +41,8 @@ class CashMovementInput {
     required this.type,
     required this.montant,
     required this.libelle,
+    required this.proof,
+    this.reference,
     this.notes,
     this.dateMouvement,
   });
@@ -48,6 +51,11 @@ class CashMovementInput {
   final CashMovementType type;
   final num montant;
   final String libelle;
+
+  /// Justificatif déjà déposé : le serveur refuse un mouvement sans lui.
+  final UploadedFile proof;
+
+  final String? reference;
   final String? notes;
 
   /// `YYYY-MM-DD`; null → server uses today.

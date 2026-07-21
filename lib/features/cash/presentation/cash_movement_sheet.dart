@@ -3,9 +3,12 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:sytium_mobile/core/upload/upload_providers.dart';
+import 'package:sytium_mobile/core/upload/uploaded_file.dart';
 import 'package:sytium_mobile/core/utils/money.dart';
 import 'package:sytium_mobile/features/cash/application/cash_providers.dart';
 import 'package:sytium_mobile/features/cash/domain/cash_models.dart';
+import 'package:sytium_mobile/features/cash/presentation/widgets/payment_proof_field.dart';
 import 'package:sytium_mobile/features/finance/application/finance_providers.dart';
 import 'package:sytium_mobile/shared/widgets/app_primary_button.dart';
 import 'package:sytium_mobile/shared/widgets/app_sheet.dart';
@@ -33,20 +36,25 @@ class _CashMovementSheet extends ConsumerStatefulWidget {
 class _CashMovementSheetState extends ConsumerState<_CashMovementSheet> {
   final _montant = TextEditingController();
   final _libelle = TextEditingController();
+  final _reference = TextEditingController();
   final _notes = TextEditingController();
 
   CashMovementType _type = CashMovementType.entree;
   CashAccount? _account;
+  DateTime _date = DateTime.now();
+  PickedProof? _proof;
   bool _submitting = false;
   String? _montantError;
   String? _libelleError;
   String? _accountError;
+  String? _proofError;
   String? _banner;
 
   @override
   void dispose() {
     _montant.dispose();
     _libelle.dispose();
+    _reference.dispose();
     _notes.dispose();
     super.dispose();
   }
@@ -61,18 +69,58 @@ class _CashMovementSheetState extends ConsumerState<_CashMovementSheet> {
     return (v != null && v > 0) ? v : null;
   }
 
+  Future<void> _pickDate() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _date,
+      // Un mouvement se constate ; on n'antidate pas au-delà de l'exercice et on
+      // ne postdate pas.
+      firstDate: DateTime(DateTime.now().year - 1),
+      lastDate: DateTime.now(),
+    );
+    if (picked != null) setState(() => _date = picked);
+  }
+
   Future<void> _submit() async {
     final montant = _parsedMontant();
     final libelle = _libelle.text.trim();
+    final proof = _proof;
     setState(() {
       _accountError = _account == null ? 'Sélectionnez un compte.' : null;
       _montantError = montant == null ? 'Montant invalide.' : null;
       _libelleError = libelle.isEmpty ? 'Libellé requis.' : null;
+      _proofError = proof == null ? 'Justificatif requis.' : null;
       _banner = null;
     });
-    if (_account == null || montant == null || libelle.isEmpty) return;
+    if (_account == null || montant == null || libelle.isEmpty || proof == null) {
+      return;
+    }
 
     setState(() => _submitting = true);
+
+    // Le fichier part d'abord : le mouvement ne transporte que son emplacement.
+    final upload = await ref
+        .read(uploadRepositoryProvider)
+        .upload(
+          filePath: proof.path,
+          fileName: proof.name,
+          bucket: UploadBucket.paymentProofs,
+          mimeType: proof.mime,
+        );
+    if (!mounted) return;
+
+    final uploaded = upload.valueOrNull;
+    if (uploaded == null) {
+      setState(() {
+        _submitting = false;
+        // Nommer l'étape qui a échoué : sans cela, un « Connexion
+        // indisponible » laissait croire que le mouvement était en cause.
+        final cause = upload.failureOrNull?.message ?? 'Réessayez.';
+        _banner = "Le justificatif n'a pas pu être envoyé. $cause";
+      });
+      return;
+    }
+
     final result = await ref
         .read(cashRepositoryProvider)
         .createMovement(
@@ -81,6 +129,11 @@ class _CashMovementSheetState extends ConsumerState<_CashMovementSheet> {
             type: _type,
             montant: montant,
             libelle: libelle,
+            proof: uploaded,
+            dateMouvement: _date.toIso8601String().split('T').first,
+            reference: _reference.text.trim().isEmpty
+                ? null
+                : _reference.text.trim(),
             notes: _notes.text.trim().isEmpty ? null : _notes.text.trim(),
           ),
         );
@@ -188,11 +241,29 @@ class _CashMovementSheetState extends ConsumerState<_CashMovementSheet> {
               errorText: _libelleError,
             ),
             const SizedBox(height: Tokens.space16),
+            _DateField(value: _date, onTap: _pickDate),
+            const SizedBox(height: Tokens.space16),
+            AppTextField(
+              controller: _reference,
+              label: 'Référence (optionnel)',
+              hint: 'Ex : chèque, virement, DEC-2026-014',
+              prefixIcon: Icons.tag,
+            ),
+            const SizedBox(height: Tokens.space16),
             AppTextField(
               controller: _notes,
               label: 'Notes (optionnel)',
               hint: 'Détails complémentaires',
               maxLines: 2,
+            ),
+            const SizedBox(height: Tokens.space16),
+            PaymentProofField(
+              value: _proof,
+              errorText: _proofError,
+              onChanged: (p) => setState(() {
+                _proof = p;
+                _proofError = null;
+              }),
             ),
             const SizedBox(height: Tokens.space24),
             AppPrimaryButton(
@@ -203,6 +274,43 @@ class _CashMovementSheetState extends ConsumerState<_CashMovementSheet> {
           ],
         ),
       ),
+    );
+  }
+}
+
+/// Date de l'opération, présentée comme un champ pour rester dans la même
+/// famille visuelle que le reste du formulaire.
+class _DateField extends StatelessWidget {
+  const _DateField({required this.value, required this.onTap});
+
+  final DateTime value;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context).textTheme;
+    final label =
+        '${value.day.toString().padLeft(2, '0')}/'
+        '${value.month.toString().padLeft(2, '0')}/${value.year}';
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text("Date de l'opération", style: theme.labelLarge),
+        const SizedBox(height: Tokens.space8),
+        OutlinedButton.icon(
+          onPressed: onTap,
+          icon: const Icon(Icons.event_outlined),
+          label: Align(
+            alignment: Alignment.centerLeft,
+            child: Text(label),
+          ),
+          style: OutlinedButton.styleFrom(
+            minimumSize: const Size.fromHeight(52),
+            alignment: Alignment.centerLeft,
+          ),
+        ),
+      ],
     );
   }
 }

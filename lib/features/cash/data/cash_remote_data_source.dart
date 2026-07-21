@@ -25,8 +25,14 @@ class CashRemoteDataSource {
         'type': input.type.wire,
         'montant': input.montant,
         'libelle': input.libelle,
+        if (input.reference != null && input.reference!.isNotEmpty)
+          'reference': input.reference,
         if (input.notes != null && input.notes!.isNotEmpty) 'notes': input.notes,
         if (input.dateMouvement != null) 'date_mouvement': input.dateMouvement,
+        'proof_path': input.proof.path,
+        'proof_name': input.proof.name,
+        'proof_mime': input.proof.mime,
+        'proof_size': input.proof.size,
       },
     );
     return CashMovementResultDto.fromJson(res.data!['data'] as Map<String, dynamic>);
