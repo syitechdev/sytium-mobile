@@ -14,10 +14,19 @@ import 'package:sytium_mobile/shared/widgets/app_primary_button.dart';
 import 'package:sytium_mobile/shared/widgets/app_sheet.dart';
 import 'package:sytium_mobile/shared/widgets/app_text_field.dart';
 import 'package:sytium_mobile/shared/widgets/attachment_field.dart';
+import 'package:sytium_mobile/shared/widgets/confirm_dialog.dart';
 import 'package:sytium_mobile/shared/widgets/error_state.dart';
 import 'package:sytium_mobile/shared/widgets/search_picker_sheet.dart';
 import 'package:sytium_mobile/theme/sytium_colors.dart';
 import 'package:sytium_mobile/theme/tokens.dart';
+
+/// Seuil au-delà duquel un montant se fait confirmer.
+///
+/// Arbitraire, et c'est assumé : il n'existe pas de montant « anormal » dans
+/// l'absolu. Il est placé assez haut pour ne pas gêner l'exploitation courante,
+/// et assez bas pour arrêter le zéro de trop — la faute qui a mis dix milliards
+/// dans une trésorerie.
+const kUnusualAmount = 50000000;
 
 /// Opens the « Nouveau mouvement de caisse » sheet. Resolves to `true` when a
 /// movement was recorded, so the caller can refresh treasury data.
@@ -153,6 +162,21 @@ class _CashMovementSheetState extends ConsumerState<_CashMovementSheet> {
         proof == null ||
         (_needsBeneficiary && _beneficiary == null)) {
       return;
+    }
+
+    // Un montant inhabituel se fait relire avant d'entrer en trésorerie : le
+    // solde est mis à jour à la saisie, et seule une suppression le corrige.
+    if (montant >= kUnusualAmount) {
+      final go = await showConfirmDialog(
+        context,
+        title: 'Confirmer le montant',
+        message:
+            '${Money.fcfa(montant)}\n\n'
+            'Ce montant est inhabituel. Vérifiez-le avant de l’enregistrer : '
+            'il modifiera aussitôt le solde du compte.',
+        confirmLabel: 'Enregistrer',
+      );
+      if (!(go ?? false) || !mounted) return;
     }
 
     setState(() => _submitting = true);

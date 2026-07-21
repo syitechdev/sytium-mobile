@@ -312,4 +312,42 @@ void main() {
 
     expect(cash.sent!.libelle, 'Achat fournitures');
   });
+
+  testWidgets('un montant inhabituel se fait confirmer', (tester) async {
+    // Le solde est mis à jour à la saisie et seule une suppression le corrige :
+    // un zéro de trop se relit avant, pas après.
+    final cash = _FakeCashRepo();
+    await _pump(tester, cash: cash);
+    await _selectAccount(tester);
+    await tester.enterText(
+      find.widgetWithText(TextField, 'Ex : 250 000'),
+      '10000000000',
+    );
+    await tester.enterText(
+      find.widgetWithText(TextField, 'Ex : Acompte client, achat fournitures…'),
+      'Virement',
+    );
+    await _pickProof(tester);
+
+    await _tapSubmit(tester);
+
+    expect(find.text('Confirmer le montant'), findsOneWidget);
+    expect(cash.sent, isNull);
+
+    await tester.tap(find.text('Annuler'));
+    await tester.pumpAndSettle();
+    expect(cash.sent, isNull);
+  });
+
+  testWidgets('un montant courant passe sans question', (tester) async {
+    final cash = _FakeCashRepo();
+    await _pump(tester, cash: cash);
+    await _fillMinimum(tester);
+    await _pickProof(tester);
+
+    await _tapSubmit(tester);
+
+    expect(find.text('Confirmer le montant'), findsNothing);
+    expect(cash.sent, isNotNull);
+  });
 }
