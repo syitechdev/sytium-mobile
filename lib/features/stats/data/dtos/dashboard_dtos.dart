@@ -39,6 +39,7 @@ class DashboardKpisDto with _$DashboardKpisDto {
     @JsonKey(name: 'period_label') @Default('') String periodLabel,
     @Default(DashboardKpiValuesDto()) DashboardKpiValuesDto kpis,
     @Default(DashboardKpiDeltasDto()) DashboardKpiDeltasDto deltas,
+    @Default(PresenceSnapshotDto()) PresenceSnapshotDto presence,
   }) = _DashboardKpisDto;
 
   factory DashboardKpisDto.fromJson(Map<String, dynamic> json) =>
@@ -59,6 +60,23 @@ class DashboardKpiDeltasDto with _$DashboardKpiDeltasDto {
 
   factory DashboardKpiDeltasDto.fromJson(Map<String, dynamic> json) =>
       _$DashboardKpiDeltasDtoFromJson(json);
+}
+
+/// Repartition de l'effectif au jour du jour. Hors periode du tableau de bord :
+/// une presence se constate, elle ne se cumule pas sur une annee.
+@freezed
+class PresenceSnapshotDto with _$PresenceSnapshotDto {
+  const factory PresenceSnapshotDto({
+    @JsonKey(name: 'effectif_actif', fromJson: _intFrom)
+    @Default(0)
+    int effectifActif,
+    @JsonKey(name: 'presents', fromJson: _intFrom) @Default(0) int presents,
+    @JsonKey(name: 'en_mission', fromJson: _intFrom) @Default(0) int enMission,
+    @JsonKey(name: 'absents', fromJson: _intFrom) @Default(0) int absents,
+  }) = _PresenceSnapshotDto;
+
+  factory PresenceSnapshotDto.fromJson(Map<String, dynamic> json) =>
+      _$PresenceSnapshotDtoFromJson(json);
 }
 
 @freezed

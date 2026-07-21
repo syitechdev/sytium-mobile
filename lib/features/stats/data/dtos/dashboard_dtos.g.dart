@@ -17,6 +17,9 @@ _$DashboardKpisDtoImpl _$$DashboardKpisDtoImplFromJson(
   deltas: json['deltas'] == null
       ? const DashboardKpiDeltasDto()
       : DashboardKpiDeltasDto.fromJson(json['deltas'] as Map<String, dynamic>),
+  presence: json['presence'] == null
+      ? const PresenceSnapshotDto()
+      : PresenceSnapshotDto.fromJson(json['presence'] as Map<String, dynamic>),
 );
 
 Map<String, dynamic> _$$DashboardKpisDtoImplToJson(
@@ -26,6 +29,7 @@ Map<String, dynamic> _$$DashboardKpisDtoImplToJson(
   'period_label': instance.periodLabel,
   'kpis': instance.kpis,
   'deltas': instance.deltas,
+  'presence': instance.presence,
 };
 
 _$DashboardKpiDeltasDtoImpl _$$DashboardKpiDeltasDtoImplFromJson(
@@ -44,6 +48,26 @@ Map<String, dynamic> _$$DashboardKpiDeltasDtoImplToJson(
   'recettes': instance.recettes,
   'charges': instance.charges,
   'masse_salariale_net': instance.masseSalarialeNet,
+};
+
+_$PresenceSnapshotDtoImpl _$$PresenceSnapshotDtoImplFromJson(
+  Map<String, dynamic> json,
+) => _$PresenceSnapshotDtoImpl(
+  effectifActif: json['effectif_actif'] == null
+      ? 0
+      : _intFrom(json['effectif_actif']),
+  presents: json['presents'] == null ? 0 : _intFrom(json['presents']),
+  enMission: json['en_mission'] == null ? 0 : _intFrom(json['en_mission']),
+  absents: json['absents'] == null ? 0 : _intFrom(json['absents']),
+);
+
+Map<String, dynamic> _$$PresenceSnapshotDtoImplToJson(
+  _$PresenceSnapshotDtoImpl instance,
+) => <String, dynamic>{
+  'effectif_actif': instance.effectifActif,
+  'presents': instance.presents,
+  'en_mission': instance.enMission,
+  'absents': instance.absents,
 };
 
 _$DashboardKpiValuesDtoImpl _$$DashboardKpiValuesDtoImplFromJson(

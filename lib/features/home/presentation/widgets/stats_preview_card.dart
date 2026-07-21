@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
 import 'package:sytium_mobile/core/utils/money.dart';
+import 'package:sytium_mobile/features/home/presentation/widgets/presence_strip.dart';
 import 'package:sytium_mobile/features/stats/application/stats_providers.dart';
 import 'package:sytium_mobile/features/stats/domain/dashboard_models.dart';
 import 'package:sytium_mobile/features/stats/presentation/widgets/kpi_card.dart';
@@ -11,11 +11,11 @@ import 'package:sytium_mobile/theme/tokens.dart';
 
 const _kPreviewPeriod = DashboardPeriod.annee;
 const _kKpiAspectRatio = 1.5;
-const _kPreviewKpiCount = 3;
+const _kPreviewKpiCount = 2;
 
-/// Formats a percentage with the fr_FR comma and one decimal: `92.5` → `92,5 %`.
-final _pct = NumberFormat('0.0', 'fr_FR');
-String _percent(num v) => '${_pct.format(v)} %';
+/// Hauteur du bandeau de présence pendant le chargement, calquée sur son
+/// contenu réel : en-tête, barre, comptes.
+const _kPresenceSkeletonHeight = 96.0;
 
 /// Compact org-stats preview for the Accueil. Reuses the Direction
 /// dashboard provider (année) and links to the full Stats tab via [onSeeAll].
@@ -50,7 +50,13 @@ class StatsPreviewCard extends ConsumerWidget {
             message: 'Stats indisponibles.',
             onRetry: () => ref.invalidate(dashboardProvider(_kPreviewPeriod)),
           ),
-          data: (k) => _PreviewGrid(kpis: k),
+          data: (k) => Column(
+            children: [
+              _PreviewGrid(kpis: k),
+              const SizedBox(height: Tokens.space12),
+              PresenceStrip(presence: k.presence),
+            ],
+          ),
         ),
       ],
     );
@@ -73,40 +79,54 @@ class _PreviewGrid extends StatelessWidget {
       childAspectRatio: _kKpiAspectRatio,
       children: [
         KpiCard(
-          label: 'CA global',
+          label: 'CA consolidé',
           value: Money.fcfa(kpis.caGlobal),
           accent: colors.brand,
           trendPercent: kpis.deltaCaGlobal,
         ),
-        KpiCard(label: 'Trésorerie', value: Money.fcfa(kpis.tresorerieTotale), accent: colors.brand),
-        KpiCard(label: 'Recouvrement', value: _percent(kpis.tauxRecouvrement), accent: colors.textMuted),
+        KpiCard(
+          label: 'Trésorerie nette',
+          value: Money.fcfa(kpis.tresorerieTotale),
+          accent: colors.brand,
+        ),
       ],
     );
   }
 }
 
-/// Skeleton mirroring the 3-KPI preview grid while it loads.
+/// Squelette calqué sur la forme réelle : deux tuiles puis le bandeau de
+/// présence — pas de saut de mise en page à l'arrivée des données.
 class _PreviewSkeleton extends StatelessWidget {
   const _PreviewSkeleton();
 
   @override
   Widget build(BuildContext context) {
     final fill = context.colors.border.withValues(alpha: 0.55);
-    return GridView.count(
-      crossAxisCount: 2,
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      mainAxisSpacing: Tokens.space12,
-      crossAxisSpacing: Tokens.space12,
-      childAspectRatio: _kKpiAspectRatio,
+    final shape = BoxDecoration(
+      color: fill,
+      borderRadius: BorderRadius.circular(Tokens.radiusMd),
+    );
+
+    return Column(
       children: [
-        for (var i = 0; i < _kPreviewKpiCount; i++)
-          DecoratedBox(
-            decoration: BoxDecoration(
-              color: fill,
-              borderRadius: BorderRadius.circular(Tokens.radiusMd),
-            ),
-          ),
+        GridView.count(
+          crossAxisCount: 2,
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          mainAxisSpacing: Tokens.space12,
+          crossAxisSpacing: Tokens.space12,
+          childAspectRatio: _kKpiAspectRatio,
+          children: [
+            for (var i = 0; i < _kPreviewKpiCount; i++)
+              DecoratedBox(decoration: shape),
+          ],
+        ),
+        const SizedBox(height: Tokens.space12),
+        SizedBox(
+          height: _kPresenceSkeletonHeight,
+          width: double.infinity,
+          child: DecoratedBox(decoration: shape),
+        ),
       ],
     );
   }

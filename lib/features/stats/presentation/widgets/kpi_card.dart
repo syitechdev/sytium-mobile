@@ -47,12 +47,24 @@ class KpiCard extends StatelessWidget {
                     borderRadius: BorderRadius.circular(Tokens.radiusPill),
                   ),
                 ),
-                const Spacer(),
-                if (trendPercent != null)
-                  TrendBadge(
-                    deltaPercent: trendPercent!.toDouble(),
-                    goodWhen: trendGoodWhen,
+                // La pastille de tendance se réduit plutôt que de déborder :
+                // en grille deux colonnes, un delta à trois chiffres dépassait
+                // la largeur de la tuile.
+                Expanded(
+                  child: Align(
+                    alignment: Alignment.centerRight,
+                    child: trendPercent == null
+                        ? const SizedBox.shrink()
+                        : FittedBox(
+                            fit: BoxFit.scaleDown,
+                            alignment: Alignment.centerRight,
+                            child: TrendBadge(
+                              deltaPercent: trendPercent!.toDouble(),
+                              goodWhen: trendGoodWhen,
+                            ),
+                          ),
                   ),
+                ),
               ],
             ),
             const SizedBox(height: Tokens.space12),

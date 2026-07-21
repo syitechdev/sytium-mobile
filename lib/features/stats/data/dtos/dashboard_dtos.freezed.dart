@@ -26,6 +26,7 @@ mixin _$DashboardKpisDto {
   String get periodLabel => throw _privateConstructorUsedError;
   DashboardKpiValuesDto get kpis => throw _privateConstructorUsedError;
   DashboardKpiDeltasDto get deltas => throw _privateConstructorUsedError;
+  PresenceSnapshotDto get presence => throw _privateConstructorUsedError;
 
   /// Serializes this DashboardKpisDto to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -49,10 +50,12 @@ abstract class $DashboardKpisDtoCopyWith<$Res> {
     @JsonKey(name: 'period_label') String periodLabel,
     DashboardKpiValuesDto kpis,
     DashboardKpiDeltasDto deltas,
+    PresenceSnapshotDto presence,
   });
 
   $DashboardKpiValuesDtoCopyWith<$Res> get kpis;
   $DashboardKpiDeltasDtoCopyWith<$Res> get deltas;
+  $PresenceSnapshotDtoCopyWith<$Res> get presence;
 }
 
 /// @nodoc
@@ -74,6 +77,7 @@ class _$DashboardKpisDtoCopyWithImpl<$Res, $Val extends DashboardKpisDto>
     Object? periodLabel = null,
     Object? kpis = null,
     Object? deltas = null,
+    Object? presence = null,
   }) {
     return _then(
       _value.copyWith(
@@ -93,6 +97,10 @@ class _$DashboardKpisDtoCopyWithImpl<$Res, $Val extends DashboardKpisDto>
                 ? _value.deltas
                 : deltas // ignore: cast_nullable_to_non_nullable
                       as DashboardKpiDeltasDto,
+            presence: null == presence
+                ? _value.presence
+                : presence // ignore: cast_nullable_to_non_nullable
+                      as PresenceSnapshotDto,
           )
           as $Val,
     );
@@ -117,6 +125,16 @@ class _$DashboardKpisDtoCopyWithImpl<$Res, $Val extends DashboardKpisDto>
       return _then(_value.copyWith(deltas: value) as $Val);
     });
   }
+
+  /// Create a copy of DashboardKpisDto
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @pragma('vm:prefer-inline')
+  $PresenceSnapshotDtoCopyWith<$Res> get presence {
+    return $PresenceSnapshotDtoCopyWith<$Res>(_value.presence, (value) {
+      return _then(_value.copyWith(presence: value) as $Val);
+    });
+  }
 }
 
 /// @nodoc
@@ -133,12 +151,15 @@ abstract class _$$DashboardKpisDtoImplCopyWith<$Res>
     @JsonKey(name: 'period_label') String periodLabel,
     DashboardKpiValuesDto kpis,
     DashboardKpiDeltasDto deltas,
+    PresenceSnapshotDto presence,
   });
 
   @override
   $DashboardKpiValuesDtoCopyWith<$Res> get kpis;
   @override
   $DashboardKpiDeltasDtoCopyWith<$Res> get deltas;
+  @override
+  $PresenceSnapshotDtoCopyWith<$Res> get presence;
 }
 
 /// @nodoc
@@ -159,6 +180,7 @@ class __$$DashboardKpisDtoImplCopyWithImpl<$Res>
     Object? periodLabel = null,
     Object? kpis = null,
     Object? deltas = null,
+    Object? presence = null,
   }) {
     return _then(
       _$DashboardKpisDtoImpl(
@@ -178,6 +200,10 @@ class __$$DashboardKpisDtoImplCopyWithImpl<$Res>
             ? _value.deltas
             : deltas // ignore: cast_nullable_to_non_nullable
                   as DashboardKpiDeltasDto,
+        presence: null == presence
+            ? _value.presence
+            : presence // ignore: cast_nullable_to_non_nullable
+                  as PresenceSnapshotDto,
       ),
     );
   }
@@ -191,6 +217,7 @@ class _$DashboardKpisDtoImpl implements _DashboardKpisDto {
     @JsonKey(name: 'period_label') this.periodLabel = '',
     this.kpis = const DashboardKpiValuesDto(),
     this.deltas = const DashboardKpiDeltasDto(),
+    this.presence = const PresenceSnapshotDto(),
   });
 
   factory _$DashboardKpisDtoImpl.fromJson(Map<String, dynamic> json) =>
@@ -208,10 +235,13 @@ class _$DashboardKpisDtoImpl implements _DashboardKpisDto {
   @override
   @JsonKey()
   final DashboardKpiDeltasDto deltas;
+  @override
+  @JsonKey()
+  final PresenceSnapshotDto presence;
 
   @override
   String toString() {
-    return 'DashboardKpisDto(period: $period, periodLabel: $periodLabel, kpis: $kpis, deltas: $deltas)';
+    return 'DashboardKpisDto(period: $period, periodLabel: $periodLabel, kpis: $kpis, deltas: $deltas, presence: $presence)';
   }
 
   @override
@@ -223,13 +253,15 @@ class _$DashboardKpisDtoImpl implements _DashboardKpisDto {
             (identical(other.periodLabel, periodLabel) ||
                 other.periodLabel == periodLabel) &&
             (identical(other.kpis, kpis) || other.kpis == kpis) &&
-            (identical(other.deltas, deltas) || other.deltas == deltas));
+            (identical(other.deltas, deltas) || other.deltas == deltas) &&
+            (identical(other.presence, presence) ||
+                other.presence == presence));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   int get hashCode =>
-      Object.hash(runtimeType, period, periodLabel, kpis, deltas);
+      Object.hash(runtimeType, period, periodLabel, kpis, deltas, presence);
 
   /// Create a copy of DashboardKpisDto
   /// with the given fields replaced by the non-null parameter values.
@@ -254,6 +286,7 @@ abstract class _DashboardKpisDto implements DashboardKpisDto {
     @JsonKey(name: 'period_label') final String periodLabel,
     final DashboardKpiValuesDto kpis,
     final DashboardKpiDeltasDto deltas,
+    final PresenceSnapshotDto presence,
   }) = _$DashboardKpisDtoImpl;
 
   factory _DashboardKpisDto.fromJson(Map<String, dynamic> json) =
@@ -268,6 +301,8 @@ abstract class _DashboardKpisDto implements DashboardKpisDto {
   DashboardKpiValuesDto get kpis;
   @override
   DashboardKpiDeltasDto get deltas;
+  @override
+  PresenceSnapshotDto get presence;
 
   /// Create a copy of DashboardKpisDto
   /// with the given fields replaced by the non-null parameter values.
@@ -528,6 +563,249 @@ abstract class _DashboardKpiDeltasDto implements DashboardKpiDeltasDto {
   @JsonKey(includeFromJson: false, includeToJson: false)
   _$$DashboardKpiDeltasDtoImplCopyWith<_$DashboardKpiDeltasDtoImpl>
   get copyWith => throw _privateConstructorUsedError;
+}
+
+PresenceSnapshotDto _$PresenceSnapshotDtoFromJson(Map<String, dynamic> json) {
+  return _PresenceSnapshotDto.fromJson(json);
+}
+
+/// @nodoc
+mixin _$PresenceSnapshotDto {
+  @JsonKey(name: 'effectif_actif', fromJson: _intFrom)
+  int get effectifActif => throw _privateConstructorUsedError;
+  @JsonKey(name: 'presents', fromJson: _intFrom)
+  int get presents => throw _privateConstructorUsedError;
+  @JsonKey(name: 'en_mission', fromJson: _intFrom)
+  int get enMission => throw _privateConstructorUsedError;
+  @JsonKey(name: 'absents', fromJson: _intFrom)
+  int get absents => throw _privateConstructorUsedError;
+
+  /// Serializes this PresenceSnapshotDto to a JSON map.
+  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
+
+  /// Create a copy of PresenceSnapshotDto
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  $PresenceSnapshotDtoCopyWith<PresenceSnapshotDto> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+abstract class $PresenceSnapshotDtoCopyWith<$Res> {
+  factory $PresenceSnapshotDtoCopyWith(
+    PresenceSnapshotDto value,
+    $Res Function(PresenceSnapshotDto) then,
+  ) = _$PresenceSnapshotDtoCopyWithImpl<$Res, PresenceSnapshotDto>;
+  @useResult
+  $Res call({
+    @JsonKey(name: 'effectif_actif', fromJson: _intFrom) int effectifActif,
+    @JsonKey(name: 'presents', fromJson: _intFrom) int presents,
+    @JsonKey(name: 'en_mission', fromJson: _intFrom) int enMission,
+    @JsonKey(name: 'absents', fromJson: _intFrom) int absents,
+  });
+}
+
+/// @nodoc
+class _$PresenceSnapshotDtoCopyWithImpl<$Res, $Val extends PresenceSnapshotDto>
+    implements $PresenceSnapshotDtoCopyWith<$Res> {
+  _$PresenceSnapshotDtoCopyWithImpl(this._value, this._then);
+
+  // ignore: unused_field
+  final $Val _value;
+  // ignore: unused_field
+  final $Res Function($Val) _then;
+
+  /// Create a copy of PresenceSnapshotDto
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? effectifActif = null,
+    Object? presents = null,
+    Object? enMission = null,
+    Object? absents = null,
+  }) {
+    return _then(
+      _value.copyWith(
+            effectifActif: null == effectifActif
+                ? _value.effectifActif
+                : effectifActif // ignore: cast_nullable_to_non_nullable
+                      as int,
+            presents: null == presents
+                ? _value.presents
+                : presents // ignore: cast_nullable_to_non_nullable
+                      as int,
+            enMission: null == enMission
+                ? _value.enMission
+                : enMission // ignore: cast_nullable_to_non_nullable
+                      as int,
+            absents: null == absents
+                ? _value.absents
+                : absents // ignore: cast_nullable_to_non_nullable
+                      as int,
+          )
+          as $Val,
+    );
+  }
+}
+
+/// @nodoc
+abstract class _$$PresenceSnapshotDtoImplCopyWith<$Res>
+    implements $PresenceSnapshotDtoCopyWith<$Res> {
+  factory _$$PresenceSnapshotDtoImplCopyWith(
+    _$PresenceSnapshotDtoImpl value,
+    $Res Function(_$PresenceSnapshotDtoImpl) then,
+  ) = __$$PresenceSnapshotDtoImplCopyWithImpl<$Res>;
+  @override
+  @useResult
+  $Res call({
+    @JsonKey(name: 'effectif_actif', fromJson: _intFrom) int effectifActif,
+    @JsonKey(name: 'presents', fromJson: _intFrom) int presents,
+    @JsonKey(name: 'en_mission', fromJson: _intFrom) int enMission,
+    @JsonKey(name: 'absents', fromJson: _intFrom) int absents,
+  });
+}
+
+/// @nodoc
+class __$$PresenceSnapshotDtoImplCopyWithImpl<$Res>
+    extends _$PresenceSnapshotDtoCopyWithImpl<$Res, _$PresenceSnapshotDtoImpl>
+    implements _$$PresenceSnapshotDtoImplCopyWith<$Res> {
+  __$$PresenceSnapshotDtoImplCopyWithImpl(
+    _$PresenceSnapshotDtoImpl _value,
+    $Res Function(_$PresenceSnapshotDtoImpl) _then,
+  ) : super(_value, _then);
+
+  /// Create a copy of PresenceSnapshotDto
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? effectifActif = null,
+    Object? presents = null,
+    Object? enMission = null,
+    Object? absents = null,
+  }) {
+    return _then(
+      _$PresenceSnapshotDtoImpl(
+        effectifActif: null == effectifActif
+            ? _value.effectifActif
+            : effectifActif // ignore: cast_nullable_to_non_nullable
+                  as int,
+        presents: null == presents
+            ? _value.presents
+            : presents // ignore: cast_nullable_to_non_nullable
+                  as int,
+        enMission: null == enMission
+            ? _value.enMission
+            : enMission // ignore: cast_nullable_to_non_nullable
+                  as int,
+        absents: null == absents
+            ? _value.absents
+            : absents // ignore: cast_nullable_to_non_nullable
+                  as int,
+      ),
+    );
+  }
+}
+
+/// @nodoc
+@JsonSerializable()
+class _$PresenceSnapshotDtoImpl implements _PresenceSnapshotDto {
+  const _$PresenceSnapshotDtoImpl({
+    @JsonKey(name: 'effectif_actif', fromJson: _intFrom) this.effectifActif = 0,
+    @JsonKey(name: 'presents', fromJson: _intFrom) this.presents = 0,
+    @JsonKey(name: 'en_mission', fromJson: _intFrom) this.enMission = 0,
+    @JsonKey(name: 'absents', fromJson: _intFrom) this.absents = 0,
+  });
+
+  factory _$PresenceSnapshotDtoImpl.fromJson(Map<String, dynamic> json) =>
+      _$$PresenceSnapshotDtoImplFromJson(json);
+
+  @override
+  @JsonKey(name: 'effectif_actif', fromJson: _intFrom)
+  final int effectifActif;
+  @override
+  @JsonKey(name: 'presents', fromJson: _intFrom)
+  final int presents;
+  @override
+  @JsonKey(name: 'en_mission', fromJson: _intFrom)
+  final int enMission;
+  @override
+  @JsonKey(name: 'absents', fromJson: _intFrom)
+  final int absents;
+
+  @override
+  String toString() {
+    return 'PresenceSnapshotDto(effectifActif: $effectifActif, presents: $presents, enMission: $enMission, absents: $absents)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$PresenceSnapshotDtoImpl &&
+            (identical(other.effectifActif, effectifActif) ||
+                other.effectifActif == effectifActif) &&
+            (identical(other.presents, presents) ||
+                other.presents == presents) &&
+            (identical(other.enMission, enMission) ||
+                other.enMission == enMission) &&
+            (identical(other.absents, absents) || other.absents == absents));
+  }
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  int get hashCode =>
+      Object.hash(runtimeType, effectifActif, presents, enMission, absents);
+
+  /// Create a copy of PresenceSnapshotDto
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$PresenceSnapshotDtoImplCopyWith<_$PresenceSnapshotDtoImpl> get copyWith =>
+      __$$PresenceSnapshotDtoImplCopyWithImpl<_$PresenceSnapshotDtoImpl>(
+        this,
+        _$identity,
+      );
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$$PresenceSnapshotDtoImplToJson(this);
+  }
+}
+
+abstract class _PresenceSnapshotDto implements PresenceSnapshotDto {
+  const factory _PresenceSnapshotDto({
+    @JsonKey(name: 'effectif_actif', fromJson: _intFrom)
+    final int effectifActif,
+    @JsonKey(name: 'presents', fromJson: _intFrom) final int presents,
+    @JsonKey(name: 'en_mission', fromJson: _intFrom) final int enMission,
+    @JsonKey(name: 'absents', fromJson: _intFrom) final int absents,
+  }) = _$PresenceSnapshotDtoImpl;
+
+  factory _PresenceSnapshotDto.fromJson(Map<String, dynamic> json) =
+      _$PresenceSnapshotDtoImpl.fromJson;
+
+  @override
+  @JsonKey(name: 'effectif_actif', fromJson: _intFrom)
+  int get effectifActif;
+  @override
+  @JsonKey(name: 'presents', fromJson: _intFrom)
+  int get presents;
+  @override
+  @JsonKey(name: 'en_mission', fromJson: _intFrom)
+  int get enMission;
+  @override
+  @JsonKey(name: 'absents', fromJson: _intFrom)
+  int get absents;
+
+  /// Create a copy of PresenceSnapshotDto
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  _$$PresenceSnapshotDtoImplCopyWith<_$PresenceSnapshotDtoImpl> get copyWith =>
+      throw _privateConstructorUsedError;
 }
 
 DashboardKpiValuesDto _$DashboardKpiValuesDtoFromJson(

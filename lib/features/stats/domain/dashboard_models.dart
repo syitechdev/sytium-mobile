@@ -13,6 +13,26 @@ enum DashboardPeriod {
   final String label;
 }
 
+/// Repartition de l'effectif actif aujourd'hui. Independante de la periode
+/// choisie : elle decrit l'instant, pas la fenetre.
+@immutable
+class PresenceSnapshot {
+  const PresenceSnapshot({
+    this.effectifActif = 0,
+    this.presents = 0,
+    this.enMission = 0,
+    this.absents = 0,
+  });
+
+  final int effectifActif;
+  final int presents;
+  final int enMission;
+  final int absents;
+
+  /// Vrai quand l'organisation n'a aucun employe actif : rien a repartir.
+  bool get isEmpty => effectifActif == 0;
+}
+
 /// Org-wide KPI snapshot for one period.
 @immutable
 class DashboardKpis {
@@ -28,6 +48,7 @@ class DashboardKpis {
     this.dettesSalaires = 0,
     this.masseSalarialeNet = 0,
     this.effectifActif = 0,
+    this.presence = const PresenceSnapshot(),
     this.deltaCaGlobal,
     this.deltaRecettes,
     this.deltaCharges,
@@ -45,6 +66,7 @@ class DashboardKpis {
   final num dettesSalaires;
   final num masseSalarialeNet;
   final int effectifActif;
+  final PresenceSnapshot presence;
 
   /// Period-over-period % change (null = no comparable base → hide the trend).
   final num? deltaCaGlobal;

@@ -22,6 +22,12 @@ const _kKpis = DashboardKpis(
   caGlobal: 145000000,
   tresorerieTotale: 87500000,
   tauxRecouvrement: 92.5,
+  presence: PresenceSnapshot(
+    effectifActif: 24,
+    presents: 18,
+    enMission: 3,
+    absents: 3,
+  ),
 );
 
 /// The home StatsPreviewCard only reads `dashboard()`; this mixin satisfies the
@@ -91,16 +97,48 @@ Widget _host(StatsRepository repo, {VoidCallback? onSeeAll}) => ProviderScope(
     );
 
 void main() {
-  testWidgets('renders the 3 KPIs formatted', (tester) async {
+  testWidgets('l’aperçu se limite à deux KPI', (tester) async {
     await tester.pumpWidget(_host(const _OkRepo(_kKpis)));
     await tester.pump();
 
     expect(find.text('Aperçu stats'), findsOneWidget);
     expect(find.text('Voir tout'), findsOneWidget);
-    expect(find.text(Money.fcfa(145000000)), findsOneWidget); // CA global
-    expect(find.text(Money.fcfa(87500000)), findsOneWidget);  // trésorerie
-    expect(find.text('92,5 %'), findsOneWidget);              // recouvrement
-    expect(find.byType(KpiCard), findsNWidgets(3));
+    expect(find.text('CA consolidé'), findsOneWidget);
+    expect(find.text(Money.fcfa(145000000)), findsOneWidget);
+    expect(find.text('Trésorerie nette'), findsOneWidget);
+    expect(find.text(Money.fcfa(87500000)), findsOneWidget);
+    expect(find.byType(KpiCard), findsNWidgets(2));
+    // Le recouvrement reste au tableau de bord complet.
+    expect(find.text('92,5 %'), findsNothing);
+  });
+
+  testWidgets('la présence du jour est répartie en trois comptes', (
+    tester,
+  ) async {
+    await tester.pumpWidget(_host(const _OkRepo(_kKpis)));
+    await tester.pump();
+
+    expect(find.text('Présence du jour'), findsOneWidget);
+    expect(find.text('24 actifs'), findsOneWidget);
+    expect(find.text('18'), findsOneWidget);
+    expect(find.text('Présents'), findsOneWidget);
+    expect(find.text('En mission'), findsOneWidget);
+    expect(find.text('Absents'), findsOneWidget);
+    expect(find.text('3'), findsNWidgets(2)); // missions et absents
+  });
+
+  testWidgets('sans employé actif, la barre laisse place à un message', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      _host(
+        const _OkRepo(DashboardKpis(period: 'annee', periodLabel: 'Année')),
+      ),
+    );
+    await tester.pump();
+
+    expect(find.text('Aucun employé actif.'), findsOneWidget);
+    expect(find.text('Présents'), findsNothing);
   });
 
   testWidgets('tapping "Voir tout" calls onSeeAll', (tester) async {
@@ -135,7 +173,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 50)); // refetch resolves
 
     expect(find.byType(ErrorState), findsNothing);
-    expect(find.byType(KpiCard), findsNWidgets(3));
+    expect(find.byType(KpiCard), findsNWidgets(2));
   });
 
   testWidgets('renders zeros without an empty/error screen', (tester) async {
@@ -143,7 +181,7 @@ void main() {
       DashboardKpis(period: 'annee', periodLabel: 'Année 2026'),
     )));
     await tester.pump();
-    expect(find.byType(KpiCard), findsNWidgets(3));
+    expect(find.byType(KpiCard), findsNWidgets(2));
     expect(find.text(Money.fcfa(0)), findsWidgets);
     expect(find.byType(ErrorState), findsNothing);
   });

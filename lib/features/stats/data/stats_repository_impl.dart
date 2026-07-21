@@ -58,6 +58,12 @@ class StatsRepositoryImpl implements StatsRepository {
           dettesSalaires: k.dettesSalaires,
           masseSalarialeNet: k.masseSalarialeNet,
           effectifActif: k.effectifActif,
+          presence: PresenceSnapshot(
+            effectifActif: dto.presence.effectifActif,
+            presents: dto.presence.presents,
+            enMission: dto.presence.enMission,
+            absents: dto.presence.absents,
+          ),
           deltaCaGlobal: d.caGlobal,
           deltaRecettes: d.recettes,
           deltaCharges: d.charges,
