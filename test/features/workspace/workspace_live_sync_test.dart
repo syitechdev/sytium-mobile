@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:sytium_mobile/app/lifecycle/app_foreground.dart';
 import 'package:sytium_mobile/core/error/failure.dart';
 import 'package:sytium_mobile/core/result/result.dart';
 import 'package:sytium_mobile/features/auth/application/auth_controller.dart';
@@ -82,12 +83,16 @@ ProviderContainer _container(
   _Repo repo,
   FakeWorkspaceRealtime realtime, {
   AuthController Function()? auth,
+  bool foreground = true,
 }) {
   final container = ProviderContainer(
     overrides: [
       authControllerProvider.overrideWith(auth ?? _OrgAuth.new),
       workspaceRepositoryProvider.overrideWithValue(repo),
       workspaceRealtimeProvider.overrideWithValue(realtime),
+      // Le vrai provider écoute le cycle de vie de la plateforme ; ici on
+      // décide explicitement si l'app est devant l'utilisateur.
+      appForegroundProvider.overrideWith(() => _Foreground(initial: foreground)),
     ],
   );
   addTearDown(container.dispose);
@@ -99,6 +104,17 @@ Future<void> _settle() async {
   for (var i = 0; i < 4; i++) {
     await Future<void>.delayed(Duration.zero);
   }
+}
+
+class _Foreground extends AppForeground {
+  _Foreground({required this.initial});
+  final bool initial;
+
+  @override
+  bool build() => initial;
+
+  /// Simule le retour de l'app au premier plan.
+  void resume() => state = true;
 }
 
 void main() {
@@ -244,6 +260,68 @@ void main() {
     await _settle();
 
     expect(repo.conversationCalls, before);
+  });
+
+  test('en arrière-plan, ne recharge PAS le fil (sinon le serveur le marque lu)',
+      () async {
+    final realtime = FakeWorkspaceRealtime();
+    final repo = _Repo();
+    final container = _container(repo, realtime, foreground: false);
+
+    container.read(workspaceLiveSyncProvider).start(pollInterval: null);
+    await _settle();
+    final thread = container.listen(channelMessagesProvider('c2'), (_, __) {});
+    addTearDown(thread.close);
+    await _settle();
+    final threadCallsBefore = repo.messageCalls.length;
+    final listCallsBefore = repo.conversationCalls;
+
+    realtime.emit(
+      c2,
+      const RealtimeEvent(
+        event: 'workspace.message.created',
+        data: {'channel_id': 'c2'},
+      ),
+    );
+    await _settle();
+
+    // `GET /messages` marque le canal lu côté serveur : le faire écran éteint
+    // effaçait les non-lus du destinataire et affichait « Lu » à l'expéditeur.
+    expect(repo.messageCalls.length, threadCallsBefore);
+    // La liste, elle, n'a aucun effet de bord : la pastille reste honnête.
+    expect(repo.conversationCalls, greaterThan(listCallsBefore));
+  });
+
+  test('en arrière-plan, le repli périodique se tait', () async {
+    final realtime = FakeWorkspaceRealtime();
+    final repo = _Repo();
+    final container = _container(repo, realtime, foreground: false);
+
+    container
+        .read(workspaceLiveSyncProvider)
+        .start(pollInterval: const Duration(milliseconds: 30));
+    await _settle();
+    final before = repo.conversationCalls;
+
+    await Future<void>.delayed(const Duration(milliseconds: 90));
+    await _settle();
+
+    expect(repo.conversationCalls, before);
+  });
+
+  test('le retour au premier plan rattrape ce qui a été manqué', () async {
+    final realtime = FakeWorkspaceRealtime();
+    final repo = _Repo();
+    final container = _container(repo, realtime, foreground: false);
+
+    container.read(workspaceLiveSyncProvider).start(pollInterval: null);
+    await _settle();
+    final before = repo.conversationCalls;
+
+    (container.read(appForegroundProvider.notifier) as _Foreground).resume();
+    await _settle();
+
+    expect(repo.conversationCalls, greaterThan(before));
   });
 
   test('start is idempotent', () async {

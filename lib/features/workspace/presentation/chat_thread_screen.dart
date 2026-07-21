@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
+import 'package:sytium_mobile/app/lifecycle/app_foreground.dart';
 import 'package:sytium_mobile/features/calls/application/call_controller.dart';
 import 'package:sytium_mobile/features/calls/domain/call_models.dart';
 import 'package:sytium_mobile/features/workspace/application/active_chat_channel.dart';
@@ -204,10 +205,13 @@ class ChatThreadScreenState extends ConsumerState<ChatThreadScreen> {
     });
     final interval = widget.pollInterval;
     if (interval != null) {
-      _poll = Timer.periodic(
-        interval,
-        (_) => ref.invalidate(channelMessagesProvider(_channelId)),
-      );
+      // Jamais en arrière-plan : chaque `GET /messages` marque le canal lu
+      // côté serveur, donc sonder téléphone verrouillé effaçait les non-lus du
+      // destinataire et affichait « Lu » à l'expéditeur.
+      _poll = Timer.periodic(interval, (_) {
+        if (!ref.read(appForegroundProvider)) return;
+        ref.invalidate(channelMessagesProvider(_channelId));
+      });
     }
   }
 

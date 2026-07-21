@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/date_symbol_data_local.dart';
+import 'package:sytium_mobile/app/lifecycle/app_foreground.dart';
 import 'package:sytium_mobile/core/error/failure.dart';
 import 'package:sytium_mobile/core/result/result.dart';
 import 'package:sytium_mobile/features/auth/application/auth_controller.dart';
@@ -45,6 +46,12 @@ class _OrgAuth extends AuthController {
           capabilities: MobileCapabilities.baseline(),
         ),
       );
+}
+
+/// App en arrière-plan pour la durée du test.
+class _Background extends AppForeground {
+  @override
+  bool build() => false;
 }
 
 const _kChannel = Conversation(
@@ -780,6 +787,41 @@ void main() {
     // global pour cette conversation.
     await tester.pumpWidget(const SizedBox());
     expect(realtime.unsubscribed, isEmpty);
+  });
+
+  testWidgets('son sondage se tait quand l’app passe en arrière-plan',
+      (tester) async {
+    final repo = _BaseRepo();
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          authControllerProvider.overrideWith(_OrgAuth.new),
+          workspaceRepositoryProvider.overrideWithValue(repo),
+          workspaceRealtimeProvider.overrideWithValue(FakeWorkspaceRealtime()),
+          appForegroundProvider.overrideWith(_Background.new),
+        ],
+        child: MaterialApp(
+          home: Theme(
+            data: AppTheme.light(),
+            child: const ChatThreadScreen(
+              conversation: _kChannel,
+              pollInterval: Duration(milliseconds: 40),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump();
+    final before = repo.messageCursors.length;
+
+    await tester.pump(const Duration(milliseconds: 130));
+    await tester.pump();
+
+    // Chaque `GET /messages` marque le canal lu côté serveur : sonder écran
+    // éteint effaçait les non-lus du destinataire.
+    expect(repo.messageCursors.length, before);
+    await tester.pumpWidget(const SizedBox());
   });
 
   testWidgets('still refetches on its fallback poll', (tester) async {

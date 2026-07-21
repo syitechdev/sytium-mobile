@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:sytium_mobile/app/lifecycle/app_foreground.dart';
 import 'package:sytium_mobile/features/auth/application/auth_controller.dart';
 import 'package:sytium_mobile/features/workspace/application/workspace_providers.dart';
 import 'package:sytium_mobile/features/workspace/domain/workspace_models.dart';
@@ -42,6 +43,7 @@ class WorkspaceLiveSync {
 
   ProviderSubscription<AsyncValue<List<Conversation>>>? _conversationsSub;
   ProviderSubscription<AsyncValue<AuthState>>? _authSub;
+  ProviderSubscription<bool>? _foregroundSub;
 
   /// Last list seen. Kept because reconciliation needs BOTH the list and the
   /// organization id, and they resolve in an unpredictable order at startup.
@@ -87,6 +89,12 @@ class WorkspaceLiveSync {
       (_, __) => _reconcile(),
     );
 
+    // Revenir au premier plan doit rattraper ce qu'on n'a pas rafraîchi
+    // pendant l'absence.
+    _foregroundSub = _ref.listen<bool>(appForegroundProvider, (_, foreground) {
+      if (foreground) _refreshConversations();
+    });
+
     if (pollInterval != null) {
       _poll = Timer.periodic(pollInterval, (_) => _refreshConversations());
     }
@@ -103,6 +111,8 @@ class WorkspaceLiveSync {
     _conversationsSub = null;
     _authSub?.close();
     _authSub = null;
+    _foregroundSub?.close();
+    _foregroundSub = null;
     _conversations = null;
 
     for (final name in _subscribed) {
@@ -156,7 +166,14 @@ class WorkspaceLiveSync {
     _log('message reçu sur ${event.data['channel_id']} → rafraîchissement');
 
     // The event carries ids only — refetch rather than trust a partial payload.
+    // Refreshing the list is free of side effects, so it happens either way.
     _ref.invalidate(conversationsProvider);
+
+    // Refetching a thread is NOT free: the backend marks the channel read on
+    // every `GET /messages`. Doing that while the app sits in the background
+    // wiped the unread badge and told the sender their message had been read,
+    // with nobody having looked at anything.
+    if (!_isForeground) return;
     final channelId = event.data['channel_id'];
     if (channelId is String && channelId.isNotEmpty) {
       _ref.invalidate(channelMessagesProvider(channelId));
@@ -164,9 +181,11 @@ class WorkspaceLiveSync {
   }
 
   void _refreshConversations() {
-    if (!_started) return;
+    if (!_started || !_isForeground) return;
     _ref.invalidate(conversationsProvider);
   }
+
+  bool get _isForeground => _ref.read(appForegroundProvider);
 
   String? get _organizationId {
     final auth = _ref.read(authControllerProvider).valueOrNull;
