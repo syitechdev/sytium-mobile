@@ -102,6 +102,16 @@ class ReverbWorkspaceRealtime implements WorkspaceRealtime {
   final bool useTls;
   final bool isConfigured;
 
+  /// Scheme derived from [useTls], for the connection trace only.
+  String get scheme => useTls ? 'wss' : 'ws';
+
+  /// Trace of the handshake, debug builds only. A silent failure here (proxy
+  /// not routing `/app`, channel-auth rejection) is otherwise indistinguishable
+  /// from "nobody sent anything", which cost a full debugging round once.
+  void _log(String message) {
+    if (kDebugMode) debugPrint('[RT] $message');
+  }
+
   PusherChannelsClient? _client;
 
   /// channelName → callback. The bound event streams fan out through here.
@@ -122,7 +132,10 @@ class ReverbWorkspaceRealtime implements WorkspaceRealtime {
 
   @override
   Future<void> ensureConnected() async {
-    if (!isConfigured) return; // graceful no-op: polling covers the thread
+    if (!isConfigured) {
+      _log('DÉSACTIVÉ : REVERB_APP_KEY/REVERB_HOST absents du build');
+      return; // graceful no-op: polling covers the thread
+    }
     if (_client != null || _connecting) return;
     _connecting = true;
     try {
@@ -134,7 +147,7 @@ class ReverbWorkspaceRealtime implements WorkspaceRealtime {
           port: port,
         ),
         connectionErrorHandler: (exception, trace, refresh) {
-          debugPrint('Reverb connection error: $exception');
+          _log('ERREUR de connexion : $exception');
           // Best-effort reconnect; polling covers gaps regardless.
           refresh();
         },
@@ -142,6 +155,8 @@ class ReverbWorkspaceRealtime implements WorkspaceRealtime {
       // Re-subscribe every known channel whenever the (re)connection is
       // established — this also covers the very first connect.
       _connectionSub = client.onConnectionEstablished.listen((_) {
+        _log('connexion établie ($scheme://$host:$port) — '
+            'réabonnement de ${_channels.length} canaux');
         for (final channel in _channels.values) {
           channel.subscribeIfNotUnsubscribed();
         }
@@ -226,10 +241,18 @@ class ReverbWorkspaceRealtime implements WorkspaceRealtime {
       );
       _channels[channelName] = channel;
 
-      // Bind each requested event → fan out to the channel's callback.
+      // Bind each requested event → fan out to the channel's callback, plus the
+      // subscription outcome: a channel that never confirms is the usual
+      // symptom of a broadcasting-auth rejection, and it is otherwise silent.
       final subs = <StreamSubscription<dynamic>>[
         for (final eventName in events)
           channel.bind(eventName).listen((event) => _dispatch(channelName, event)),
+        channel.whenSubscriptionSucceeded().listen(
+              (_) => _log('abonné à $channelName'),
+            ),
+        channel.onSubscriptionError().listen(
+              (e) => _log('ECHEC abonnement $channelName : ${e.data}'),
+            ),
       ];
       _eventSubs[channelName] = subs;
 
@@ -245,6 +268,7 @@ class ReverbWorkspaceRealtime implements WorkspaceRealtime {
     final cb = _callbacks[channelName];
     if (cb == null) return;
     final data = event.tryGetDataAsMap() ?? const <String, dynamic>{};
+    _log('événement ${event.name} sur $channelName');
     cb(RealtimeEvent(event: event.name, data: data));
   }
 

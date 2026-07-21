@@ -62,6 +62,7 @@ class WorkspaceLiveSync {
     if (_started) return;
     _started = true;
 
+    _log('démarrage');
     final realtime = _ref.read(workspaceRealtimeProvider);
     _realtime = realtime;
     unawaited(realtime.ensureConnected());
@@ -128,17 +129,31 @@ class WorkspaceLiveSync {
       for (final c in conversations) 'private-org.$orgId.workspace.${c.id}',
     };
 
-    for (final name in _subscribed.difference(wanted)) {
+    final gone = _subscribed.difference(wanted);
+    final fresh = wanted.difference(_subscribed);
+    for (final name in gone) {
       realtime.unsubscribe(name);
     }
-    for (final name in wanted.difference(_subscribed)) {
+    for (final name in fresh) {
       realtime.subscribe(name, _onEvent, events: _kMessageEvents);
+    }
+    if (gone.isNotEmpty || fresh.isNotEmpty) {
+      _log('${wanted.length} conversations suivies '
+          '(+${fresh.length}/-${gone.length})');
     }
     _subscribed = wanted;
   }
 
+  /// Trace of the live path, debug builds only — one prefix so
+  /// `flutter logs | grep '\[RT\]'` shows connection, subscriptions and
+  /// incoming messages end to end. Silent in release.
+  void _log(String message) {
+    if (kDebugMode) debugPrint('[RT] sync : $message');
+  }
+
   void _onEvent(RealtimeEvent event) {
     if (!_started || !_kMessageEvents.contains(event.event)) return;
+    _log('message reçu sur ${event.data['channel_id']} → rafraîchissement');
 
     // The event carries ids only — refetch rather than trust a partial payload.
     _ref.invalidate(conversationsProvider);
