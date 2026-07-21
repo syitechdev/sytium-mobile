@@ -82,15 +82,12 @@ class _SalesDocFormSheetState extends ConsumerState<_SalesDocFormSheet> {
 
   late SalesDocKind _kind = widget.initialKind;
   num _taux = 18;
-  num _remise = 0;
   CashAccount? _account;
   bool _submitting = false;
   String? _clientError;
   String? _itemsError;
   String? _accountError;
   String? _banner;
-
-  static const _remiseOptions = <num>[0, 5, 10, 20];
 
   @override
   void initState() {
@@ -131,11 +128,9 @@ class _SalesDocFormSheetState extends ConsumerState<_SalesDocFormSheet> {
     setState(() {});
   }
 
-  num get _htBrut => _lines.fold<num>(0, (s, l) => s + l.total);
-  num get _remiseAmount => (_htBrut * _remise / 100).round();
-  num get _htNet => _htBrut - _remiseAmount;
-  num get _tva => (_htNet * _taux / 100).round();
-  num get _ttc => _htNet + _tva;
+  num get _ht => _lines.fold<num>(0, (s, l) => s + l.total);
+  num get _tva => (_ht * _taux / 100).round();
+  num get _ttc => _ht + _tva;
 
   bool get _canComptant {
     final auth = ref.read(authControllerProvider).valueOrNull;
@@ -171,7 +166,6 @@ class _SalesDocFormSheetState extends ConsumerState<_SalesDocFormSheet> {
             clientNom: client,
             objet: _objet.text.trim().isEmpty ? null : _objet.text.trim(),
             tauxTva: _taux,
-            remise: _remise,
             accountId: needAccount ? _account!.id : null,
             items: validLines.map((l) => l.toInput()).toList(),
           ),
@@ -289,28 +283,11 @@ class _SalesDocFormSheetState extends ConsumerState<_SalesDocFormSheet> {
                 onRemove: () => _removeLine(i),
               ),
             const SizedBox(height: Tokens.space16),
-            Row(
-              children: [
-                Expanded(
-                  child: _Dropdown<num>(
-                    label: 'Remise',
-                    value: _remise,
-                    items: {
-                      for (final r in _remiseOptions) r: '${r.toInt()} %',
-                    },
-                    onChanged: (v) => setState(() => _remise = v),
-                  ),
-                ),
-                const SizedBox(width: Tokens.space12),
-                Expanded(
-                  child: _Dropdown<num>(
-                    label: 'TVA',
-                    value: _taux,
-                    items: const {0: '0 %', 18: '18 %'},
-                    onChanged: (v) => setState(() => _taux = v),
-                  ),
-                ),
-              ],
+            _Dropdown<num>(
+              label: 'TVA',
+              value: _taux,
+              items: const {0: '0 %', 18: '18 %'},
+              onChanged: (v) => setState(() => _taux = v),
             ),
             if (comptant) ...[
               const SizedBox(height: Tokens.space16),
@@ -322,9 +299,7 @@ class _SalesDocFormSheetState extends ConsumerState<_SalesDocFormSheet> {
             ],
             const SizedBox(height: Tokens.space24),
             _TotalsCard(
-              htBrut: _htBrut,
-              remisePct: _remise,
-              remiseAmount: _remiseAmount,
+              ht: _ht,
               tvaPct: _taux,
               tva: _tva,
               ttc: _ttc,
@@ -525,17 +500,13 @@ class _LineEditor extends StatelessWidget {
 
 class _TotalsCard extends StatelessWidget {
   const _TotalsCard({
-    required this.htBrut,
-    required this.remisePct,
-    required this.remiseAmount,
+    required this.ht,
     required this.tvaPct,
     required this.tva,
     required this.ttc,
   });
 
-  final num htBrut;
-  final num remisePct;
-  final num remiseAmount;
+  final num ht;
   final num tvaPct;
   final num tva;
   final num ttc;
@@ -552,16 +523,7 @@ class _TotalsCard extends StatelessWidget {
       ),
       child: Column(
         children: [
-          _row(context, 'Montant HT brut', Money.fcfa(htBrut)),
-          if (remisePct > 0) ...[
-            const SizedBox(height: Tokens.space8),
-            _row(
-              context,
-              'Remise (${remisePct.toInt()} %)',
-              '-${Money.fcfa(remiseAmount)}',
-              color: colors.danger,
-            ),
-          ],
+          _row(context, 'Montant HT', Money.fcfa(ht)),
           const SizedBox(height: Tokens.space8),
           _row(context, 'TVA (${tvaPct.toInt()} %)', Money.fcfa(tva)),
           const Divider(height: Tokens.space24),

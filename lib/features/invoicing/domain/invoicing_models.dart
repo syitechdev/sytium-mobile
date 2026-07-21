@@ -34,7 +34,6 @@ class SalesDocInput {
     required this.items,
     this.objet,
     this.tauxTva = 18,
-    this.remise = 0,
     this.accountId,
   });
 
@@ -44,7 +43,6 @@ class SalesDocInput {
   final num tauxTva;
 
   /// Discount %, applied to the HT (0–100).
-  final num remise;
 
   /// Cash account crediting the payment — required when [kind] is comptant.
   final String? accountId;

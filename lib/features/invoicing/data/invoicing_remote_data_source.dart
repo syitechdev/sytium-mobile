@@ -17,7 +17,6 @@ class InvoicingRemoteDataSource {
         'client_nom': input.clientNom,
         if (input.objet != null && input.objet!.isNotEmpty) 'objet': input.objet,
         'taux_tva': input.tauxTva,
-        'remise': input.remise,
         if (input.isComptant) 'comptant': true,
         if (input.accountId != null) 'account_id': input.accountId,
         'items': [
