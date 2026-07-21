@@ -23,7 +23,24 @@ final tokenStoreProvider = Provider<TokenStore>.internal(
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef TokenStoreRef = ProviderRef<TokenStore>;
-String _$authDioHash() => r'6685bfa9259e60def6d29d235fc910ba55c223d9';
+String _$sessionCacheHash() => r'666a3ae89b9534d2c166f924c6f5629cb77be599';
+
+/// See also [sessionCache].
+@ProviderFor(sessionCache)
+final sessionCacheProvider = Provider<SessionCache>.internal(
+  sessionCache,
+  name: r'sessionCacheProvider',
+  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+      ? null
+      : _$sessionCacheHash,
+  dependencies: null,
+  allTransitiveDependencies: null,
+);
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+typedef SessionCacheRef = ProviderRef<SessionCache>;
+String _$authDioHash() => r'3f07663874be2bdd621f9fb9134ed994ad94ba8a';
 
 /// See also [authDio].
 @ProviderFor(authDio)
@@ -40,7 +57,7 @@ final authDioProvider = Provider<Dio>.internal(
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef AuthDioRef = ProviderRef<Dio>;
-String _$authRepositoryHash() => r'1652121afe9889fe79571b81a2c60b4041f48e8f';
+String _$authRepositoryHash() => r'e0b88a23554e9af09452ea69721c60a214917d77';
 
 /// See also [authRepository].
 @ProviderFor(authRepository)

@@ -1,9 +1,12 @@
+import 'dart:convert';
+
 import 'package:dio/dio.dart';
 import 'package:sytium_mobile/core/error/failure.dart';
 import 'package:sytium_mobile/core/network/error_mapper.dart';
 import 'package:sytium_mobile/core/notifications/device_identity.dart';
 import 'package:sytium_mobile/core/result/result.dart';
 import 'package:sytium_mobile/core/storage/secure_token_store.dart';
+import 'package:sytium_mobile/core/storage/session_cache.dart';
 import 'package:sytium_mobile/core/utils/asset_url.dart';
 import 'package:sytium_mobile/core/utils/role_labels.dart';
 import 'package:sytium_mobile/features/auth/data/auth_remote_data_source.dart';
@@ -18,11 +21,13 @@ class AuthRepositoryImpl implements AuthRepository {
   AuthRepositoryImpl({
     required this.remote,
     required this.tokenStore,
+    required this.sessionCache,
     required this.resolveDeviceId,
   });
 
   final AuthRemoteDataSource remote;
   final TokenStore tokenStore;
+  final SessionCache sessionCache;
   final DeviceIdProvider resolveDeviceId;
 
   @override
@@ -47,9 +52,11 @@ class AuthRepositoryImpl implements AuthRepository {
             : DateTime.tryParse(login.expiresAt!),
       );
       final boot = await remote.bootstrap();
+      await sessionCache.save(jsonEncode(boot.toJson()));
       return Ok(_session(boot));
     } on DioException catch (e) {
       await tokenStore.clear();
+      await sessionCache.clear();
       return Err(mapDioError(e));
     } catch (_) {
       return const Err(UnknownFailure());
@@ -62,11 +69,39 @@ class AuthRepositoryImpl implements AuthRepository {
     if (token == null) return const Err(UnauthorizedFailure());
     try {
       final boot = await remote.bootstrap();
+      await sessionCache.save(jsonEncode(boot.toJson()));
       return Ok(_session(boot));
     } on DioException catch (e) {
       final failure = mapDioError(e);
-      if (failure is UnauthorizedFailure) await tokenStore.clear();
-      return Err(failure);
+
+      // Le serveur a parlé : la session n'existe plus, on efface tout.
+      if (failure is UnauthorizedFailure) {
+        await tokenStore.clear();
+        await sessionCache.clear();
+        return Err(failure);
+      }
+
+      // Le serveur n'a pas répondu (hors ligne, panne, coupure). Le jeton mobile
+      // n'expire pas : rien ne dit que la session est finie, et renvoyer
+      // l'utilisateur sur l'écran de connexion lui ferait croire le contraire.
+      final cached = await _cachedSession();
+      return cached == null ? Err(failure) : Ok(cached);
+    }
+  }
+
+  /// Reconstruit la dernière session connue, ou `null` si rien n'est conservé
+  /// ou si la charge n'est plus lisible.
+  Future<AuthSession?> _cachedSession() async {
+    final raw = await sessionCache.read();
+    if (raw == null) return null;
+    try {
+      final decoded = jsonDecode(raw) as Map<String, dynamic>;
+      return _session(BootstrapResponseDto.fromJson(decoded));
+    } catch (_) {
+      // Charge illisible (format changé entre deux versions) : on la jette
+      // plutôt que de faire échouer chaque démarrage hors ligne.
+      await sessionCache.clear();
+      return null;
     }
   }
 
@@ -78,6 +113,7 @@ class AuthRepositoryImpl implements AuthRepository {
       // best-effort; we clear local state regardless
     } finally {
       await tokenStore.clear();
+      await sessionCache.clear();
     }
   }
 
