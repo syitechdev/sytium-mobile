@@ -199,6 +199,29 @@ flutter test                                                # + golden tests
 flutter run --dart-define=API_BASE_URL=...                  # lancer sur simulateur
 ```
 
+### Builds de distribution — le temps réel ne s'active QUE par `--dart-define`
+
+`RealtimeConfig.isConfigured` exige `REVERB_APP_KEY` **et** `REVERB_HOST`
+(`lib/features/workspace/realtime/realtime_config.dart`). Un `flutter build` sans
+ces defines compile une application où la couche live est un no-op silencieux :
+la messagerie retombe sur son polling, mais **les appels WebRTC n'ont plus aucune
+signalisation** — l'offre SDP part et personne ne la reçoit, l'appel ne se
+connecte jamais. Rien dans l'interface ne le signale. Toujours builder ainsi :
+
+```bash
+flutter build apk --release \
+  --dart-define=API_BASE_URL=https://api-beta.sytium.tech/api/v1 \
+  --dart-define=REVERB_APP_KEY=<REVERB_APP_KEY du .env backend> \
+  --dart-define=REVERB_HOST=api-beta.sytium.tech \
+  --dart-define=REVERB_PORT=443 \
+  --dart-define=REVERB_SCHEME=https
+```
+
+La clé doit être **identique** à celle du `.env` backend et à la variable GitHub
+`VITE_REVERB_APP_KEY_BETA` du front : c'est le même serveur Reverb pour les trois
+clients. Elle est publique (elle est livrée à chaque client) ; le
+`REVERB_APP_SECRET` ne quitte jamais le serveur.
+
 ## 11. Definition of Done (cocher avant de livrer une feature)
 
 - [ ] Données via repository + DTO freezed dérivés du contrat réel ; cache + pagination si liste
