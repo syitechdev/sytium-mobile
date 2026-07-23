@@ -12,6 +12,7 @@ import 'package:sytium_mobile/features/stats/domain/dashboard_models.dart';
 import 'package:sytium_mobile/features/stats/domain/dashboard_series_models.dart';
 import 'package:sytium_mobile/features/stats/domain/stats_models.dart';
 import 'package:sytium_mobile/features/stats/domain/stats_repository.dart';
+import 'package:sytium_mobile/features/stats/domain/working_capital_models.dart';
 import 'package:sytium_mobile/shared/widgets/error_state.dart';
 import 'package:sytium_mobile/theme/theme.dart';
 
@@ -32,13 +33,22 @@ const _kKpis = DashboardKpis(
 /// The home StatsPreviewCard only reads `dashboard()`; this mixin satisfies the
 /// unused `dashboardSeries()` member of the interface for these fakes.
 mixin _NoSeries implements StatsRepository {
+
+  @override
+  Future<Result<WorkingCapital>> workingCapital() =>
+      Completer<Result<WorkingCapital>>().future;
   @override
   Future<Result<DashboardSeries>> dashboardSeries() =>
       Completer<Result<DashboardSeries>>().future;
 }
 
 class _OkRepo with _NoSeries implements StatsRepository {
+
   const _OkRepo(this.kpis);
+
+  @override
+  Future<Result<WorkingCapital>> workingCapital() =>
+      Completer<Result<WorkingCapital>>().future;
   final DashboardKpis kpis;
   @override
   Future<Result<DashboardKpis>> dashboard(DashboardPeriod period) async => Ok(kpis);
@@ -48,7 +58,12 @@ class _OkRepo with _NoSeries implements StatsRepository {
 }
 
 class _ErrRepo with _NoSeries implements StatsRepository {
+
   const _ErrRepo();
+
+  @override
+  Future<Result<WorkingCapital>> workingCapital() =>
+      Completer<Result<WorkingCapital>>().future;
   @override
   Future<Result<DashboardKpis>> dashboard(DashboardPeriod period) async =>
       const Err(ServerFailure(message: 'boom'));
@@ -58,7 +73,12 @@ class _ErrRepo with _NoSeries implements StatsRepository {
 }
 
 class _LoadingRepo with _NoSeries implements StatsRepository {
+
   const _LoadingRepo();
+
+  @override
+  Future<Result<WorkingCapital>> workingCapital() =>
+      Completer<Result<WorkingCapital>>().future;
   @override
   Future<Result<DashboardKpis>> dashboard(DashboardPeriod period) =>
       Completer<Result<DashboardKpis>>().future;
@@ -70,7 +90,12 @@ class _LoadingRepo with _NoSeries implements StatsRepository {
 /// Fails the first `dashboard()` call, then succeeds — proving the retry path
 /// (`ref.invalidate` → refetch) actually re-runs the request and recovers.
 class _FlakyRepo with _NoSeries implements StatsRepository {
+
   _FlakyRepo(this.kpis);
+
+  @override
+  Future<Result<WorkingCapital>> workingCapital() =>
+      Completer<Result<WorkingCapital>>().future;
   final DashboardKpis kpis;
   int calls = 0;
   @override

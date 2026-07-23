@@ -12,6 +12,7 @@ import 'package:sytium_mobile/features/stats/domain/dashboard_models.dart';
 import 'package:sytium_mobile/features/stats/domain/dashboard_series_models.dart';
 import 'package:sytium_mobile/features/stats/domain/stats_models.dart';
 import 'package:sytium_mobile/features/stats/domain/stats_repository.dart';
+import 'package:sytium_mobile/features/stats/domain/working_capital_models.dart';
 import 'package:sytium_mobile/features/stats/presentation/widgets/kpi_card.dart';
 import 'package:sytium_mobile/features/stats/presentation/widgets/organisation_stats_view.dart';
 import 'package:sytium_mobile/shared/widgets/error_state.dart';
@@ -24,7 +25,12 @@ final _pct = NumberFormat('0.0', 'fr_FR');
 String _percent(num v) => '${_pct.format(v)} %';
 
 class _BaseRepo implements StatsRepository {
+
   const _BaseRepo();
+
+  @override
+  Future<Result<WorkingCapital>> workingCapital() =>
+      Completer<Result<WorkingCapital>>().future;
   @override
   Future<Result<MonthlyAttendance>> attendanceSummary(String month) async =>
       const Ok(MonthlyAttendance(month: ''));

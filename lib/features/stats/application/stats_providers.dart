@@ -8,6 +8,7 @@ import 'package:sytium_mobile/features/stats/domain/dashboard_models.dart';
 import 'package:sytium_mobile/features/stats/domain/dashboard_series_models.dart';
 import 'package:sytium_mobile/features/stats/domain/stats_models.dart';
 import 'package:sytium_mobile/features/stats/domain/stats_repository.dart';
+import 'package:sytium_mobile/features/stats/domain/working_capital_models.dart';
 
 part 'stats_providers.g.dart';
 
@@ -42,4 +43,11 @@ Future<DashboardKpis> dashboard(Ref ref, DashboardPeriod period) async {
 Future<DashboardSeries> dashboardSeries(Ref ref) async {
   final result = await ref.watch(statsRepositoryProvider).dashboardSeries();
   return result.fold((s) => s, (f) => throw Exception(f.message ?? 'Erreur'));
+}
+
+/// Équilibre financier (FR / BFR / TN) et son signal santé, dérivés serveur.
+@riverpod
+Future<WorkingCapital> workingCapital(Ref ref) async {
+  final result = await ref.watch(statsRepositoryProvider).workingCapital();
+  return result.fold((w) => w, (f) => throw Exception(f.message ?? 'Erreur'));
 }

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -19,6 +20,7 @@ import 'package:sytium_mobile/features/stats/domain/dashboard_models.dart';
 import 'package:sytium_mobile/features/stats/domain/dashboard_series_models.dart';
 import 'package:sytium_mobile/features/stats/domain/stats_models.dart';
 import 'package:sytium_mobile/features/stats/domain/stats_repository.dart';
+import 'package:sytium_mobile/features/stats/domain/working_capital_models.dart';
 import 'package:sytium_mobile/features/stats/presentation/stats_screen.dart';
 import 'package:sytium_mobile/features/workspace/application/workspace_providers.dart';
 import 'package:sytium_mobile/features/workspace/domain/workspace_models.dart';
@@ -61,6 +63,10 @@ class _CountingPointageRepo extends _FakePointageRepo {
 }
 
 class _FakeStatsRepo implements StatsRepository {
+
+  @override
+  Future<Result<WorkingCapital>> workingCapital() =>
+      Completer<Result<WorkingCapital>>().future;
   @override
   Future<Result<MonthlyAttendance>> attendanceSummary(String month) async =>
       const Err(NetworkFailure());

@@ -6,6 +6,7 @@ import 'package:sytium_mobile/features/stats/application/stats_providers.dart';
 import 'package:sytium_mobile/features/stats/domain/dashboard_models.dart';
 import 'package:sytium_mobile/features/stats/domain/dashboard_series_models.dart';
 import 'package:sytium_mobile/features/stats/presentation/widgets/kpi_card.dart';
+import 'package:sytium_mobile/features/stats/presentation/widgets/working_capital_card.dart';
 import 'package:sytium_mobile/shared/charts/app_bar_chart.dart';
 import 'package:sytium_mobile/shared/charts/app_donut_chart.dart';
 import 'package:sytium_mobile/shared/charts/app_horizontal_bar_chart.dart';
@@ -43,7 +44,8 @@ class _OrganisationStatsViewState
   Future<void> _refresh() async {
     ref
       ..invalidate(dashboardProvider(_period))
-      ..invalidate(dashboardSeriesProvider);
+      ..invalidate(dashboardSeriesProvider)
+      ..invalidate(workingCapitalProvider);
   }
 
   @override
@@ -54,6 +56,10 @@ class _OrganisationStatsViewState
       child: ListView(
         padding: const EdgeInsets.all(Tokens.space16),
         children: [
+          // Signal d'équilibre financier : indépendant de la période choisie,
+          // il ouvre la vue comme une synthèse santé.
+          const WorkingCapitalCard(),
+          const SizedBox(height: Tokens.space24),
           Wrap(
             spacing: Tokens.space8,
             children: [

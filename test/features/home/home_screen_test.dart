@@ -25,6 +25,7 @@ import 'package:sytium_mobile/features/stats/domain/dashboard_models.dart';
 import 'package:sytium_mobile/features/stats/domain/dashboard_series_models.dart';
 import 'package:sytium_mobile/features/stats/domain/stats_models.dart';
 import 'package:sytium_mobile/features/stats/domain/stats_repository.dart';
+import 'package:sytium_mobile/features/stats/domain/working_capital_models.dart';
 import 'package:sytium_mobile/shared/widgets/app_avatar.dart';
 import 'package:sytium_mobile/theme/theme.dart';
 
@@ -69,7 +70,12 @@ class _AuthRepo implements AuthRepository {
 /// Keeps `dashboardProvider` loading indefinitely — safe for HomeScreen gating tests
 /// because 'Aperçu stats' header is outside the `.when` and appears even while loading.
 class _StatsLoadingRepo implements StatsRepository {
+
   const _StatsLoadingRepo();
+
+  @override
+  Future<Result<WorkingCapital>> workingCapital() =>
+      Completer<Result<WorkingCapital>>().future;
   @override
   Future<Result<DashboardKpis>> dashboard(DashboardPeriod period) =>
       Completer<Result<DashboardKpis>>().future;
@@ -107,7 +113,12 @@ class _PointageRepo implements PointageRepository {
 /// Dépôt de stats qui répond tout de suite. Contrairement à [_StatsLoadingRepo],
 /// il laisse le tirer-pour-rafraîchir se terminer au lieu de tourner sans fin.
 class _StatsErrorRepo implements StatsRepository {
+
   const _StatsErrorRepo();
+
+  @override
+  Future<Result<WorkingCapital>> workingCapital() =>
+      Completer<Result<WorkingCapital>>().future;
   @override
   Future<Result<DashboardKpis>> dashboard(DashboardPeriod period) async =>
       const Err(NetworkFailure());

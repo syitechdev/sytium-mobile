@@ -22,4 +22,10 @@ class DashboardRemoteDataSource {
       res.data!['data'] as Map<String, dynamic>,
     );
   }
+
+  /// Signal d'équilibre financier, déjà dérivé par le serveur.
+  Future<Map<String, dynamic>> workingCapital() async {
+    final res = await _dio.get<Map<String, dynamic>>('/mobile/working-capital');
+    return res.data!['data'] as Map<String, dynamic>;
+  }
 }

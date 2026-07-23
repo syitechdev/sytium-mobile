@@ -9,6 +9,7 @@ import 'package:sytium_mobile/features/stats/domain/dashboard_models.dart';
 import 'package:sytium_mobile/features/stats/domain/dashboard_series_models.dart';
 import 'package:sytium_mobile/features/stats/domain/stats_models.dart';
 import 'package:sytium_mobile/features/stats/domain/stats_repository.dart';
+import 'package:sytium_mobile/features/stats/domain/working_capital_models.dart';
 
 class StatsRepositoryImpl implements StatsRepository {
   StatsRepositoryImpl(this._remote, this._dashboardRemote);
@@ -117,6 +118,50 @@ class StatsRepositoryImpl implements StatsRepository {
           chargesEvolution: map(dto.chargesEvolution),
         );
       });
+
+  @override
+  Future<Result<WorkingCapital>> workingCapital() => _guard(() async {
+        final j = await _dashboardRemote.workingCapital();
+        final m = j['metrics'] as Map<String, dynamic>? ?? const {};
+        final w = j['weights'] as Map<String, dynamic>? ?? const {};
+        final b = j['breakdown'] as Map<String, dynamic>? ?? const {};
+        final d = j['diagnostic'] as Map<String, dynamic>? ?? const {};
+
+        WcMetric metric(String key) {
+          final e = m[key] as Map<String, dynamic>? ?? const {};
+          return WcMetric(
+            signal: WcSignal.fromWire(e['signal'] as String?),
+            score: _num(e['score']),
+          );
+        }
+
+        return WorkingCapital(
+          fr: _num(j['fr']),
+          bfr: _num(j['bfr']),
+          tn: _num(j['tn']),
+          overall: WcSignal.fromWire(j['overall'] as String?),
+          score: (j['score'] as num?)?.toInt() ?? 0,
+          frMetric: metric('fr'),
+          bfrMetric: metric('bfr'),
+          tnMetric: metric('tn'),
+          frWeight: (w['fr'] as num?)?.toInt() ?? 0,
+          bfrWeight: (w['bfr'] as num?)?.toInt() ?? 0,
+          tnWeight: (w['tn'] as num?)?.toInt() ?? 0,
+          diagnosticTitle: (d['title'] as String?) ?? '',
+          diagnosticText: (d['text'] as String?) ?? '',
+          tresorerie: _num(b['tresorerie']),
+          creancesClients: _num(b['creances_clients']),
+          stocks: _num(b['stocks']),
+          dettesFournisseurs: _num(b['dettes_fournisseurs']),
+        );
+      });
+
+  /// Un agrégat SQL peut remonter en chaîne décimale.
+  static num _num(Object? v) => switch (v) {
+        final num n => n,
+        final String s => num.tryParse(s) ?? 0,
+        _ => 0,
+      };
 
   Future<Result<T>> _guard<T>(Future<T> Function() run) async {
     try {

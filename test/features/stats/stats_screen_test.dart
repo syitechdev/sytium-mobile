@@ -19,6 +19,7 @@ import 'package:sytium_mobile/features/stats/domain/dashboard_models.dart';
 import 'package:sytium_mobile/features/stats/domain/dashboard_series_models.dart';
 import 'package:sytium_mobile/features/stats/domain/stats_models.dart';
 import 'package:sytium_mobile/features/stats/domain/stats_repository.dart';
+import 'package:sytium_mobile/features/stats/domain/working_capital_models.dart';
 import 'package:sytium_mobile/features/stats/presentation/stats_screen.dart';
 import 'package:sytium_mobile/features/stats/presentation/widgets/kpi_card.dart';
 import 'package:sytium_mobile/shared/widgets/error_state.dart';
@@ -75,7 +76,12 @@ const _kEmptySeries = DashboardSeries(
 );
 
 class _OkRepo implements StatsRepository {
+
   const _OkRepo(this.data);
+
+  @override
+  Future<Result<WorkingCapital>> workingCapital() =>
+      Completer<Result<WorkingCapital>>().future;
   final MonthlyAttendance data;
 
   @override
@@ -90,7 +96,12 @@ class _OkRepo implements StatsRepository {
 }
 
 class _ErrRepo implements StatsRepository {
+
   const _ErrRepo();
+
+  @override
+  Future<Result<WorkingCapital>> workingCapital() =>
+      Completer<Result<WorkingCapital>>().future;
   @override
   Future<Result<MonthlyAttendance>> attendanceSummary(String month) async =>
       throw Exception('réseau indisponible');
@@ -103,7 +114,12 @@ class _ErrRepo implements StatsRepository {
 }
 
 class _LoadingRepo implements StatsRepository {
+
   const _LoadingRepo();
+
+  @override
+  Future<Result<WorkingCapital>> workingCapital() =>
+      Completer<Result<WorkingCapital>>().future;
   @override
   Future<Result<MonthlyAttendance>> attendanceSummary(String month) =>
       Completer<Result<MonthlyAttendance>>().future;

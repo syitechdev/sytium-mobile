@@ -11,9 +11,14 @@ import 'package:sytium_mobile/features/stats/domain/dashboard_models.dart';
 import 'package:sytium_mobile/features/stats/domain/dashboard_series_models.dart';
 import 'package:sytium_mobile/features/stats/domain/stats_models.dart';
 import 'package:sytium_mobile/features/stats/domain/stats_repository.dart';
+import 'package:sytium_mobile/features/stats/domain/working_capital_models.dart';
 import 'package:sytium_mobile/theme/theme.dart';
 
 mixin _Stub implements StatsRepository {
+
+  @override
+  Future<Result<WorkingCapital>> workingCapital() =>
+      Completer<Result<WorkingCapital>>().future;
   @override
   Future<Result<DashboardSeries>> dashboardSeries() =>
       Completer<Result<DashboardSeries>>().future;
@@ -23,7 +28,12 @@ mixin _Stub implements StatsRepository {
 }
 
 class _OkRepo with _Stub implements StatsRepository {
+
   const _OkRepo(this.kpis);
+
+  @override
+  Future<Result<WorkingCapital>> workingCapital() =>
+      Completer<Result<WorkingCapital>>().future;
   final DashboardKpis kpis;
   @override
   Future<Result<DashboardKpis>> dashboard(DashboardPeriod period) async =>

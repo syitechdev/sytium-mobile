@@ -328,5 +328,25 @@ final dashboardSeriesProvider =
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef DashboardSeriesRef = AutoDisposeFutureProviderRef<DashboardSeries>;
+String _$workingCapitalHash() => r'cbc9b6700fb29793bbf2ad07974c14bf51fe0610';
+
+/// Équilibre financier (FR / BFR / TN) et son signal santé, dérivés serveur.
+///
+/// Copied from [workingCapital].
+@ProviderFor(workingCapital)
+final workingCapitalProvider =
+    AutoDisposeFutureProvider<WorkingCapital>.internal(
+      workingCapital,
+      name: r'workingCapitalProvider',
+      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+          ? null
+          : _$workingCapitalHash,
+      dependencies: null,
+      allTransitiveDependencies: null,
+    );
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+typedef WorkingCapitalRef = AutoDisposeFutureProviderRef<WorkingCapital>;
 // ignore_for_file: type=lint
 // ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package

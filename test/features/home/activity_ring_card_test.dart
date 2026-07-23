@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -10,13 +11,19 @@ import 'package:sytium_mobile/features/stats/domain/dashboard_models.dart';
 import 'package:sytium_mobile/features/stats/domain/dashboard_series_models.dart';
 import 'package:sytium_mobile/features/stats/domain/stats_models.dart';
 import 'package:sytium_mobile/features/stats/domain/stats_repository.dart';
+import 'package:sytium_mobile/features/stats/domain/working_capital_models.dart';
 import 'package:sytium_mobile/theme/theme.dart';
 
 const _kEmployee = AttendanceEmployee(id: 'e1', nom: 'Koffi', prenoms: 'Ama');
 
 /// Ne sert que le récapitulatif mensuel : le reste de l'écran n'est pas monté.
 class _Repo implements StatsRepository {
+
   const _Repo(this.summary);
+
+  @override
+  Future<Result<WorkingCapital>> workingCapital() =>
+      Completer<Result<WorkingCapital>>().future;
 
   final MonthlyAttendance summary;
 
