@@ -128,6 +128,14 @@ class ReverbWorkspaceRealtime implements WorkspaceRealtime {
   /// every known channel on connect/reconnect.
   StreamSubscription<void>? _connectionSub;
 
+  /// Notifie les consommateurs à chaque (re)connexion établie. Broadcast, vit le
+  /// temps du singleton (le provider est keepAlive) : réutilisé entre
+  /// déconnexion et reconnexion, donc jamais refermé ici.
+  final StreamController<void> _reconnected = StreamController<void>.broadcast();
+
+  @override
+  Stream<void> get onReconnected => _reconnected.stream;
+
   bool _connecting = false;
 
   @override
@@ -160,6 +168,10 @@ class ReverbWorkspaceRealtime implements WorkspaceRealtime {
         for (final channel in _channels.values) {
           channel.subscribeIfNotUnsubscribed();
         }
+        // Prévient les consommateurs (rattrapage des appels entrants manqués
+        // pendant la coupure). Fire aussi au tout premier connect : sans effet
+        // (rien à rattraper) ou dédupliqué par showIncoming.
+        if (!_reconnected.isClosed) _reconnected.add(null);
       });
       _client = client;
       await client.connect();

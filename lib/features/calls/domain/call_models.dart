@@ -85,6 +85,25 @@ class CallSignal {
   final Map<String, dynamic> payload;
 }
 
+/// Un appel entrant encore en sonnerie, rattrape via `GET /workspace/calls/pending`.
+/// `WorkspaceIncomingCallCreated` (Reverb) et le push VoIP sont diffuses une
+/// seule fois ; s'ils sont perdus (app qui demarre, revient au premier plan,
+/// reconnexion), rien ne fait sonner. Cet endpoint liste ce qui devrait sonner.
+@immutable
+class PendingCall {
+  const PendingCall({
+    required this.callId,
+    required this.channelId,
+    required this.kind,
+    this.callerName,
+  });
+
+  final String callId;
+  final String channelId;
+  final CallKind kind;
+  final String? callerName;
+}
+
 /// An ICE server for the RTCPeerConnection config.
 @immutable
 class IceServer {

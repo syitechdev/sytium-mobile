@@ -17,6 +17,7 @@ import 'package:sytium_mobile/core/notifications/push_messaging_service.dart';
 import 'package:sytium_mobile/core/notifications/push_payload.dart';
 import 'package:sytium_mobile/features/auth/application/auth_providers.dart';
 import 'package:sytium_mobile/features/calls/application/call_controller.dart';
+import 'package:sytium_mobile/features/calls/application/calls_providers.dart';
 import 'package:sytium_mobile/features/calls/domain/call_models.dart';
 import 'package:sytium_mobile/features/notifications/application/notifications_providers.dart';
 import 'package:sytium_mobile/features/notifications/presentation/notifications_screen.dart';
@@ -88,6 +89,34 @@ class PushNotificationsCoordinator {
     // Un accept survenu app terminée laisse un appel CallKit actif : on le
     // récupère et on rejoint le mesh sur ce démarrage à froid.
     await _recoverColdStartAccept();
+
+    // Un appel peut sonner sans que ni le push VoIP ni l'événement Reverb ne
+    // soient arrivés (démarrage) : on interroge le serveur pour rattraper.
+    await recoverPendingIncomingCalls();
+  }
+
+  /// Rattrape les appels entrants encore en sonnerie que ni le push VoIP ni
+  /// l'événement Reverb temps réel n'ont fait sonner. À appeler au cold start,
+  /// au retour au premier plan et à la reconnexion Reverb. Idempotent :
+  /// `showIncoming` déduplique par id d'appel (aucun double affichage).
+  Future<void> recoverPendingIncomingCalls() async {
+    if (!_started) return;
+    // Déjà dans un appel actif : ne pas re-sonner.
+    if (_ref.read(callControllerProvider).isActive) return;
+
+    final res = await _ref.read(callsRepositoryProvider).pendingCalls();
+    final calls = res.valueOrNull ?? const <PendingCall>[];
+    for (final call in calls) {
+      await CallKitService.showIncoming(
+        PushPayload(
+          kind: PushKind.incomingCall,
+          callId: call.callId,
+          channelId: call.channelId,
+          callKind: call.kind.wire,
+          callerName: call.callerName,
+        ),
+      );
+    }
   }
 
   /// À appeler à la déconnexion : désenregistre l'appareil, ferme toute UI

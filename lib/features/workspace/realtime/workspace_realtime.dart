@@ -15,6 +15,12 @@ abstract class WorkspaceRealtime {
   /// Lazily connects (idempotent). No-op when Reverb is not configured.
   Future<void> ensureConnected();
 
+  /// Émet à chaque (re)connexion établie du socket. Sert à rejouer ce que la
+  /// diffusion unique de Reverb a pu manquer pendant la coupure (ex. rattrapage
+  /// des appels entrants en sonnerie). Flux broadcast, jamais fermé côté
+  /// consommateur ; s'abonner puis annuler proprement.
+  Stream<void> get onReconnected;
+
   /// Tears the connection down (called on logout).
   Future<void> disconnect();
 

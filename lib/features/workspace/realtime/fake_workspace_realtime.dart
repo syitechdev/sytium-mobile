@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:sytium_mobile/features/workspace/realtime/workspace_realtime.dart';
 
 /// In-memory [WorkspaceRealtime] for tests (and the provider default until the
@@ -14,6 +16,14 @@ class FakeWorkspaceRealtime implements WorkspaceRealtime {
   final Map<String, void Function(RealtimeEvent)> _callbacks = {};
 
   bool connected = false;
+
+  final StreamController<void> _reconnected = StreamController<void>.broadcast();
+
+  @override
+  Stream<void> get onReconnected => _reconnected.stream;
+
+  /// Test hook : simule une (re)connexion du socket.
+  void emitReconnected() => _reconnected.add(null);
 
   @override
   Future<void> ensureConnected() async {

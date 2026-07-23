@@ -10,6 +10,10 @@ abstract interface class CallsRepository {
   /// [after] exclus (`id` du dernier signal traite ; omis = tout le pending).
   Future<Result<List<CallSignal>>> signalsSince(String callId, {String? after});
 
+  /// Appels entrants encore en sonnerie pour l'utilisateur (rattrapage d'une
+  /// notification d'appel perdue).
+  Future<Result<List<PendingCall>>> pendingCalls();
+
   Future<Result<void>> accept(String callId);
   Future<Result<void>> decline(String callId);
   Future<Result<void>> miss(String callId);

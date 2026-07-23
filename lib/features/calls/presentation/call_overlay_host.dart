@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:sytium_mobile/app/lifecycle/app_foreground.dart';
+import 'package:sytium_mobile/app/notifications/push_notifications_coordinator.dart';
 import 'package:sytium_mobile/core/notifications/callkit_service.dart';
 import 'package:sytium_mobile/core/notifications/push_payload.dart';
 import 'package:sytium_mobile/features/calls/application/call_controller.dart';
@@ -31,6 +33,10 @@ class _CallOverlayHostState extends ConsumerState<CallOverlayHost> {
   WorkspaceRealtime? _realtime;
   String? _channel;
 
+  /// Abonnement au signal de (re)connexion du socket → rattrapage des appels
+  /// entrants manqués pendant la coupure.
+  StreamSubscription<void>? _reconnectSub;
+
   /// Minuteur de fermeture de l'écran de fin d'appel.
   Timer? _dismiss;
 
@@ -53,6 +59,15 @@ class _CallOverlayHostState extends ConsumerState<CallOverlayHost> {
     _channel = desired;
     if (desired == null) return;
     _realtime = ref.read(workspaceRealtimeProvider);
+    // Rattrapage des appels entrants manqués à chaque (re)connexion du socket
+    // (le singleton realtime est stable : un seul abonnement suffit).
+    _reconnectSub ??= _realtime!.onReconnected.listen((_) {
+      unawaited(
+        ref
+            .read(pushNotificationsCoordinatorProvider)
+            .recoverPendingIncomingCalls(),
+      );
+    });
     // Fire-and-forget connect; subscribe queues until the socket is up.
     unawaited(_realtime!.ensureConnected());
     _realtime!.subscribe(
@@ -103,14 +118,28 @@ class _CallOverlayHostState extends ConsumerState<CallOverlayHost> {
   @override
   void dispose() {
     _dismiss?.cancel();
+    unawaited(_reconnectSub?.cancel());
     if (_channel != null) _realtime?.unsubscribe(_channel!);
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    // Keep the subscription in sync with auth/user changes.
-    ref.listen(currentUserIdProvider, (_, next) => _syncSubscription(next));
+    ref
+      // Keep the subscription in sync with auth/user changes.
+      ..listen(currentUserIdProvider, (_, next) => _syncSubscription(next))
+      // Retour au premier plan (l'app était en arrière-plan, le socket a pu
+      // tomber) : rattraper un appel entrant que ni le push ni le temps réel
+      // n'ont fait sonner. Le cold start est couvert par le coordinateur.
+      ..listen(appForegroundProvider, (previous, next) {
+        if (next && previous != true) {
+          unawaited(
+            ref
+                .read(pushNotificationsCoordinatorProvider)
+                .recoverPendingIncomingCalls(),
+          );
+        }
+      });
 
     final phase = ref.watch(callControllerProvider.select((c) => c.phase));
 

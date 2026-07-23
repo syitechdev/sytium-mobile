@@ -50,6 +50,18 @@ class CallsRemoteDataSource {
         .toList();
   }
 
+  /// Appels entrants encore en sonnerie pour l'utilisateur courant (rattrapage
+  /// d'une notification d'appel perdue). Renvoie la liste brute.
+  Future<List<Map<String, dynamic>>> pendingCalls() async {
+    final res = await _dio.get<Map<String, dynamic>>(
+      '/workspace/calls/pending',
+    );
+    return (res.data!['data'] as List)
+        .whereType<Map<dynamic, dynamic>>()
+        .map((e) => e.map((k, v) => MapEntry(k.toString(), v)))
+        .toList();
+  }
+
   Future<void> accept(String callId) =>
       _dio.post<Map<String, dynamic>>('/workspace/calls/$callId/accept');
 

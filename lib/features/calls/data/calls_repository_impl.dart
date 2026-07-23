@@ -75,6 +75,23 @@ class CallsRepositoryImpl implements CallsRepository {
   });
 
   @override
+  Future<Result<List<PendingCall>>> pendingCalls() => _guard(() async {
+    final rows = await _remote.pendingCalls();
+    return rows
+        .where((r) => r['call_id'] != null && r['channel_id'] != null)
+        .map((r) {
+          final initiator = r['initiator'];
+          return PendingCall(
+            callId: r['call_id'].toString(),
+            channelId: r['channel_id'].toString(),
+            kind: CallKind.fromWire(r['kind']?.toString()),
+            callerName: initiator is Map ? initiator['name']?.toString() : null,
+          );
+        })
+        .toList();
+  });
+
+  @override
   Future<Result<void>> accept(String callId) =>
       _guard(() => _remote.accept(callId));
 
