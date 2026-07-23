@@ -15,7 +15,10 @@ ApprovalsRepository approvalsRepository(Ref ref) => ApprovalsRepositoryImpl(
 
 /// Items the connected user can validate now (+ per-type counts).
 /// Refresh via `ref.invalidate(pendingApprovalsProvider)`.
-@riverpod
+///
+/// keepAlive : la donnée survit à un aller-retour de défilement au lieu d'être
+/// détruite puis rechargée.
+@Riverpod(keepAlive: true)
 Future<PendingApprovals> pendingApprovals(Ref ref) async {
   final result = await ref.watch(approvalsRepositoryProvider).pending();
   return result.fold((p) => p, (f) => throw Exception(f.message ?? 'Erreur'));

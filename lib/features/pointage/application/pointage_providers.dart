@@ -31,7 +31,9 @@ Stream<bool> vpnActive(Ref ref) async* {
 }
 
 /// Today's status (next allowed motif). Refreshable after a scan.
-@riverpod
+/// keepAlive : la donnée survit à un aller-retour de défilement au lieu d'être
+/// détruite puis rechargée. Rafraîchie explicitement (scan, tirer-pour-rafraîchir).
+@Riverpod(keepAlive: true)
 Future<PointageStatus> pointageStatus(Ref ref) async {
   final result = await ref.watch(pointageRepositoryProvider).status();
   return result.fold((s) => s, (f) => throw Exception(f.message ?? 'Erreur'));

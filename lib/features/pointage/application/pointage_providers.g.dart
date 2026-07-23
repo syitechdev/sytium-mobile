@@ -67,26 +67,27 @@ final vpnActiveProvider = AutoDisposeStreamProvider<bool>.internal(
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef VpnActiveRef = AutoDisposeStreamProviderRef<bool>;
-String _$pointageStatusHash() => r'ddbae47c3ab50cba8b02f0aa81909977fb691206';
+String _$pointageStatusHash() => r'92cf1ceb742ec36edeaff3a220f3949b6c52b7c5';
 
 /// Today's status (next allowed motif). Refreshable after a scan.
+/// keepAlive : la donnée survit à un aller-retour de défilement au lieu d'être
+/// détruite puis rechargée. Rafraîchie explicitement (scan, tirer-pour-rafraîchir).
 ///
 /// Copied from [pointageStatus].
 @ProviderFor(pointageStatus)
-final pointageStatusProvider =
-    AutoDisposeFutureProvider<PointageStatus>.internal(
-      pointageStatus,
-      name: r'pointageStatusProvider',
-      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
-          ? null
-          : _$pointageStatusHash,
-      dependencies: null,
-      allTransitiveDependencies: null,
-    );
+final pointageStatusProvider = FutureProvider<PointageStatus>.internal(
+  pointageStatus,
+  name: r'pointageStatusProvider',
+  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+      ? null
+      : _$pointageStatusHash,
+  dependencies: null,
+  allTransitiveDependencies: null,
+);
 
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
-typedef PointageStatusRef = AutoDisposeFutureProviderRef<PointageStatus>;
+typedef PointageStatusRef = FutureProviderRef<PointageStatus>;
 String _$pointageZonesHash() => r'7079b639d33e9e166caf432052abb74fed26e6a0';
 
 /// Active geofence zones for the org (for the out-of-zone pre-warning).

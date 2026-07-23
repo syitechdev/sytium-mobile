@@ -22,15 +22,19 @@ StatsRepository statsRepository(Ref ref) {
 }
 
 /// Monthly attendance synthesis keyed by `YYYY-MM`.
-@riverpod
+///
+/// keepAlive : la donnée survit à un aller-retour de défilement (carte démontée
+/// hors écran) au lieu d'être détruite puis rechargée — plus de squelette au
+/// retour. Rafraîchie explicitement (tirer-pour-rafraîchir, retour d'onglet).
+@Riverpod(keepAlive: true)
 Future<MonthlyAttendance> monthlyAttendance(Ref ref, String month) async {
   final result =
       await ref.watch(statsRepositoryProvider).attendanceSummary(month);
   return result.fold((m) => m, (f) => throw Exception(f.message ?? 'Erreur'));
 }
 
-/// Org-wide dashboard KPIs keyed by [period].
-@riverpod
+/// Org-wide dashboard KPIs keyed by [period]. keepAlive : cf. [monthlyAttendance].
+@Riverpod(keepAlive: true)
 Future<DashboardKpis> dashboard(Ref ref, DashboardPeriod period) async {
   final result = await ref.watch(statsRepositoryProvider).dashboard(period);
   return result.fold((k) => k, (f) => throw Exception(f.message ?? 'Erreur'));
@@ -38,15 +42,16 @@ Future<DashboardKpis> dashboard(Ref ref, DashboardPeriod period) async {
 
 /// Org-wide chart series (12-month trends + breakdowns, current year). Loaded
 /// independently from [dashboard] so the KPI grid renders without waiting on
-/// the heavier aggregates.
-@riverpod
+/// the heavier aggregates. keepAlive : cf. [monthlyAttendance].
+@Riverpod(keepAlive: true)
 Future<DashboardSeries> dashboardSeries(Ref ref) async {
   final result = await ref.watch(statsRepositoryProvider).dashboardSeries();
   return result.fold((s) => s, (f) => throw Exception(f.message ?? 'Erreur'));
 }
 
 /// Équilibre financier (FR / BFR / TN) et son signal santé, dérivés serveur.
-@riverpod
+/// keepAlive : cf. [monthlyAttendance].
+@Riverpod(keepAlive: true)
 Future<WorkingCapital> workingCapital(Ref ref) async {
   final result = await ref.watch(statsRepositoryProvider).workingCapital();
   return result.fold((w) => w, (f) => throw Exception(f.message ?? 'Erreur'));

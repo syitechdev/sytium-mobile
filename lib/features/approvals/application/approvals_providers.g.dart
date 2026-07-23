@@ -25,26 +25,28 @@ final approvalsRepositoryProvider =
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef ApprovalsRepositoryRef = AutoDisposeProviderRef<ApprovalsRepository>;
-String _$pendingApprovalsHash() => r'381e01972c1e852546d0f48d744be63833a89cb3';
+String _$pendingApprovalsHash() => r'7349da68893f154987a7c38a719d678af2eee847';
 
 /// Items the connected user can validate now (+ per-type counts).
 /// Refresh via `ref.invalidate(pendingApprovalsProvider)`.
 ///
+/// keepAlive : la donnée survit à un aller-retour de défilement au lieu d'être
+/// détruite puis rechargée.
+///
 /// Copied from [pendingApprovals].
 @ProviderFor(pendingApprovals)
-final pendingApprovalsProvider =
-    AutoDisposeFutureProvider<PendingApprovals>.internal(
-      pendingApprovals,
-      name: r'pendingApprovalsProvider',
-      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
-          ? null
-          : _$pendingApprovalsHash,
-      dependencies: null,
-      allTransitiveDependencies: null,
-    );
+final pendingApprovalsProvider = FutureProvider<PendingApprovals>.internal(
+  pendingApprovals,
+  name: r'pendingApprovalsProvider',
+  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+      ? null
+      : _$pendingApprovalsHash,
+  dependencies: null,
+  allTransitiveDependencies: null,
+);
 
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
-typedef PendingApprovalsRef = AutoDisposeFutureProviderRef<PendingApprovals>;
+typedef PendingApprovalsRef = FutureProviderRef<PendingApprovals>;
 // ignore_for_file: type=lint
 // ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package

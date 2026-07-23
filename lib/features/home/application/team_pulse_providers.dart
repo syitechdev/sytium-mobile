@@ -18,7 +18,10 @@ int _i(Object? v) => switch (v) {
     };
 
 /// Org team pulse (attendance + task completion) for the Stats tab.
-@riverpod
+///
+/// keepAlive : la donnée survit à un aller-retour de défilement au lieu d'être
+/// détruite puis rechargée. Rafraîchie explicitement (tirer-pour-rafraîchir).
+@Riverpod(keepAlive: true)
 Future<TeamPulse> teamPulse(Ref ref) async {
   final dio = ref.watch(authDioProvider);
   final res = await dio.get<Map<String, dynamic>>('/mobile/team-pulse');

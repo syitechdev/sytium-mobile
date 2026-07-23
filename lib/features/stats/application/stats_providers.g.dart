@@ -23,7 +23,7 @@ final statsRepositoryProvider = AutoDisposeProvider<StatsRepository>.internal(
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef StatsRepositoryRef = AutoDisposeProviderRef<StatsRepository>;
-String _$monthlyAttendanceHash() => r'4ef45c6285015138140da9aff9df2b352f9d20aa';
+String _$monthlyAttendanceHash() => r'bc201772bce93cb6e4a6d83adccc12f657b90879';
 
 /// Copied from Dart SDK
 class _SystemHash {
@@ -48,20 +48,36 @@ class _SystemHash {
 
 /// Monthly attendance synthesis keyed by `YYYY-MM`.
 ///
+/// keepAlive : la donnée survit à un aller-retour de défilement (carte démontée
+/// hors écran) au lieu d'être détruite puis rechargée — plus de squelette au
+/// retour. Rafraîchie explicitement (tirer-pour-rafraîchir, retour d'onglet).
+///
 /// Copied from [monthlyAttendance].
 @ProviderFor(monthlyAttendance)
 const monthlyAttendanceProvider = MonthlyAttendanceFamily();
 
 /// Monthly attendance synthesis keyed by `YYYY-MM`.
 ///
+/// keepAlive : la donnée survit à un aller-retour de défilement (carte démontée
+/// hors écran) au lieu d'être détruite puis rechargée — plus de squelette au
+/// retour. Rafraîchie explicitement (tirer-pour-rafraîchir, retour d'onglet).
+///
 /// Copied from [monthlyAttendance].
 class MonthlyAttendanceFamily extends Family<AsyncValue<MonthlyAttendance>> {
   /// Monthly attendance synthesis keyed by `YYYY-MM`.
+  ///
+  /// keepAlive : la donnée survit à un aller-retour de défilement (carte démontée
+  /// hors écran) au lieu d'être détruite puis rechargée — plus de squelette au
+  /// retour. Rafraîchie explicitement (tirer-pour-rafraîchir, retour d'onglet).
   ///
   /// Copied from [monthlyAttendance].
   const MonthlyAttendanceFamily();
 
   /// Monthly attendance synthesis keyed by `YYYY-MM`.
+  ///
+  /// keepAlive : la donnée survit à un aller-retour de défilement (carte démontée
+  /// hors écran) au lieu d'être détruite puis rechargée — plus de squelette au
+  /// retour. Rafraîchie explicitement (tirer-pour-rafraîchir, retour d'onglet).
   ///
   /// Copied from [monthlyAttendance].
   MonthlyAttendanceProvider call(String month) {
@@ -92,10 +108,17 @@ class MonthlyAttendanceFamily extends Family<AsyncValue<MonthlyAttendance>> {
 
 /// Monthly attendance synthesis keyed by `YYYY-MM`.
 ///
+/// keepAlive : la donnée survit à un aller-retour de défilement (carte démontée
+/// hors écran) au lieu d'être détruite puis rechargée — plus de squelette au
+/// retour. Rafraîchie explicitement (tirer-pour-rafraîchir, retour d'onglet).
+///
 /// Copied from [monthlyAttendance].
-class MonthlyAttendanceProvider
-    extends AutoDisposeFutureProvider<MonthlyAttendance> {
+class MonthlyAttendanceProvider extends FutureProvider<MonthlyAttendance> {
   /// Monthly attendance synthesis keyed by `YYYY-MM`.
+  ///
+  /// keepAlive : la donnée survit à un aller-retour de défilement (carte démontée
+  /// hors écran) au lieu d'être détruite puis rechargée — plus de squelette au
+  /// retour. Rafraîchie explicitement (tirer-pour-rafraîchir, retour d'onglet).
   ///
   /// Copied from [monthlyAttendance].
   MonthlyAttendanceProvider(String month)
@@ -143,7 +166,7 @@ class MonthlyAttendanceProvider
   }
 
   @override
-  AutoDisposeFutureProviderElement<MonthlyAttendance> createElement() {
+  FutureProviderElement<MonthlyAttendance> createElement() {
     return _MonthlyAttendanceProviderElement(this);
   }
 
@@ -163,13 +186,13 @@ class MonthlyAttendanceProvider
 
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
-mixin MonthlyAttendanceRef on AutoDisposeFutureProviderRef<MonthlyAttendance> {
+mixin MonthlyAttendanceRef on FutureProviderRef<MonthlyAttendance> {
   /// The parameter `month` of this provider.
   String get month;
 }
 
 class _MonthlyAttendanceProviderElement
-    extends AutoDisposeFutureProviderElement<MonthlyAttendance>
+    extends FutureProviderElement<MonthlyAttendance>
     with MonthlyAttendanceRef {
   _MonthlyAttendanceProviderElement(super.provider);
 
@@ -177,24 +200,24 @@ class _MonthlyAttendanceProviderElement
   String get month => (origin as MonthlyAttendanceProvider).month;
 }
 
-String _$dashboardHash() => r'08dc87b5a35b9f20f0a887ea0a8b8335880d13bf';
+String _$dashboardHash() => r'eb6120c1590933583f298fc0955a71ce9e36dcee';
 
-/// Org-wide dashboard KPIs keyed by [period].
+/// Org-wide dashboard KPIs keyed by [period]. keepAlive : cf. [monthlyAttendance].
 ///
 /// Copied from [dashboard].
 @ProviderFor(dashboard)
 const dashboardProvider = DashboardFamily();
 
-/// Org-wide dashboard KPIs keyed by [period].
+/// Org-wide dashboard KPIs keyed by [period]. keepAlive : cf. [monthlyAttendance].
 ///
 /// Copied from [dashboard].
 class DashboardFamily extends Family<AsyncValue<DashboardKpis>> {
-  /// Org-wide dashboard KPIs keyed by [period].
+  /// Org-wide dashboard KPIs keyed by [period]. keepAlive : cf. [monthlyAttendance].
   ///
   /// Copied from [dashboard].
   const DashboardFamily();
 
-  /// Org-wide dashboard KPIs keyed by [period].
+  /// Org-wide dashboard KPIs keyed by [period]. keepAlive : cf. [monthlyAttendance].
   ///
   /// Copied from [dashboard].
   DashboardProvider call(DashboardPeriod period) {
@@ -221,11 +244,11 @@ class DashboardFamily extends Family<AsyncValue<DashboardKpis>> {
   String? get name => r'dashboardProvider';
 }
 
-/// Org-wide dashboard KPIs keyed by [period].
+/// Org-wide dashboard KPIs keyed by [period]. keepAlive : cf. [monthlyAttendance].
 ///
 /// Copied from [dashboard].
-class DashboardProvider extends AutoDisposeFutureProvider<DashboardKpis> {
-  /// Org-wide dashboard KPIs keyed by [period].
+class DashboardProvider extends FutureProvider<DashboardKpis> {
+  /// Org-wide dashboard KPIs keyed by [period]. keepAlive : cf. [monthlyAttendance].
   ///
   /// Copied from [dashboard].
   DashboardProvider(DashboardPeriod period)
@@ -272,7 +295,7 @@ class DashboardProvider extends AutoDisposeFutureProvider<DashboardKpis> {
   }
 
   @override
-  AutoDisposeFutureProviderElement<DashboardKpis> createElement() {
+  FutureProviderElement<DashboardKpis> createElement() {
     return _DashboardProviderElement(this);
   }
 
@@ -292,13 +315,12 @@ class DashboardProvider extends AutoDisposeFutureProvider<DashboardKpis> {
 
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
-mixin DashboardRef on AutoDisposeFutureProviderRef<DashboardKpis> {
+mixin DashboardRef on FutureProviderRef<DashboardKpis> {
   /// The parameter `period` of this provider.
   DashboardPeriod get period;
 }
 
-class _DashboardProviderElement
-    extends AutoDisposeFutureProviderElement<DashboardKpis>
+class _DashboardProviderElement extends FutureProviderElement<DashboardKpis>
     with DashboardRef {
   _DashboardProviderElement(super.provider);
 
@@ -306,47 +328,46 @@ class _DashboardProviderElement
   DashboardPeriod get period => (origin as DashboardProvider).period;
 }
 
-String _$dashboardSeriesHash() => r'eae3df3fdf062adbc74b26ece6cd544866046163';
+String _$dashboardSeriesHash() => r'04cabcf6ad283650df77b635aa09a8ad7057feea';
 
 /// Org-wide chart series (12-month trends + breakdowns, current year). Loaded
 /// independently from [dashboard] so the KPI grid renders without waiting on
-/// the heavier aggregates.
+/// the heavier aggregates. keepAlive : cf. [monthlyAttendance].
 ///
 /// Copied from [dashboardSeries].
 @ProviderFor(dashboardSeries)
-final dashboardSeriesProvider =
-    AutoDisposeFutureProvider<DashboardSeries>.internal(
-      dashboardSeries,
-      name: r'dashboardSeriesProvider',
-      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
-          ? null
-          : _$dashboardSeriesHash,
-      dependencies: null,
-      allTransitiveDependencies: null,
-    );
+final dashboardSeriesProvider = FutureProvider<DashboardSeries>.internal(
+  dashboardSeries,
+  name: r'dashboardSeriesProvider',
+  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+      ? null
+      : _$dashboardSeriesHash,
+  dependencies: null,
+  allTransitiveDependencies: null,
+);
 
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
-typedef DashboardSeriesRef = AutoDisposeFutureProviderRef<DashboardSeries>;
-String _$workingCapitalHash() => r'cbc9b6700fb29793bbf2ad07974c14bf51fe0610';
+typedef DashboardSeriesRef = FutureProviderRef<DashboardSeries>;
+String _$workingCapitalHash() => r'd55e70562b4f4a85231565f064b6f96578854e6d';
 
 /// Équilibre financier (FR / BFR / TN) et son signal santé, dérivés serveur.
+/// keepAlive : cf. [monthlyAttendance].
 ///
 /// Copied from [workingCapital].
 @ProviderFor(workingCapital)
-final workingCapitalProvider =
-    AutoDisposeFutureProvider<WorkingCapital>.internal(
-      workingCapital,
-      name: r'workingCapitalProvider',
-      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
-          ? null
-          : _$workingCapitalHash,
-      dependencies: null,
-      allTransitiveDependencies: null,
-    );
+final workingCapitalProvider = FutureProvider<WorkingCapital>.internal(
+  workingCapital,
+  name: r'workingCapitalProvider',
+  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+      ? null
+      : _$workingCapitalHash,
+  dependencies: null,
+  allTransitiveDependencies: null,
+);
 
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
-typedef WorkingCapitalRef = AutoDisposeFutureProviderRef<WorkingCapital>;
+typedef WorkingCapitalRef = FutureProviderRef<WorkingCapital>;
 // ignore_for_file: type=lint
 // ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package
