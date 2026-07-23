@@ -81,6 +81,9 @@ class _PeerLink {
   bool hasVideo = false;
   bool micOn = true;
   final List<RTCIceCandidate> pending = [];
+  // Mesure le temps « creation du leg -> connecte », pour objectiver le
+  // time-to-connect et l'effet de la pre-collecte ICE.
+  final Stopwatch dialWatch = Stopwatch()..start();
 
   RemoteParticipant toView() => RemoteParticipant(
     userId: userId,
@@ -159,6 +162,36 @@ class CallController extends _$CallController {
     final i = candidate.indexOf(' typ ');
     if (i < 0) return '?';
     return candidate.substring(i + 5).split(' ').first;
+  }
+
+  /// Journalise le type de la paire de candidats retenue (host/srflx/relay),
+  /// pour verifier quel chemin ICE porte reellement le media. Purement
+  /// diagnostic : n'echoue jamais.
+  Future<void> _logSelectedPair(RTCPeerConnection pc, String userId) async {
+    try {
+      final reports = await pc.getStats();
+      final locals = <String, String>{};
+      final remotes = <String, String>{};
+      StatsReport? pair;
+      for (final r in reports) {
+        final type = r.values['candidateType'] as String?;
+        if (r.type == 'local-candidate' && type != null) locals[r.id] = type;
+        if (r.type == 'remote-candidate' && type != null) remotes[r.id] = type;
+        if (r.type == 'candidate-pair' &&
+            (r.values['nominated'] == true || r.values['selected'] == true)) {
+          pair = r;
+        }
+      }
+      final localType = pair == null
+          ? '?'
+          : locals[pair.values['localCandidateId']] ?? '?';
+      final remoteType = pair == null
+          ? '?'
+          : remotes[pair.values['remoteCandidateId']] ?? '?';
+      _log('paire ICE $userId: $localType/$remoteType');
+    } catch (_) {
+      // getStats indisponible : le diagnostic ne doit jamais bloquer l'appel.
+    }
   }
 
   @override
@@ -434,6 +467,11 @@ class CallController extends _$CallController {
     final pc = await createPeerConnection({
       'iceServers': _iceServers,
       'sdpSemantics': 'unified-plan',
+      // Pre-collecte des candidats : le gathering (dont l'allocation TURN, lente)
+      // demarre des la creation de la PeerConnection, avant meme l'offre. Le
+      // candidat relay est ainsi pret plus tot, ce qui reduit le delai
+      // « decroche -> media ».
+      'iceCandidatePoolSize': 3,
     });
     link.pc = pc;
 
@@ -475,6 +513,11 @@ class CallController extends _$CallController {
         _log('connState $userId: $s');
         if (s == RTCPeerConnectionState.RTCPeerConnectionStateConnected) {
           link.connected = true;
+          if (link.dialWatch.isRunning) {
+            link.dialWatch.stop();
+            _log('connecte a $userId en ${link.dialWatch.elapsedMilliseconds} ms');
+            unawaited(_logSelectedPair(pc, userId));
+          }
           _connectWatchdog?.cancel();
           if (state.phase != CallPhase.connected && state.isActive) {
             state = state.copyWith(
