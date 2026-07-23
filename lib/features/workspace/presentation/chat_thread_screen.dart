@@ -1130,6 +1130,16 @@ class _MessageBubble extends StatelessWidget {
       );
     }
 
+    // Le web poste les appels comme un message `:::CALL:::{json}` (message
+    // normal, non systeme) et le rend en carte. Sans ce parsing, le JSON brut
+    // s'affichait tel quel dans le fil.
+    final callMarker = message.isDeleted
+        ? null
+        : WorkspaceCallMarker.tryParse(message.content);
+    if (callMarker != null) {
+      return _CallMarkerPill(marker: callMarker);
+    }
+
     final failed = message.deliveryState == DeliveryState.failed;
     final bg = isMine ? colors.brand : colors.card;
     final fg = isMine ? colors.onBrand : colors.textPrimary;
@@ -1260,6 +1270,56 @@ class _MessageBubble extends StatelessWidget {
 }
 
 /// A reply-to preview shown at the top of a bubble.
+/// Rend un message marqueur d'appel (`:::CALL:::`) en puce centree, plutot que
+/// le JSON brut. La carte joignable du web n'a pas d'equivalent ici : sur mobile
+/// les appels entrants arrivent par CallKit/push, cette puce est informative et
+/// double le resume systeme que le backend poste en fin d'appel.
+class _CallMarkerPill extends StatelessWidget {
+  const _CallMarkerPill({required this.marker});
+
+  final WorkspaceCallMarker marker;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    final isVideo = marker.kind == CallKind.video;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: Tokens.space8),
+      child: Center(
+        child: Container(
+          padding: const EdgeInsets.symmetric(
+            horizontal: Tokens.space12,
+            vertical: Tokens.space4,
+          ),
+          decoration: BoxDecoration(
+            color: colors.card,
+            borderRadius: BorderRadius.circular(Tokens.radiusPill),
+            border: Border.all(color: colors.border),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                isVideo ? Icons.videocam_rounded : Icons.call_rounded,
+                size: 14,
+                color: colors.textMuted,
+              ),
+              const SizedBox(width: Tokens.space4),
+              Text(
+                isVideo ? 'Appel vidéo' : 'Appel audio',
+                style: Theme.of(
+                  context,
+                ).textTheme.labelSmall?.copyWith(color: colors.textMuted),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _ReplyQuote extends StatelessWidget {
   const _ReplyQuote({required this.reply, required this.onBrand});
   final ReplyPreview reply;

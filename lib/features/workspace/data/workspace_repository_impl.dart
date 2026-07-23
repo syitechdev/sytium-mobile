@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:sytium_mobile/core/error/failure.dart';
 import 'package:sytium_mobile/core/network/error_mapper.dart';
 import 'package:sytium_mobile/core/result/result.dart';
+import 'package:sytium_mobile/features/calls/domain/call_models.dart';
 import 'package:sytium_mobile/features/workspace/data/dtos/workspace_dtos.dart';
 import 'package:sytium_mobile/features/workspace/data/workspace_remote_data_source.dart';
 import 'package:sytium_mobile/features/workspace/domain/workspace_models.dart';
@@ -155,13 +156,21 @@ class WorkspaceRepositoryImpl implements WorkspaceRepository {
       // A present last_message carries content even when empty (e.g. an
       // attachment-only message, WS3) — keep it null only when the object
       // itself is absent so the row shows "no preview" cleanly.
-      lastMessagePreview: lm?.content,
+      lastMessagePreview: _previewFor(lm?.content),
       lastMessageAt: lm?.createdAt,
       lastMessageAuthorId: lm?.authorId,
       lastMessageIsSystem: lm?.isSystem ?? false,
       isMember: d.isMember,
       memberCount: d.memberCount,
     );
+  }
+
+  /// Le web stocke les appels comme un message `:::CALL:::{json}`. Dans l'apercu
+  /// de conversation, on montre un libelle lisible plutot que le JSON brut.
+  String? _previewFor(String? content) {
+    final marker = WorkspaceCallMarker.tryParse(content);
+    if (marker == null) return content;
+    return marker.kind == CallKind.video ? 'Appel vidéo' : 'Appel audio';
   }
 
   Member _channelMemberToDomain(ChannelMemberDto d) => Member(

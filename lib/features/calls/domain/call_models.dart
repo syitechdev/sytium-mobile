@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 
@@ -14,6 +16,51 @@ enum CallKind {
 
 /// WebRTC signaling message kinds (matches the backend `type` enum).
 enum SignalType { offer, answer, ice, hangup, state }
+
+/// Un message `:::CALL:::{json}` : le client WEB poste un message de tchat
+/// NORMAL avec ce contenu au lancement d'un appel, et le rend sous forme de
+/// carte d'appel. Le mobile doit le parser lui aussi, sinon le JSON brut fuit
+/// dans le fil (le marqueur est un message reel, stocke cote backend).
+///
+/// Miroir de `parseCall()` du front (`src/pages/workspace/Workspace.tsx`).
+@immutable
+class WorkspaceCallMarker {
+  const WorkspaceCallMarker({
+    required this.kind,
+    this.callId,
+    this.startedAt,
+  });
+
+  static const marker = ':::CALL:::';
+
+  final CallKind kind;
+  final String? callId;
+  final DateTime? startedAt;
+
+  /// Retourne le marqueur parse, ou null si [content] est un message ordinaire.
+  static WorkspaceCallMarker? tryParse(String? content) {
+    if (content == null) return null;
+    final trimmed = content.trim();
+    if (!trimmed.startsWith(marker)) return null;
+    try {
+      final data = jsonDecode(trimmed.substring(marker.length));
+      if (data is! Map) return null;
+      final kind = data['kind'];
+      if (kind != 'audio' && kind != 'video') return null;
+      final callId = data['callId'];
+      final url = data['url'];
+      // Meme garde que le front : un vrai marqueur porte un callId ou une url.
+      if (callId is! String && url is! String) return null;
+      return WorkspaceCallMarker(
+        kind: CallKind.fromWire(kind as String),
+        callId: callId is String ? callId : null,
+        startedAt: DateTime.tryParse(data['startedAt']?.toString() ?? ''),
+      );
+    } catch (_) {
+      return null;
+    }
+  }
+}
 
 /// An ICE server for the RTCPeerConnection config.
 @immutable
