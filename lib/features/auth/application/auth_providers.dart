@@ -4,6 +4,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:sytium_mobile/core/network/auth_interceptor.dart';
 import 'package:sytium_mobile/core/network/dio_client.dart';
 import 'package:sytium_mobile/core/network/http_cache.dart';
+import 'package:sytium_mobile/core/network/retry_interceptor.dart';
 import 'package:sytium_mobile/core/notifications/device_identity.dart';
 import 'package:sytium_mobile/core/storage/secure_token_store.dart';
 import 'package:sytium_mobile/core/storage/session_cache.dart';
@@ -60,6 +61,10 @@ Dio authDio(Ref ref) {
       },
     ),
   );
+  // En dernier : rejoue les GET qui échouent sur une panne transitoire (coupure
+  // brève, 5xx, délai serveur). `fetch` repasse par le cache et l'auth, donc le
+  // rejeu repart avec un jeton frais. Aucune écriture ni aucun 4xx n'est rejoué.
+  dio.interceptors.add(RetryInterceptor(dio: dio));
   return dio;
 }
 
