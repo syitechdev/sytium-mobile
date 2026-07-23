@@ -222,6 +222,23 @@ La clé doit être **identique** à celle du `.env` backend et à la variable Gi
 clients. Elle est publique (elle est livrée à chaque client) ; le
 `REVERB_APP_SECRET` ne quitte jamais le serveur.
 
+### iOS : `VOIP_ENV` doit suivre le PROVISIONING, jamais le mode de compilation
+
+`AppConfig.voipEnvironment` (`--dart-define=VOIP_ENV`, défaut `development`) est
+déclaré au backend pour choisir l'hôte APNs. Il DOIT correspondre à
+l'environnement de provisioning iOS réel, PAS à `--release` :
+
+- **Sideload / ad hoc / TestFlight interne** (entitlement `aps-environment=development`,
+  token VoIP **sandbox**) → laisser le défaut `development`. **Ne PAS** passer
+  `VOIP_ENV=production`, même en `--release`.
+- **App Store / TestFlight en provisioning production** → `--dart-define=VOIP_ENV=production`.
+
+Piège corrigé le 23/07/2026 : la valeur était dérivée de `kReleaseMode`, donc un
+build `--release` sideloadé déclarait `production` → push VoIP envoyé sur l'APNs
+production avec un token sandbox → `BadDeviceToken` → le serveur **purge le
+voip_token** → l'iPhone ne sonne plus, appli fermée/verrouillée (« le premier
+appel n'arrive jamais »).
+
 ## 11. Definition of Done (cocher avant de livrer une feature)
 
 - [ ] Données via repository + DTO freezed dérivés du contrat réel ; cache + pagination si liste

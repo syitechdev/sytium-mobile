@@ -12,6 +12,24 @@ abstract final class AppConfig {
   /// Identifies this client when issuing a Sanctum personal access token.
   static const String deviceName = 'sytium-mobile';
 
+  /// Environnement APNs VoIP declare au backend ('production' | 'development').
+  ///
+  /// Il DOIT correspondre a l'environnement de PROVISIONING iOS reel, pas au
+  /// mode de compilation : un build sideloade ou ad hoc porte un entitlement
+  /// `aps-environment=development` et un token VoIP SANDBOX **meme en --release**.
+  /// Le declarer 'production' (ancien comportement, derive de kReleaseMode) fait
+  /// envoyer le push sur l'APNs production -> BadDeviceToken -> le serveur purge
+  /// le voip_token -> l'iPhone ne sonne plus, appli fermee/verrouillee.
+  ///
+  /// Defaut 'development' (sideload/TestFlight interne). Ne passer 'production'
+  /// que pour un build distribue via l'App Store / TestFlight en provisioning
+  /// production :
+  ///   flutter build ipa --dart-define=VOIP_ENV=production
+  static const String voipEnvironment = String.fromEnvironment(
+    'VOIP_ENV',
+    defaultValue: 'development',
+  );
+
   /// Request timeout for the HTTP client.
   static const Duration httpTimeout = Duration(seconds: 20);
 
