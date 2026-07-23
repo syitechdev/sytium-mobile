@@ -61,7 +61,9 @@ class CallKitService {
         supportsVideo: true,
         maximumCallGroups: 1,
         maximumCallsPerCallGroup: 1,
-        audioSessionMode: 'default',
+        // Mode VoIP (AVAudioSessionModeVoiceChat) : routage + gain + AEC
+        // optimisés pour la voix. 'default' donnait un volume incohérent/faible.
+        audioSessionMode: 'voiceChat',
         supportsDTMF: false,
         supportsHolding: false,
         supportsGrouping: false,

@@ -301,6 +301,18 @@ class CallController extends _$CallController {
     state = state.copyWith(speakerOn: on);
   }
 
+  /// Ré-applique la route audio (préférence haut-parleur/écouteur) après que
+  /// CallKit/WebRTC a (re)configuré sa session audio à la connexion — sinon la
+  /// route posée à la préparation est réinitialisée et le son retombe. On tire
+  /// deux fois : tout de suite, puis après l'activation de la session (course).
+  void _reapplyAudioRoute() {
+    final speaker = state.speakerOn;
+    unawaited(Helper.setSpeakerphoneOn(speaker));
+    Timer(const Duration(milliseconds: 800), () {
+      if (state.isActive) unawaited(Helper.setSpeakerphoneOn(state.speakerOn));
+    });
+  }
+
   Future<void> switchCamera() async {
     final track = _localStream?.getVideoTracks();
     if (track != null && track.isNotEmpty) {
@@ -556,6 +568,11 @@ class CallController extends _$CallController {
           if (_incomingViaCallkit && callId != null) {
             unawaited(CallKitService.setConnected(callId));
           }
+          // Ré-assérer la route audio : à la connexion, CallKit/WebRTC (re)active
+          // sa session audio et REINITIALISE la route -> la préférence haut-parleur
+          // posée à la préparation retombe (« le son devient faible »). On la
+          // réapplique ici, puis une fois de plus après l'activation de la session.
+          _reapplyAudioRoute();
         } else if (s == RTCPeerConnectionState.RTCPeerConnectionStateFailed ||
             s == RTCPeerConnectionState.RTCPeerConnectionStateClosed) {
           // A single leg dropping removes its tile; it does not end the call.
