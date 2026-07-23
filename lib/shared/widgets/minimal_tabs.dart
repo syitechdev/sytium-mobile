@@ -75,33 +75,33 @@ class _Tab extends StatelessWidget {
     return Semantics(
       button: true,
       selected: active,
+      // Sans marge verticale propre : le cadre de l'onglet colle à son contenu,
+      // pour que l'écart avec les sections voisines reste celui posé par le
+      // parent (space16), identique partout.
       child: InkWell(
         onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: Tokens.space8),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                label,
-                style: style?.copyWith(
-                  color: active ? activeColor : mutedColor,
-                  fontWeight: active ? FontWeight.w700 : FontWeight.w500,
-                ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              label,
+              style: style?.copyWith(
+                color: active ? activeColor : mutedColor,
+                fontWeight: active ? FontWeight.w700 : FontWeight.w500,
               ),
-              const SizedBox(height: Tokens.space4),
-              // Le trait ne prend de la place que sous l'onglet actif ; les
-              // autres gardent un trait transparent pour ne pas décaler le texte.
-              Container(
-                height: 2,
-                width: 20,
-                decoration: BoxDecoration(
-                  color: active ? activeColor : Colors.transparent,
-                  borderRadius: BorderRadius.circular(Tokens.radiusPill),
-                ),
+            ),
+            const SizedBox(height: Tokens.space4),
+            // Le trait ne prend de la place que sous l'onglet actif ; les
+            // autres gardent un trait transparent pour ne pas décaler le texte.
+            Container(
+              height: 2,
+              width: 20,
+              decoration: BoxDecoration(
+                color: active ? activeColor : Colors.transparent,
+                borderRadius: BorderRadius.circular(Tokens.radiusPill),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

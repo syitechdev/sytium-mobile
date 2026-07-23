@@ -14,55 +14,53 @@ class ApprovalsAlertCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final total = ref.watch(pendingApprovalsProvider).maybeWhen(
-          data: (p) => p.counts.total,
-          orElse: () => 0,
-        );
+    final total = ref
+        .watch(pendingApprovalsProvider)
+        .maybeWhen(data: (p) => p.counts.total, orElse: () => 0);
     if (total == 0) return const SizedBox.shrink();
 
     final colors = context.colors;
     final theme = Theme.of(context).textTheme;
-    return Padding(
-      padding: const EdgeInsets.only(bottom: Tokens.space16),
-      child: Material(
-        color: colors.warning.withValues(alpha: 0.10),
+    // Aucune marge propre : l'écart avec les sections voisines est posé par le
+    // parent, uniformément, comme pour toutes les cartes de l'accueil.
+    return Material(
+      color: colors.warning.withValues(alpha: 0.10),
+      borderRadius: BorderRadius.circular(Tokens.radiusMd),
+      child: InkWell(
         borderRadius: BorderRadius.circular(Tokens.radiusMd),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(Tokens.radiusMd),
-          onTap: () => navigateForModule(context, 'approvals'),
-          child: Container(
-            padding: const EdgeInsets.all(Tokens.space16),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(Tokens.radiusMd),
-              border: Border.all(color: colors.warning.withValues(alpha: 0.35)),
-            ),
-            child: Row(
-              children: [
-                Icon(Icons.assignment_turned_in_outlined, color: colors.warning),
-                const SizedBox(width: Tokens.space12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        total > 1
-                            ? '$total demandes à valider'
-                            : '1 demande à valider',
-                        style: theme.titleSmall
-                            ?.copyWith(fontWeight: FontWeight.w700),
+        onTap: () => navigateForModule(context, 'approvals'),
+        child: Container(
+          padding: const EdgeInsets.all(Tokens.space16),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(Tokens.radiusMd),
+            border: Border.all(color: colors.warning.withValues(alpha: 0.35)),
+          ),
+          child: Row(
+            children: [
+              Icon(Icons.assignment_turned_in_outlined, color: colors.warning),
+              const SizedBox(width: Tokens.space12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      total > 1
+                          ? '$total demandes à valider'
+                          : '1 demande à valider',
+                      style: theme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w700,
                       ),
-                      const SizedBox(height: Tokens.space4),
-                      Text(
-                        'Congés, permissions et objectifs en attente',
-                        style:
-                            theme.bodySmall?.copyWith(color: colors.textMuted),
-                      ),
-                    ],
-                  ),
+                    ),
+                    const SizedBox(height: Tokens.space4),
+                    Text(
+                      'Congés, permissions et objectifs en attente',
+                      style: theme.bodySmall?.copyWith(color: colors.textMuted),
+                    ),
+                  ],
                 ),
-                Icon(Icons.chevron_right, color: colors.warning),
-              ],
-            ),
+              ),
+              Icon(Icons.chevron_right, color: colors.warning),
+            ],
           ),
         ),
       ),
