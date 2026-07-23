@@ -22,6 +22,7 @@ import 'package:sytium_mobile/features/stats/domain/stats_repository.dart';
 import 'package:sytium_mobile/features/stats/presentation/stats_screen.dart';
 import 'package:sytium_mobile/features/stats/presentation/widgets/kpi_card.dart';
 import 'package:sytium_mobile/shared/widgets/error_state.dart';
+import 'package:sytium_mobile/shared/widgets/minimal_tabs.dart';
 import 'package:sytium_mobile/theme/theme.dart';
 
 // ── Auth stub ────────────────────────────────────────────────────────────────
@@ -195,7 +196,7 @@ void main() {
         await _screen(tester, repo: const _OkRepo(_kFullData)),
       );
       await _settle(tester);
-      expect(find.byType(SegmentedButton<StatsTab>), findsNothing);
+      expect(find.byType(MinimalTabs<StatsTab>), findsNothing);
       expect(find.text('Organisation'), findsNothing);
     });
 
@@ -283,7 +284,7 @@ void main() {
       );
       await _settle(tester);
 
-      expect(find.byType(SegmentedButton<StatsTab>), findsOneWidget);
+      expect(find.byType(MinimalTabs<StatsTab>), findsOneWidget);
       expect(find.text('Organisation'), findsOneWidget);
       expect(find.text('Mon activité'), findsOneWidget);
       // Default = Organisation → an org KPI is visible, not « mes heures ».

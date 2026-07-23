@@ -14,6 +14,7 @@ import 'package:sytium_mobile/features/home/presentation/widgets/profile_header_
 import 'package:sytium_mobile/features/home/presentation/widgets/stats_preview_card.dart';
 import 'package:sytium_mobile/features/home/presentation/widgets/today_summary_card.dart';
 import 'package:sytium_mobile/features/pointage/application/pointage_providers.dart';
+import 'package:sytium_mobile/shared/widgets/minimal_tabs.dart';
 import 'package:sytium_mobile/theme/sytium_colors.dart';
 import 'package:sytium_mobile/theme/tokens.dart';
 
@@ -71,6 +72,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       headerSliverBuilder: (context, _) => [
         SliverToBoxAdapter(
           child: Padding(
+            // Même écart partout : chaque section est séparée par un
+            // SizedBox(space16), et le bas de l'en-tête reste sans marge — c'est
+            // le volet en dessous qui pose le premier espace, égal aux autres.
             padding: const EdgeInsets.fromLTRB(
               Tokens.space16,
               Tokens.space16,
@@ -80,75 +84,84 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                  ProfileHeaderCard(
-                    user: widget.user,
-                    onAvatarTap: widget.onExplorer,
-                  ),
-                  if (showToday) ...[
-                    const SizedBox(height: Tokens.space16),
-                    const TodaySummaryCard(),
-                  ],
-                  if (showCompta) ...[
-                    const SizedBox(height: Tokens.space16),
-                    _MinimalTabs(
-                      selected: _tab,
-                      onSelected: (t) => setState(() => _tab = t),
-                    ),
-                  ],
-                  const SizedBox(height: Tokens.space12),
+                ProfileHeaderCard(
+                  user: widget.user,
+                  onAvatarTap: widget.onExplorer,
+                ),
+                if (showToday) ...[
+                  const SizedBox(height: Tokens.space16),
+                  const TodaySummaryCard(),
                 ],
-              ),
+                // Les demandes à valider passent avant les onglets : c'est une
+                // alerte qui concerne l'utilisateur quel que soit le volet ouvert.
+                if (caps.approvals) ...[
+                  const SizedBox(height: Tokens.space16),
+                  const ApprovalsAlertCard(),
+                ],
+                if (showCompta) ...[
+                  const SizedBox(height: Tokens.space16),
+                  MinimalTabs<HomeTab>(
+                    selected: _tab,
+                    onSelected: (t) => setState(() => _tab = t),
+                    tabs: const [
+                      MinimalTab(value: HomeTab.stats, label: 'Stats'),
+                      MinimalTab(value: HomeTab.caisse, label: 'Caisse'),
+                      MinimalTab(value: HomeTab.docs, label: 'Docs'),
+                    ],
+                  ),
+                ],
+              ],
             ),
           ),
-        ],
-        body: switch (_tab) {
-          HomeTab.stats => _StatsTab(
-              capabilities: caps,
-              onPointer: widget.onPointer,
-              onStats: widget.onStats,
-            ),
-          HomeTab.caisse => const ComptaCaisseView(),
-          HomeTab.docs => const ComptaDocsView(),
-        },
-      );
-    }
+        ),
+      ],
+      body: switch (_tab) {
+        HomeTab.stats => _StatsTab(
+          capabilities: caps,
+          onPointer: widget.onPointer,
+          onStats: widget.onStats,
+        ),
+        HomeTab.caisse => const ComptaCaisseView(),
+        HomeTab.docs => const ComptaDocsView(),
+      },
+    );
   }
+}
 
-  /// The Stats pane — profile, today status, approvals, org-stats preview + CA
-  /// trend, personal activity, « À faire » and quick actions.
-  class _StatsTab extends ConsumerWidget {
-    const _StatsTab({
-      required this.capabilities,
-      required this.onPointer,
-      required this.onStats,
-    });
+/// The Stats pane — profile, today status, approvals, org-stats preview + CA
+/// trend, personal activity, « À faire » and quick actions.
+class _StatsTab extends ConsumerWidget {
+  const _StatsTab({
+    required this.capabilities,
+    required this.onPointer,
+    required this.onStats,
+  });
 
-    final MobileCapabilities capabilities;
-    final VoidCallback onPointer;
-    final VoidCallback onStats;
+  final MobileCapabilities capabilities;
+  final VoidCallback onPointer;
+  final VoidCallback onStats;
 
-    @override
-    Widget build(BuildContext context, WidgetRef ref) {
-      final colors = context.colors;
-      final theme = Theme.of(context).textTheme;
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final colors = context.colors;
+    final theme = Theme.of(context).textTheme;
 
-      final statusAsync = ref.watch(pointageStatusProvider);
-      final notPointed = statusAsync.maybeWhen(
-        data: (s) => s.hasEmployee && !s.dayClosed && s.todayCount == 0,
-        orElse: () => false,
-      );
+    final statusAsync = ref.watch(pointageStatusProvider);
+    final notPointed = statusAsync.maybeWhen(
+      data: (s) => s.hasEmployee && !s.dayClosed && s.todayCount == 0,
+      orElse: () => false,
+    );
 
-      // Tirer pour rafraîchir : les volets Caisse et Docs ont déjà le leur, le
-      // volet Stats restait la seule zone qu'on ne pouvait pas recharger à la
-      // main.
-      return RefreshIndicator(
-        onRefresh: () => refreshHomeAndWait(ref),
-        child: ListView(
-          padding: const EdgeInsets.all(Tokens.space16),
-          // Le geste doit partir même quand le contenu tient dans l'écran.
-          physics: const AlwaysScrollableScrollPhysics(),
-          children: [
-          if (capabilities.approvals) const ApprovalsAlertCard(),
+    // Tirer pour rafraîchir : les volets Caisse et Docs ont déjà le leur, le
+    // volet Stats restait la seule zone qu'on ne pouvait pas recharger à la
+    // main.
+    return RefreshIndicator(
+      onRefresh: () => refreshHomeAndWait(ref),
+      child: ListView(
+        padding: const EdgeInsets.all(Tokens.space16),
+        // Le geste doit partir même quand le contenu tient dans l'écran.
+        physics: const AlwaysScrollableScrollPhysics(),
+        children: [
           if (capabilities.dashboard) ...[
             StatsPreviewCard(onSeeAll: onStats),
             const SizedBox(height: Tokens.space16),
@@ -156,7 +169,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             const HomeDailyRevenueCard(),
             const SizedBox(height: Tokens.space16),
             HomeCaTrendCard(onSeeAll: onStats),
-            const SizedBox(height: Tokens.space24),
+            const SizedBox(height: Tokens.space16),
           ],
           const ActivityRingCard(),
           Text('À faire', style: theme.titleSmall),
@@ -181,99 +194,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               ),
             ),
         ],
-      ),
-    );
-  }
-}
-
-/// Sélecteur de volet minimaliste : des libellés à plat, seul l'actif est
-/// coloré et souligné. Pas de cadre ni de fond — le contenu porte l'attention,
-/// pas le sélecteur.
-class _MinimalTabs extends StatelessWidget {
-  const _MinimalTabs({required this.selected, required this.onSelected});
-
-  final HomeTab selected;
-  final ValueChanged<HomeTab> onSelected;
-
-  static const _labels = {
-    HomeTab.stats: 'Stats',
-    HomeTab.caisse: 'Caisse',
-    HomeTab.docs: 'Docs',
-  };
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.colors;
-    final theme = Theme.of(context).textTheme;
-
-    return Row(
-      children: [
-        for (final tab in HomeTab.values) ...[
-          _Tab(
-            label: _labels[tab]!,
-            active: tab == selected,
-            activeColor: colors.brand,
-            mutedColor: colors.textMuted,
-            style: theme.titleSmall,
-            onTap: () => onSelected(tab),
-          ),
-          const SizedBox(width: Tokens.space24),
-        ],
-      ],
-    );
-  }
-}
-
-class _Tab extends StatelessWidget {
-  const _Tab({
-    required this.label,
-    required this.active,
-    required this.activeColor,
-    required this.mutedColor,
-    required this.style,
-    required this.onTap,
-  });
-
-  final String label;
-  final bool active;
-  final Color activeColor;
-  final Color mutedColor;
-  final TextStyle? style;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Semantics(
-      button: true,
-      selected: active,
-      child: InkWell(
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: Tokens.space8),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                label,
-                style: style?.copyWith(
-                  color: active ? activeColor : mutedColor,
-                  fontWeight: active ? FontWeight.w700 : FontWeight.w500,
-                ),
-              ),
-              const SizedBox(height: Tokens.space4),
-              // Le trait ne prend de la place que sous l'onglet actif ; les
-              // autres gardent un trait transparent pour ne pas décaler le texte.
-              Container(
-                height: 2,
-                width: 20,
-                decoration: BoxDecoration(
-                  color: active ? activeColor : Colors.transparent,
-                  borderRadius: BorderRadius.circular(Tokens.radiusPill),
-                ),
-              ),
-            ],
-          ),
-        ),
       ),
     );
   }

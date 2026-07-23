@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sytium_mobile/features/auth/application/auth_controller.dart';
 import 'package:sytium_mobile/features/stats/presentation/widgets/my_activity_view.dart';
 import 'package:sytium_mobile/features/stats/presentation/widgets/organisation_stats_view.dart';
+import 'package:sytium_mobile/shared/widgets/minimal_tabs.dart';
 import 'package:sytium_mobile/theme/tokens.dart';
 
 /// The two panes of the adaptive Stats tab.
@@ -36,20 +37,19 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
     return Column(
       children: [
         Padding(
-          padding: const EdgeInsets.all(Tokens.space16),
-          child: SegmentedButton<StatsTab>(
-            segments: const [
-              ButtonSegment(
-                value: StatsTab.organisation,
-                label: Text('Organisation'),
-              ),
-              ButtonSegment(
-                value: StatsTab.myActivity,
-                label: Text('Mon activité'),
-              ),
+          padding: const EdgeInsets.fromLTRB(
+            Tokens.space16,
+            Tokens.space16,
+            Tokens.space16,
+            0,
+          ),
+          child: MinimalTabs<StatsTab>(
+            selected: _tab,
+            onSelected: (t) => setState(() => _tab = t),
+            tabs: const [
+              MinimalTab(value: StatsTab.organisation, label: 'Organisation'),
+              MinimalTab(value: StatsTab.myActivity, label: 'Mon activité'),
             ],
-            selected: {_tab},
-            onSelectionChanged: (s) => setState(() => _tab = s.first),
           ),
         ),
         Expanded(

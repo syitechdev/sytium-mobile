@@ -14,6 +14,7 @@ import 'package:sytium_mobile/shared/charts/app_horizontal_bar_chart.dart';
 import 'package:sytium_mobile/shared/charts/chart_card.dart';
 import 'package:sytium_mobile/shared/charts/chart_models.dart';
 import 'package:sytium_mobile/shared/widgets/error_state.dart';
+import 'package:sytium_mobile/shared/widgets/minimal_tabs.dart';
 import 'package:sytium_mobile/theme/sytium_colors.dart';
 import 'package:sytium_mobile/theme/tokens.dart';
 
@@ -75,22 +76,13 @@ class _CommercialDashboardScreenState
               Tokens.space16,
               0,
             ),
-            child: SegmentedButton<_CommercialTab>(
-              showSelectedIcon: false,
-              segments: const [
-                ButtonSegment(
-                  value: _CommercialTab.tableau,
-                  label: Text('Tableau'),
-                  icon: Icon(Icons.insights_outlined, size: 18),
-                ),
-                ButtonSegment(
-                  value: _CommercialTab.proformas,
-                  label: Text('Proformas'),
-                  icon: Icon(Icons.description_outlined, size: 18),
-                ),
+            child: MinimalTabs<_CommercialTab>(
+              selected: _tab,
+              onSelected: (t) => setState(() => _tab = t),
+              tabs: const [
+                MinimalTab(value: _CommercialTab.tableau, label: 'Tableau'),
+                MinimalTab(value: _CommercialTab.proformas, label: 'Proformas'),
               ],
-              selected: {_tab},
-              onSelectionChanged: (s) => setState(() => _tab = s.first),
             ),
           ),
           Expanded(
@@ -119,7 +111,8 @@ class _DashboardTab extends ConsumerWidget {
     final async = ref.watch(commercialDashboardProvider(period));
 
     return RefreshIndicator(
-      onRefresh: () async => ref.invalidate(commercialDashboardProvider(period)),
+      onRefresh: () async =>
+          ref.invalidate(commercialDashboardProvider(period)),
       child: ListView(
         padding: const EdgeInsets.all(Tokens.space16),
         children: [
@@ -139,7 +132,8 @@ class _DashboardTab extends ConsumerWidget {
             loading: () => const _CommercialSkeleton(),
             error: (e, _) => ErrorState(
               message: 'Impossible de charger le tableau commercial.',
-              onRetry: () => ref.invalidate(commercialDashboardProvider(period)),
+              onRetry: () =>
+                  ref.invalidate(commercialDashboardProvider(period)),
             ),
             data: (d) => _Sections(dashboard: d),
           ),
@@ -159,7 +153,8 @@ class _ProformaListTab extends ConsumerWidget {
     final async = ref.watch(documentsProvider(DocType.proforma));
 
     return RefreshIndicator(
-      onRefresh: () async => ref.invalidate(documentsProvider(DocType.proforma)),
+      onRefresh: () async =>
+          ref.invalidate(documentsProvider(DocType.proforma)),
       child: async.when(
         loading: () => const _ListSkeleton(),
         error: (e, _) => ListView(
@@ -167,7 +162,8 @@ class _ProformaListTab extends ConsumerWidget {
             const SizedBox(height: Tokens.space48),
             ErrorState(
               message: 'Impossible de charger les proformas.',
-              onRetry: () => ref.invalidate(documentsProvider(DocType.proforma)),
+              onRetry: () =>
+                  ref.invalidate(documentsProvider(DocType.proforma)),
             ),
           ],
         ),
@@ -229,23 +225,25 @@ class _Sections extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const _SectionTitle('Pipeline'),
-        _Grid(children: [
-          KpiCard(
-            label: 'Pipeline total',
-            value: Money.fcfa(p.pipelineTotal),
-            accent: colors.brand,
-          ),
-          KpiCard(
-            label: 'Pondéré',
-            value: Money.fcfa(p.pipelinePondere),
-            accent: colors.brand,
-          ),
-          KpiCard(
-            label: 'Opportunités ouvertes',
-            value: '${p.opportunitesOuvertes}',
-            accent: colors.textMuted,
-          ),
-        ]),
+        _Grid(
+          children: [
+            KpiCard(
+              label: 'Pipeline total',
+              value: Money.fcfa(p.pipelineTotal),
+              accent: colors.brand,
+            ),
+            KpiCard(
+              label: 'Pondéré',
+              value: Money.fcfa(p.pipelinePondere),
+              accent: colors.brand,
+            ),
+            KpiCard(
+              label: 'Opportunités ouvertes',
+              value: '${p.opportunitesOuvertes}',
+              accent: colors.textMuted,
+            ),
+          ],
+        ),
         if (p.parEtape.where((s) => s.montant > 0).isNotEmpty) ...[
           const SizedBox(height: Tokens.space12),
           ChartCard(
@@ -261,43 +259,46 @@ class _Sections extends StatelessWidget {
         ],
         const SizedBox(height: Tokens.space24),
         const _SectionTitle('Performance'),
-        _Grid(children: [
-          KpiCard(
-            label: 'CA signé',
-            value: Money.fcfa(k.caSigne),
-            accent: colors.brand,
-          ),
-          KpiCard(
-            label: 'Deals gagnés',
-            value: '${k.dealsGagnes}',
-            accent: colors.textMuted,
-          ),
-          KpiCard(
-            label: 'Taux de conversion',
-            value: _percent(k.tauxConversion),
-            accent: colors.brand,
-          ),
-          KpiCard(
-            label: 'Nouveaux prospects',
-            value: '${k.nouveauxProspects}',
-            accent: colors.textMuted,
-          ),
-        ]),
+        _Grid(
+          children: [
+            KpiCard(
+              label: 'CA signé',
+              value: Money.fcfa(k.caSigne),
+              accent: colors.brand,
+            ),
+            KpiCard(
+              label: 'Deals gagnés',
+              value: '${k.dealsGagnes}',
+              accent: colors.textMuted,
+            ),
+            KpiCard(
+              label: 'Taux de conversion',
+              value: _percent(k.tauxConversion),
+              accent: colors.brand,
+            ),
+            KpiCard(
+              label: 'Nouveaux prospects',
+              value: '${k.nouveauxProspects}',
+              accent: colors.textMuted,
+            ),
+          ],
+        ),
         const SizedBox(height: Tokens.space24),
         const _SectionTitle('À faire'),
-        _Grid(children: [
-          KpiCard(
-            label: 'Tâches en retard',
-            value: '${t.tachesEnRetard}',
-            accent:
-                t.tachesEnRetard > 0 ? colors.danger : colors.textMuted,
-          ),
-          KpiCard(
-            label: 'RDV cette semaine',
-            value: '${t.rdvSemaine}',
-            accent: colors.textMuted,
-          ),
-        ]),
+        _Grid(
+          children: [
+            KpiCard(
+              label: 'Tâches en retard',
+              value: '${t.tachesEnRetard}',
+              accent: t.tachesEnRetard > 0 ? colors.danger : colors.textMuted,
+            ),
+            KpiCard(
+              label: 'RDV cette semaine',
+              value: '${t.rdvSemaine}',
+              accent: colors.textMuted,
+            ),
+          ],
+        ),
       ],
     );
   }
@@ -313,10 +314,9 @@ class _SectionTitle extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: Tokens.space12),
       child: Text(
         title,
-        style: Theme.of(context)
-            .textTheme
-            .titleMedium
-            ?.copyWith(fontWeight: FontWeight.w700),
+        style: Theme.of(
+          context,
+        ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
       ),
     );
   }

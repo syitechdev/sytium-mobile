@@ -7,6 +7,7 @@ import 'package:sytium_mobile/features/requests/presentation/permission_form_she
 import 'package:sytium_mobile/features/requests/presentation/widgets/leave_card.dart';
 import 'package:sytium_mobile/features/requests/presentation/widgets/permission_card.dart';
 import 'package:sytium_mobile/shared/widgets/error_state.dart';
+import 'package:sytium_mobile/shared/widgets/minimal_tabs.dart';
 import 'package:sytium_mobile/theme/sytium_colors.dart';
 import 'package:sytium_mobile/theme/tokens.dart';
 
@@ -57,20 +58,19 @@ class _RequestsScreenState extends ConsumerState<RequestsScreen> {
       body: Column(
         children: [
           Padding(
-            padding: const EdgeInsets.all(Tokens.space16),
-            child: SegmentedButton<RequestTab>(
-              segments: const [
-                ButtonSegment(
-                  value: RequestTab.leaves,
-                  label: Text('Congés'),
-                ),
-                ButtonSegment(
-                  value: RequestTab.permissions,
-                  label: Text('Permissions'),
-                ),
+            padding: const EdgeInsets.fromLTRB(
+              Tokens.space16,
+              Tokens.space16,
+              Tokens.space16,
+              0,
+            ),
+            child: MinimalTabs<RequestTab>(
+              selected: _tab,
+              onSelected: (t) => setState(() => _tab = t),
+              tabs: const [
+                MinimalTab(value: RequestTab.leaves, label: 'Congés'),
+                MinimalTab(value: RequestTab.permissions, label: 'Permissions'),
               ],
-              selected: {_tab},
-              onSelectionChanged: (s) => setState(() => _tab = s.first),
             ),
           ),
           Expanded(
@@ -115,8 +115,7 @@ class _LeavesPane extends ConsumerWidget {
           return ListView.separated(
             padding: const EdgeInsets.all(Tokens.space16),
             itemCount: leaves.length,
-            separatorBuilder: (_, __) =>
-                const SizedBox(height: Tokens.space12),
+            separatorBuilder: (_, __) => const SizedBox(height: Tokens.space12),
             itemBuilder: (context, i) {
               final leave = leaves[i];
               return LeaveCard(
@@ -185,8 +184,7 @@ class _PermissionsPane extends ConsumerWidget {
           return ListView.separated(
             padding: const EdgeInsets.all(Tokens.space16),
             itemCount: permissions.length,
-            separatorBuilder: (_, __) =>
-                const SizedBox(height: Tokens.space12),
+            separatorBuilder: (_, __) => const SizedBox(height: Tokens.space12),
             itemBuilder: (context, i) =>
                 PermissionCard(permission: permissions[i]),
           );
