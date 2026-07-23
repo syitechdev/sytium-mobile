@@ -17,6 +17,7 @@ import 'package:sytium_mobile/features/home/application/team_pulse_providers.dar
 import 'package:sytium_mobile/features/home/domain/team_pulse.dart';
 import 'package:sytium_mobile/features/home/presentation/home_screen.dart';
 import 'package:sytium_mobile/features/home/presentation/widgets/profile_header_card.dart';
+import 'package:sytium_mobile/features/home/presentation/widgets/stats_preview_card.dart';
 import 'package:sytium_mobile/features/pointage/application/pointage_providers.dart';
 import 'package:sytium_mobile/features/pointage/domain/pointage_models.dart';
 import 'package:sytium_mobile/features/pointage/domain/pointage_repository.dart';
@@ -67,8 +68,9 @@ class _AuthRepo implements AuthRepository {
   Future<void> logout() async {}
 }
 
-/// Keeps `dashboardProvider` loading indefinitely — safe for HomeScreen gating tests
-/// because 'Aperçu stats' header is outside the `.when` and appears even while loading.
+/// Keeps `dashboardProvider` loading indefinitely — safe for HomeScreen gating
+/// tests, which key on the StatsPreviewCard widget itself (present regardless of
+/// its async state), not on rendered content.
 class _StatsLoadingRepo implements StatsRepository {
 
   const _StatsLoadingRepo();
@@ -432,12 +434,12 @@ void main() {
       // dashboard: true → card present
       await tester.pumpWidget(_hostHome(capabilities: _caps(dashboard: true)));
       await tester.pump();
-      expect(find.text('Aperçu stats'), findsOneWidget);
+      expect(find.byType(StatsPreviewCard), findsOneWidget);
 
       // dashboard: false → card absent
       await tester.pumpWidget(_hostHome(capabilities: _caps()));
       await tester.pump();
-      expect(find.text('Aperçu stats'), findsNothing);
+      expect(find.byType(StatsPreviewCard), findsNothing);
     });
   });
 

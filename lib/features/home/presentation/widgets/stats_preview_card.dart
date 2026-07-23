@@ -13,33 +13,18 @@ const _kPreviewPeriod = DashboardPeriod.annee;
 /// contenu réel : en-tête, barre, comptes.
 const _kPresenceSkeletonHeight = 96.0;
 
-/// Compact org-stats preview for the Accueil. Reuses the Direction
-/// dashboard provider (année) and links to the full Stats tab via [onSeeAll].
+/// Compact org-stats preview for the Accueil: the day's presence strip. Reuses
+/// the Direction dashboard provider (année).
 /// Rendered only for `capabilities.dashboard` profiles (gated by the caller).
 class StatsPreviewCard extends ConsumerWidget {
-  const StatsPreviewCard({required this.onSeeAll, super.key});
-
-  /// Switches the shell to the Stats tab (Organisation segment).
-  final VoidCallback onSeeAll;
+  const StatsPreviewCard({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final theme = Theme.of(context).textTheme;
     final async = ref.watch(dashboardProvider(_kPreviewPeriod));
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text('Aperçu stats', style: theme.titleSmall),
-            TextButton(
-              onPressed: onSeeAll,
-              child: const Text('Voir tout'),
-            ),
-          ],
-        ),
-        const SizedBox(height: Tokens.space8),
         async.when(
           loading: () => const _PreviewSkeleton(),
           error: (e, _) => ErrorState(

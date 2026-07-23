@@ -14,6 +14,7 @@ import 'package:sytium_mobile/features/home/presentation/widgets/profile_header_
 import 'package:sytium_mobile/features/home/presentation/widgets/stats_preview_card.dart';
 import 'package:sytium_mobile/features/home/presentation/widgets/today_summary_card.dart';
 import 'package:sytium_mobile/features/pointage/application/pointage_providers.dart';
+import 'package:sytium_mobile/features/stats/presentation/widgets/working_capital_card.dart';
 import 'package:sytium_mobile/shared/widgets/minimal_tabs.dart';
 import 'package:sytium_mobile/theme/sytium_colors.dart';
 import 'package:sytium_mobile/theme/tokens.dart';
@@ -163,7 +164,11 @@ class _StatsTab extends ConsumerWidget {
         physics: const AlwaysScrollableScrollPhysics(),
         children: [
           if (capabilities.dashboard) ...[
-            StatsPreviewCard(onSeeAll: onStats),
+            // Équilibre financier en tête du volet Stats, juste sous les
+            // onglets : même synthèse santé que sur le tableau de bord.
+            const WorkingCapitalCard(),
+            const SizedBox(height: Tokens.space16),
+            const StatsPreviewCard(),
             const SizedBox(height: Tokens.space16),
             const HomePulseCard(),
             const HomeDailyRevenueCard(),

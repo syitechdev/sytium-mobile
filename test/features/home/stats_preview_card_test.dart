@@ -110,12 +110,12 @@ class _FlakyRepo with _NoSeries implements StatsRepository {
       Completer<Result<MonthlyAttendance>>().future;
 }
 
-Widget _host(StatsRepository repo, {VoidCallback? onSeeAll}) => ProviderScope(
+Widget _host(StatsRepository repo) => ProviderScope(
       overrides: [statsRepositoryProvider.overrideWithValue(repo)],
       child: MaterialApp(
         theme: AppTheme.light(),
-        home: Scaffold(
-          body: StatsPreviewCard(onSeeAll: onSeeAll ?? () {}),
+        home: const Scaffold(
+          body: StatsPreviewCard(),
         ),
       ),
     );
@@ -125,12 +125,11 @@ void main() {
     tester,
   ) async {
     // Ils vivent désormais dans la carte « Aujourd'hui » en tête d'accueil :
-    // l'aperçu ne garde que la présence du jour.
+    // l'aperçu ne garde que la présence du jour, sans en-tête.
     await tester.pumpWidget(_host(const _OkRepo(_kKpis)));
     await tester.pump();
 
-    expect(find.text('Aperçu stats'), findsOneWidget);
-    expect(find.text('Voir tout'), findsOneWidget);
+    expect(find.text('Aperçu stats'), findsNothing);
     expect(find.byType(PresenceStrip), findsOneWidget);
     expect(find.text('CA consolidé'), findsNothing);
     expect(find.text('Trésorerie nette'), findsNothing);
@@ -185,16 +184,6 @@ void main() {
 
     expect(find.byType(PresenceStrip), findsNothing);
     expect(find.text('Aucun employé actif.'), findsNothing);
-    // L'en-tête, lui, reste toujours affiché.
-    expect(find.text('Aperçu stats'), findsOneWidget);
-  });
-
-  testWidgets('tapping "Voir tout" calls onSeeAll', (tester) async {
-    var tapped = 0;
-    await tester.pumpWidget(_host(const _OkRepo(_kKpis), onSeeAll: () => tapped++));
-    await tester.pump();
-    await tester.tap(find.text('Voir tout'));
-    expect(tapped, 1);
   });
 
   testWidgets('pendant le chargement, ni présence ni erreur', (tester) async {
@@ -202,8 +191,6 @@ void main() {
     await tester.pump();
     expect(find.byType(PresenceStrip), findsNothing);
     expect(find.byType(ErrorState), findsNothing);
-    // L'en-tête reste, seule la source est encore en vol.
-    expect(find.text('Aperçu stats'), findsOneWidget);
   });
 
   testWidgets('shows ErrorState + Réessayer on failure', (tester) async {
