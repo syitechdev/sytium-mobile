@@ -62,6 +62,29 @@ class WorkspaceCallMarker {
   }
 }
 
+/// Un signal WebRTC persiste cote serveur, rejoue via l'endpoint de rattrapage
+/// `GET /workspace/calls/{id}/signals`. Les evenements sont diffuses par Reverb
+/// en `ShouldBroadcastNow` (une seule fois, sans rejeu) : un pair non abonne a
+/// l'instant exact de l'emission (demarrage, reconnexion, reveil ecran
+/// verrouille) perdait le signal. [id] est un UUIDv7 monotone : il sert de
+/// curseur `after` et de cle de deduplication avec le flux live (`event_id`).
+@immutable
+class CallSignal {
+  const CallSignal({
+    required this.id,
+    required this.type,
+    required this.senderId,
+    this.recipientUserId,
+    this.payload = const {},
+  });
+
+  final String id;
+  final String type;
+  final String senderId;
+  final String? recipientUserId;
+  final Map<String, dynamic> payload;
+}
+
 /// An ICE server for the RTCPeerConnection config.
 @immutable
 class IceServer {

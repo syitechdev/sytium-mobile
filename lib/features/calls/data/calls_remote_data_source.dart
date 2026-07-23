@@ -33,6 +33,23 @@ class CallsRemoteDataSource {
     return CallDto.fromJson(res.data!['data'] as Map<String, dynamic>);
   }
 
+  /// Rattrapage des signaux WebRTC manques (offer/answer/ice/state/hangup)
+  /// destines a l'utilisateur courant, depuis [after] exclus (`id` du dernier
+  /// signal traite). Renvoie la liste brute triee par `id` croissant.
+  Future<List<Map<String, dynamic>>> signalsSince(
+    String callId, {
+    String? after,
+  }) async {
+    final res = await _dio.get<Map<String, dynamic>>(
+      '/workspace/calls/$callId/signals',
+      queryParameters: {if (after != null) 'after': after},
+    );
+    return (res.data!['data'] as List)
+        .whereType<Map<dynamic, dynamic>>()
+        .map((e) => e.map((k, v) => MapEntry(k.toString(), v)))
+        .toList();
+  }
+
   Future<void> accept(String callId) =>
       _dio.post<Map<String, dynamic>>('/workspace/calls/$callId/accept');
 

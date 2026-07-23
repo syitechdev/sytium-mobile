@@ -51,6 +51,30 @@ class CallsRepositoryImpl implements CallsRepository {
   );
 
   @override
+  Future<Result<List<CallSignal>>> signalsSince(
+    String callId, {
+    String? after,
+  }) => _guard(() async {
+    final rows = await _remote.signalsSince(callId, after: after);
+    return rows
+        .where((r) => r['id'] != null && r['type'] != null)
+        .map(
+          (r) => CallSignal(
+            id: r['id'].toString(),
+            type: r['type'].toString(),
+            senderId: (r['sender_id'] ?? '').toString(),
+            recipientUserId: r['recipient_user_id']?.toString(),
+            payload: r['payload'] is Map
+                ? (r['payload'] as Map).map(
+                    (k, v) => MapEntry(k.toString(), v),
+                  )
+                : const {},
+          ),
+        )
+        .toList();
+  });
+
+  @override
   Future<Result<void>> accept(String callId) =>
       _guard(() => _remote.accept(callId));
 

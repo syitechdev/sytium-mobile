@@ -5,6 +5,11 @@ abstract interface class CallsRepository {
   Future<Result<List<IceServer>>> iceServers();
   Future<Result<Call>> startCall(String channelId, CallKind kind);
   Future<Result<Call>> fetchCall(String callId);
+
+  /// Rattrapage des signaux WebRTC manques destines a l'utilisateur, depuis
+  /// [after] exclus (`id` du dernier signal traite ; omis = tout le pending).
+  Future<Result<List<CallSignal>>> signalsSince(String callId, {String? after});
+
   Future<Result<void>> accept(String callId);
   Future<Result<void>> decline(String callId);
   Future<Result<void>> miss(String callId);

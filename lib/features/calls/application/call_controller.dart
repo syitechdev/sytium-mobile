@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:sytium_mobile/core/notifications/callkit_service.dart';
 import 'package:sytium_mobile/features/auth/application/auth_controller.dart';
 import 'package:sytium_mobile/features/calls/application/calls_providers.dart';
 import 'package:sytium_mobile/features/calls/domain/call_models.dart';
@@ -81,6 +82,8 @@ class _PeerLink {
   bool hasVideo = false;
   bool micOn = true;
   final List<RTCIceCandidate> pending = [];
+  // Une seule relance d'offre si l'answer se perd (cf. _sendOffer).
+  bool offerRetried = false;
   // Mesure le temps « creation du leg -> connecte », pour objectiver le
   // time-to-connect et l'effet de la pre-collecte ICE.
   final Stopwatch dialWatch = Stopwatch()..start();
@@ -119,6 +122,19 @@ class CallController extends _$CallController {
   // arrival order. Concurrent handlers on the same RTCPeerConnection corrupt its
   // native state (setRemoteDescription hangs / returns "SessionDescription NULL").
   Future<void> _signalChain = Future<void>.value();
+
+  // ---- Rattrapage des signaux (endpoint /signals) --------------------------
+  // Deduplication live + rejeu par `id` (UUIDv7) : un signal recu en direct et
+  // via le rattrapage ne doit etre applique qu'une fois.
+  final Set<String> _seenSignalIds = <String>{};
+  // Curseur `after` : plus grand id vu (live ou rattrape). UUIDv7 monotone.
+  String? _lastSignalId;
+  // Sonde periodique de rattrapage, active a l'ouverture du canal jusqu'a la
+  // connexion (couvre l'offer/les ICE emis avant que l'abonnement soit actif).
+  Timer? _recoveryTimer;
+  // Vrai quand l'appel a ete decroche via CallKit : dans ce cas seulement on
+  // marque le call natif « connecte » (et uniquement une fois le media etabli).
+  bool _incomingViaCallkit = false;
 
   String? get _me {
     final auth = ref.read(authControllerProvider).valueOrNull;
@@ -249,6 +265,10 @@ class CallController extends _$CallController {
   Future<void> acceptIncoming() async {
     final call = state.call;
     if (call == null || state.phase != CallPhase.incoming) return;
+    // Decroche via CallKit : on marquera le call natif « connecte » seulement
+    // quand le media sera reellement etabli (pas des l'accept), sinon le
+    // minuteur CallKit tourne sur un appel muet.
+    _incomingViaCallkit = true;
     state = state.copyWith(phase: CallPhase.connecting);
     await _prepareMedia(call.kind);
     _armConnectWatchdog();
@@ -367,6 +387,11 @@ class CallController extends _$CallController {
       _onSignal,
       events: const ['workspace.call.signal', 'workspace.call.updated'],
     );
+
+    // Reverb diffuse les signaux une seule fois (ShouldBroadcastNow) : ceux emis
+    // avant que cet abonnement soit actif sont perdus cote transport. On les
+    // rattrape via l'endpoint /signals, des maintenant puis quelques secondes.
+    _startRecoveryPolling();
   }
 
   /// Joins the mesh: subscribes to the call channel first, then reconciles the
@@ -518,6 +543,15 @@ class CallController extends _$CallController {
             _log('connecte a $userId en ${link.dialWatch.elapsedMilliseconds} ms');
             unawaited(_logSelectedPair(pc, userId));
           }
+          // Le media coule enfin : plus besoin de rattraper des signaux, et
+          // c'est SEULEMENT ici qu'on autorise le minuteur CallKit (sinon il
+          // afficherait « en cours » sur un appel muet).
+          _recoveryTimer?.cancel();
+          _recoveryTimer = null;
+          final callId = _callId;
+          if (_incomingViaCallkit && callId != null) {
+            unawaited(CallKitService.setConnected(callId));
+          }
           _connectWatchdog?.cancel();
           if (state.phase != CallPhase.connected && state.isActive) {
             state = state.copyWith(
@@ -564,6 +598,26 @@ class CallController extends _$CallController {
       recipient: link.userId,
       payload: {'sdp': offer.sdp, 'type': offer.type},
     );
+
+    // Filet anti-perte : si aucune answer n'arrive (offer ou answer tombee dans
+    // une fenetre ou le pair n'ecoutait pas), on renvoie l'offre UNE fois apres
+    // ~2 s. Le rattrapage /signals couvre le pair; ceci couvre l'appelant.
+    if (!link.offerRetried) {
+      Timer(const Duration(seconds: 2), () {
+        final current = _peers[link.userId];
+        if (current == null ||
+            !identical(current, link) ||
+            current.remoteSet ||
+            current.connected ||
+            current.offerRetried ||
+            !state.isActive) {
+          return;
+        }
+        current.offerRetried = true;
+        _log("pas d'answer en 2 s -> renvoi de l'offre a ${link.userId}");
+        unawaited(_sendOffer(current));
+      });
+    }
   }
 
   Future<void> _onSignal(RealtimeEvent e) async {
@@ -585,17 +639,36 @@ class CallController extends _$CallController {
     }
     if (e.event != 'workspace.call.signal') return;
 
-    // Ignore our own broadcast echoes and signals meant for another peer.
-    final sender = e.data['sender_id'] as String?;
-    if (sender == null || sender == _me) return;
-    final recipient = e.data['recipient_user_id'] as String?;
-    if (recipient != null && recipient != _me) return;
-
-    final type = e.data['type'] as String?;
     // The realtime transport can deliver the nested `payload` either as a Map or
     // as a JSON string (double-encoding in the Reverb/Pusher wire format). Parse
     // both, otherwise `payload['sdp']` is null and setRemoteDescription fails.
-    final payload = _asPayload(e.data['payload']);
+    _ingestSignal(
+      id: e.data['event_id'] as String?,
+      type: e.data['type'] as String?,
+      sender: e.data['sender_id'] as String?,
+      recipient: e.data['recipient_user_id'] as String?,
+      payload: _asPayload(e.data['payload']),
+    );
+    await _signalChain;
+  }
+
+  /// Point d'entree unique des signaux, live comme rattrapes. Filtre les echos,
+  /// deduplique par `id` (partage entre les deux sources) et met en file serie.
+  void _ingestSignal({
+    required String? type,
+    required String? sender,
+    required Map<String, dynamic> payload,
+    String? id,
+    String? recipient,
+  }) {
+    // Ignore our own broadcast echoes and signals meant for another peer.
+    if (sender == null || sender == _me) return;
+    if (recipient != null && recipient != _me) return;
+
+    if (id != null) {
+      _advanceSignalCursor(id);
+      if (!_seenSignalIds.add(id)) return; // deja applique (live ou rattrapage)
+    }
     _log('<- $type from $sender');
 
     // Chain onto the serial queue so peer-connection operations never overlap.
@@ -608,8 +681,66 @@ class CallController extends _$CallController {
         _log('SIGNAL $type from $sender FAILED: $err');
       }
     });
-    await _signalChain;
   }
+
+  /// Avance le curseur `after` vers le plus grand id vu. Les UUIDv7 sont
+  /// triables lexicographiquement, donc comparables directement.
+  void _advanceSignalCursor(String id) {
+    if (_lastSignalId == null || id.compareTo(_lastSignalId!) > 0) {
+      _lastSignalId = id;
+    }
+  }
+
+  /// Rejoue les signaux persistes que Reverb n'a pas (ou plus) livres. Pagine
+  /// par `after` jusqu'a epuisement ; ne bloque jamais l'appel en cas d'echec.
+  Future<void> _recoverSignals() async {
+    final callId = _callId;
+    if (callId == null || !state.isActive) return;
+    try {
+      while (state.isActive) {
+        final before = _lastSignalId;
+        final res = await ref
+            .read(callsRepositoryProvider)
+            .signalsSince(callId, after: before);
+        final signals = res.valueOrNull ?? const <CallSignal>[];
+        if (signals.isEmpty) break;
+        for (final s in signals) {
+          _ingestSignal(
+            id: s.id,
+            type: s.type,
+            sender: s.senderId,
+            recipient: s.recipientUserId,
+            payload: s.payload,
+          );
+        }
+        // Progression du curseur garantie (serveur: id > after) ; sinon on
+        // s'arrete pour ne jamais boucler indefiniment.
+        if (_lastSignalId == before) break;
+      }
+    } catch (err) {
+      _log('recover signals failed: $err');
+    }
+  }
+
+  /// Lance le rattrapage a l'ouverture du canal puis le repete quelques fois :
+  /// l'offer de l'appelant peut arriver juste apres l'abonnement/le decrochage.
+  /// S'arrete des qu'un pair est connecte, a la fin de l'appel, ou apres ~12 s.
+  void _startRecoveryPolling() {
+    _recoveryTimer?.cancel();
+    unawaited(_recoverSignals());
+    var polls = 0;
+    _recoveryTimer = Timer.periodic(const Duration(milliseconds: 1200), (t) {
+      polls++;
+      if (!state.isActive || _anyConnected() || polls > 10) {
+        t.cancel();
+        _recoveryTimer = null;
+        return;
+      }
+      unawaited(_recoverSignals());
+    });
+  }
+
+  bool _anyConnected() => _peers.values.any((link) => link.connected);
 
   Future<void> _handleSignal(
     String? type,
@@ -756,6 +887,11 @@ class CallController extends _$CallController {
   Future<void> _teardown() async {
     _connectWatchdog?.cancel();
     _connectWatchdog = null;
+    _recoveryTimer?.cancel();
+    _recoveryTimer = null;
+    _seenSignalIds.clear();
+    _lastSignalId = null;
+    _incomingViaCallkit = false;
     final channel = _channelName;
     if (channel != null) _realtime?.unsubscribe(channel);
     _channelName = null;

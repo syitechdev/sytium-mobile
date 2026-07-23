@@ -178,7 +178,9 @@ class PushNotificationsCoordinator {
             : callerName,
       );
     await controller.acceptIncoming();
-    unawaited(CallKitService.setConnected(callId));
+    // Ne PAS marquer CallKit « connecte » ici : le media n'est pas encore
+    // etabli. Le CallController le fera quand la RTCPeerConnection passera a
+    // « connected », sinon le minuteur CallKit tourne sur un appel muet.
   }
 
   Future<void> _decline(String callId) =>
