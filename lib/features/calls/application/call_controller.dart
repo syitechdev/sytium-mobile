@@ -524,7 +524,16 @@ class CallController extends _$CallController {
         );
       }
       ..onIceGatheringState = ((s) => _log('iceGather $userId: $s'))
-      ..onIceConnectionState = ((s) => _log('iceConn $userId: $s'))
+      ..onIceConnectionState = (s) {
+        _log('iceConn $userId: $s');
+        // Le chemin reseau est etabli (candidat valide) : on peut deja montrer
+        // « connecte » cote UI, ~1 s avant la fin du DTLS. Reduit la fenetre
+        // « connexion… » de l'appelant pour l'aligner sur l'appele.
+        if (s == RTCIceConnectionState.RTCIceConnectionStateConnected ||
+            s == RTCIceConnectionState.RTCIceConnectionStateCompleted) {
+          _markConnected(link, pc, userId);
+        }
+      }
       ..onSignalingState = ((s) => _log('sigState $userId: $s'))
       ..onTrack = (event) {
         _log('track $userId: ${event.track.kind}');
@@ -537,29 +546,16 @@ class CallController extends _$CallController {
       ..onConnectionState = (s) {
         _log('connState $userId: $s');
         if (s == RTCPeerConnectionState.RTCPeerConnectionStateConnected) {
-          link.connected = true;
-          if (link.dialWatch.isRunning) {
-            link.dialWatch.stop();
-            _log('connecte a $userId en ${link.dialWatch.elapsedMilliseconds} ms');
-            unawaited(_logSelectedPair(pc, userId));
-          }
-          // Le media coule enfin : plus besoin de rattraper des signaux, et
-          // c'est SEULEMENT ici qu'on autorise le minuteur CallKit (sinon il
-          // afficherait « en cours » sur un appel muet).
-          _recoveryTimer?.cancel();
-          _recoveryTimer = null;
+          // Repli : couvre le cas où iceConnection=connected n'a pas été émis
+          // distinctement. Idempotent (cf. _markConnected).
+          _markConnected(link, pc, userId);
+          // Minuteur CallKit natif : SEULEMENT à la connexion COMPLÈTE (DTLS
+          // fini = média réel), pour ne jamais afficher « en cours » sur un
+          // appel muet — indépendamment de l'avance prise par l'UI à l'ICE.
           final callId = _callId;
           if (_incomingViaCallkit && callId != null) {
             unawaited(CallKitService.setConnected(callId));
           }
-          _connectWatchdog?.cancel();
-          if (state.phase != CallPhase.connected && state.isActive) {
-            state = state.copyWith(
-              phase: CallPhase.connected,
-              connectedAt: state.connectedAt ?? DateTime.now(),
-            );
-          }
-          _publish();
         } else if (s == RTCPeerConnectionState.RTCPeerConnectionStateFailed ||
             s == RTCPeerConnectionState.RTCPeerConnectionStateClosed) {
           // A single leg dropping removes its tile; it does not end the call.
@@ -570,6 +566,32 @@ class CallController extends _$CallController {
     _publish();
     if (offer) await _sendOffer(link);
     return link;
+  }
+
+  /// Passe l'appel à « connecté » côté UI (écran + minuteur) dès que le chemin
+  /// réseau est établi — sur iceConnection=connected (tôt) ou, en repli, sur
+  /// connectionState=connected. Idempotent via `link.connected`. Ne touche PAS
+  /// à CallKit : le minuteur natif iOS reste posé à la connexion complète (DTLS)
+  /// dans onConnectionState, pour ne pas mentir sur un appel encore muet.
+  void _markConnected(_PeerLink link, RTCPeerConnection pc, String userId) {
+    if (link.connected) return;
+    link.connected = true;
+    if (link.dialWatch.isRunning) {
+      link.dialWatch.stop();
+      _log('connecte a $userId en ${link.dialWatch.elapsedMilliseconds} ms');
+      unawaited(_logSelectedPair(pc, userId));
+    }
+    // Chemin établi : plus besoin de rattraper des signaux ni du chien de garde.
+    _recoveryTimer?.cancel();
+    _recoveryTimer = null;
+    _connectWatchdog?.cancel();
+    if (state.phase != CallPhase.connected && state.isActive) {
+      state = state.copyWith(
+        phase: CallPhase.connected,
+        connectedAt: state.connectedAt ?? DateTime.now(),
+      );
+    }
+    _publish();
   }
 
   Future<void> _removePeer(String userId) async {
