@@ -1,4 +1,6 @@
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:sytium_mobile/core/storage/secure_token_store.dart'
+    show kSytiumKeychainOptions;
 
 /// Dernière réponse de `bootstrap` conservée sur l'appareil, en JSON brut.
 ///
@@ -20,6 +22,10 @@ class SecureSessionCache implements SessionCache {
           storage ??
           const FlutterSecureStorage(
             aOptions: AndroidOptions(encryptedSharedPreferences: true),
+            // Meme raison que le token (cf. [kSytiumKeychainOptions]) : `restore()`
+            // relit ce cache pour reconstruire le profil, y compris au reveil
+            // ecran verrouille.
+            iOptions: kSytiumKeychainOptions,
           );
 
   final FlutterSecureStorage _storage;

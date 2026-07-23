@@ -1,6 +1,8 @@
 import 'dart:math';
 
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:sytium_mobile/core/storage/secure_token_store.dart'
+    show kSytiumKeychainOptions;
 
 /// Résout l'identifiant d'installation. Alias de fonction plutôt qu'interface :
 /// un seul membre, et cela donne un double trivial en test — l'implémentation
@@ -20,6 +22,11 @@ class DeviceIdentity {
           storage ??
           const FlutterSecureStorage(
             aOptions: AndroidOptions(encryptedSharedPreferences: true),
+            // Critique ici : une lecture verrouillee renverrait null et
+            // getOrCreate() forgerait un NOUVEL id d'appareil, orphelinant la
+            // ligne backend et le token VoIP -> l'appareil cesse de recevoir les
+            // appels. Cf. [kSytiumKeychainOptions].
+            iOptions: kSytiumKeychainOptions,
           );
 
   final FlutterSecureStorage _storage;

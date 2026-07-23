@@ -1,5 +1,19 @@
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
+/// Accessibilite keychain iOS. Le defaut du plugin est `unlocked`
+/// (kSecAttrAccessibleWhenUnlocked) : le keychain n'est alors LISIBLE QUE
+/// telephone deverrouille. Or un push VoIP/CallKit reveille l'app en
+/// arriere-plan AVANT le deverrouillage : `restore()` lisait le token pendant
+/// cette fenetre verrouillee, obtenait null, et renvoyait l'utilisateur sur
+/// l'ecran de connexion (appel jamais rejoint, ecran d'appel qui se ferme).
+/// `first_unlock` (kSecAttrAccessibleAfterFirstUnlock) rend le token lisible
+/// des le premier deverrouillage suivant un redemarrage, y compris ensuite
+/// ecran verrouille — le niveau recommande par Apple pour un identifiant que
+/// l'app doit lire en tache de fond.
+const kSytiumKeychainOptions = IOSOptions(
+  accessibility: KeychainAccessibility.first_unlock,
+);
+
 /// Abstraction so the app and tests don't depend on the platform channel.
 abstract interface class TokenStore {
   Future<void> save({required String token, DateTime? expiresAt});
@@ -16,6 +30,7 @@ class SecureTokenStore implements TokenStore {
           storage ??
           const FlutterSecureStorage(
             aOptions: AndroidOptions(encryptedSharedPreferences: true),
+            iOptions: kSytiumKeychainOptions,
           );
 
   final FlutterSecureStorage _storage;
