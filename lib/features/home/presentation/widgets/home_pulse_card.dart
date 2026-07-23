@@ -59,7 +59,9 @@ class _Card extends StatelessWidget {
                     percent: pulse.tachesTaux / 100,
                     color: colors.brand,
                     centerLabel: '${pulse.tachesTaux.round()} %',
-                    caption: 'Tâches BTP\n${pulse.tachesDone}/${pulse.tachesTotal}',
+                    // Neutre : ces tâches viennent du module Projets, générique
+                    // à tous les secteurs — « BTP » supposait à tort un chantier.
+                    caption: 'Tâches projets\n${pulse.tachesDone}/${pulse.tachesTotal}',
                   ),
                 ),
               ],
