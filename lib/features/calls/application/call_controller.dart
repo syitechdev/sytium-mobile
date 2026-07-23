@@ -580,6 +580,36 @@ class CallController extends _$CallController {
     } catch (_) {}
     await link.renderer.dispose();
     _publish();
+
+    // Dernier pair parti d'un appel CONNECTE (l'autre a raccroche, ou sa
+    // PeerConnection est tombee) : terminer localement. On ne depend pas de
+    // `workspace.call.updated` (status=ended) qui est ShouldBroadcastNow, donc
+    // perdable, et n'est PAS rejoue par l'endpoint /signals — c'est ce qui
+    // laissait l'ecran du destinataire compter apres le raccrochage de l'appelant.
+    // Gate sur `connected` : pendant la mise en place (sonnerie) un mesh vide est
+    // transitoire et normal, la fin est alors geree par le status declined/cancelled.
+    if (_peers.isEmpty &&
+        state.isActive &&
+        state.phase == CallPhase.connected) {
+      _finishRemotely();
+    }
+  }
+
+  /// Termine l'appel a l'initiative de l'autre pair (raccrochage/fin distante) :
+  /// bascule l'etat, ferme aussi l'UI CallKit native si l'appel venait de la, et
+  /// libere les ressources. Idempotent via le garde `state.isActive`.
+  void _finishRemotely() {
+    if (!state.isActive) return;
+    final callId = _callId;
+    final wasCallkit = _incomingViaCallkit;
+    state = const CallSession(phase: CallPhase.ended);
+    if (wasCallkit && callId != null) {
+      // Sinon l'appel natif iOS resterait affiche apres la fermeture de l'ecran
+      // Flutter. Idempotent cote coordinateur (actionCallEnded -> hangup no-op
+      // car l'appel n'est deja plus actif).
+      unawaited(CallKitService.end(callId));
+    }
+    unawaited(_teardown());
   }
 
   // ---- Signaling -----------------------------------------------------------
@@ -628,10 +658,7 @@ class CallController extends _$CallController {
           status == 'ended' ||
           status == 'missed' ||
           status == 'cancelled') {
-        if (state.isActive) {
-          state = const CallSession(phase: CallPhase.ended);
-          unawaited(_teardown());
-        }
+        _finishRemotely();
         return;
       }
       _syncRoster(_parseRoster(e.data['participants']));
