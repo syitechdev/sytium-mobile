@@ -20,6 +20,9 @@ _$DashboardKpisDtoImpl _$$DashboardKpisDtoImplFromJson(
   presence: json['presence'] == null
       ? null
       : PresenceSnapshotDto.fromJson(json['presence'] as Map<String, dynamic>),
+  today: json['today'] == null
+      ? null
+      : TodaySnapshotDto.fromJson(json['today'] as Map<String, dynamic>),
 );
 
 Map<String, dynamic> _$$DashboardKpisDtoImplToJson(
@@ -30,6 +33,7 @@ Map<String, dynamic> _$$DashboardKpisDtoImplToJson(
   'kpis': instance.kpis,
   'deltas': instance.deltas,
   'presence': instance.presence,
+  'today': instance.today,
 };
 
 _$DashboardKpiDeltasDtoImpl _$$DashboardKpiDeltasDtoImplFromJson(
@@ -68,6 +72,24 @@ Map<String, dynamic> _$$PresenceSnapshotDtoImplToJson(
   'presents': instance.presents,
   'en_mission': instance.enMission,
   'absents': instance.absents,
+};
+
+_$TodaySnapshotDtoImpl _$$TodaySnapshotDtoImplFromJson(
+  Map<String, dynamic> json,
+) => _$TodaySnapshotDtoImpl(
+  ca: json['ca'] == null ? 0 : _numFrom(json['ca']),
+  recettes: json['recettes'] == null ? 0 : _numFrom(json['recettes']),
+  depenses: json['depenses'] == null ? 0 : _numFrom(json['depenses']),
+  solde: json['solde'] == null ? 0 : _numFrom(json['solde']),
+);
+
+Map<String, dynamic> _$$TodaySnapshotDtoImplToJson(
+  _$TodaySnapshotDtoImpl instance,
+) => <String, dynamic>{
+  'ca': instance.ca,
+  'recettes': instance.recettes,
+  'depenses': instance.depenses,
+  'solde': instance.solde,
 };
 
 _$DashboardKpiValuesDtoImpl _$$DashboardKpiValuesDtoImplFromJson(

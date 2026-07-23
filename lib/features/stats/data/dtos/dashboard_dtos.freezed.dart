@@ -27,6 +27,7 @@ mixin _$DashboardKpisDto {
   DashboardKpiValuesDto get kpis => throw _privateConstructorUsedError;
   DashboardKpiDeltasDto get deltas => throw _privateConstructorUsedError;
   PresenceSnapshotDto? get presence => throw _privateConstructorUsedError;
+  TodaySnapshotDto? get today => throw _privateConstructorUsedError;
 
   /// Serializes this DashboardKpisDto to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -51,11 +52,13 @@ abstract class $DashboardKpisDtoCopyWith<$Res> {
     DashboardKpiValuesDto kpis,
     DashboardKpiDeltasDto deltas,
     PresenceSnapshotDto? presence,
+    TodaySnapshotDto? today,
   });
 
   $DashboardKpiValuesDtoCopyWith<$Res> get kpis;
   $DashboardKpiDeltasDtoCopyWith<$Res> get deltas;
   $PresenceSnapshotDtoCopyWith<$Res>? get presence;
+  $TodaySnapshotDtoCopyWith<$Res>? get today;
 }
 
 /// @nodoc
@@ -78,6 +81,7 @@ class _$DashboardKpisDtoCopyWithImpl<$Res, $Val extends DashboardKpisDto>
     Object? kpis = null,
     Object? deltas = null,
     Object? presence = freezed,
+    Object? today = freezed,
   }) {
     return _then(
       _value.copyWith(
@@ -101,6 +105,10 @@ class _$DashboardKpisDtoCopyWithImpl<$Res, $Val extends DashboardKpisDto>
                 ? _value.presence
                 : presence // ignore: cast_nullable_to_non_nullable
                       as PresenceSnapshotDto?,
+            today: freezed == today
+                ? _value.today
+                : today // ignore: cast_nullable_to_non_nullable
+                      as TodaySnapshotDto?,
           )
           as $Val,
     );
@@ -139,6 +147,20 @@ class _$DashboardKpisDtoCopyWithImpl<$Res, $Val extends DashboardKpisDto>
       return _then(_value.copyWith(presence: value) as $Val);
     });
   }
+
+  /// Create a copy of DashboardKpisDto
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @pragma('vm:prefer-inline')
+  $TodaySnapshotDtoCopyWith<$Res>? get today {
+    if (_value.today == null) {
+      return null;
+    }
+
+    return $TodaySnapshotDtoCopyWith<$Res>(_value.today!, (value) {
+      return _then(_value.copyWith(today: value) as $Val);
+    });
+  }
 }
 
 /// @nodoc
@@ -156,6 +178,7 @@ abstract class _$$DashboardKpisDtoImplCopyWith<$Res>
     DashboardKpiValuesDto kpis,
     DashboardKpiDeltasDto deltas,
     PresenceSnapshotDto? presence,
+    TodaySnapshotDto? today,
   });
 
   @override
@@ -164,6 +187,8 @@ abstract class _$$DashboardKpisDtoImplCopyWith<$Res>
   $DashboardKpiDeltasDtoCopyWith<$Res> get deltas;
   @override
   $PresenceSnapshotDtoCopyWith<$Res>? get presence;
+  @override
+  $TodaySnapshotDtoCopyWith<$Res>? get today;
 }
 
 /// @nodoc
@@ -185,6 +210,7 @@ class __$$DashboardKpisDtoImplCopyWithImpl<$Res>
     Object? kpis = null,
     Object? deltas = null,
     Object? presence = freezed,
+    Object? today = freezed,
   }) {
     return _then(
       _$DashboardKpisDtoImpl(
@@ -208,6 +234,10 @@ class __$$DashboardKpisDtoImplCopyWithImpl<$Res>
             ? _value.presence
             : presence // ignore: cast_nullable_to_non_nullable
                   as PresenceSnapshotDto?,
+        today: freezed == today
+            ? _value.today
+            : today // ignore: cast_nullable_to_non_nullable
+                  as TodaySnapshotDto?,
       ),
     );
   }
@@ -222,6 +252,7 @@ class _$DashboardKpisDtoImpl implements _DashboardKpisDto {
     this.kpis = const DashboardKpiValuesDto(),
     this.deltas = const DashboardKpiDeltasDto(),
     this.presence,
+    this.today,
   });
 
   factory _$DashboardKpisDtoImpl.fromJson(Map<String, dynamic> json) =>
@@ -241,10 +272,12 @@ class _$DashboardKpisDtoImpl implements _DashboardKpisDto {
   final DashboardKpiDeltasDto deltas;
   @override
   final PresenceSnapshotDto? presence;
+  @override
+  final TodaySnapshotDto? today;
 
   @override
   String toString() {
-    return 'DashboardKpisDto(period: $period, periodLabel: $periodLabel, kpis: $kpis, deltas: $deltas, presence: $presence)';
+    return 'DashboardKpisDto(period: $period, periodLabel: $periodLabel, kpis: $kpis, deltas: $deltas, presence: $presence, today: $today)';
   }
 
   @override
@@ -258,13 +291,21 @@ class _$DashboardKpisDtoImpl implements _DashboardKpisDto {
             (identical(other.kpis, kpis) || other.kpis == kpis) &&
             (identical(other.deltas, deltas) || other.deltas == deltas) &&
             (identical(other.presence, presence) ||
-                other.presence == presence));
+                other.presence == presence) &&
+            (identical(other.today, today) || other.today == today));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode =>
-      Object.hash(runtimeType, period, periodLabel, kpis, deltas, presence);
+  int get hashCode => Object.hash(
+    runtimeType,
+    period,
+    periodLabel,
+    kpis,
+    deltas,
+    presence,
+    today,
+  );
 
   /// Create a copy of DashboardKpisDto
   /// with the given fields replaced by the non-null parameter values.
@@ -290,6 +331,7 @@ abstract class _DashboardKpisDto implements DashboardKpisDto {
     final DashboardKpiValuesDto kpis,
     final DashboardKpiDeltasDto deltas,
     final PresenceSnapshotDto? presence,
+    final TodaySnapshotDto? today,
   }) = _$DashboardKpisDtoImpl;
 
   factory _DashboardKpisDto.fromJson(Map<String, dynamic> json) =
@@ -306,6 +348,8 @@ abstract class _DashboardKpisDto implements DashboardKpisDto {
   DashboardKpiDeltasDto get deltas;
   @override
   PresenceSnapshotDto? get presence;
+  @override
+  TodaySnapshotDto? get today;
 
   /// Create a copy of DashboardKpisDto
   /// with the given fields replaced by the non-null parameter values.
@@ -808,6 +852,246 @@ abstract class _PresenceSnapshotDto implements PresenceSnapshotDto {
   @override
   @JsonKey(includeFromJson: false, includeToJson: false)
   _$$PresenceSnapshotDtoImplCopyWith<_$PresenceSnapshotDtoImpl> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+TodaySnapshotDto _$TodaySnapshotDtoFromJson(Map<String, dynamic> json) {
+  return _TodaySnapshotDto.fromJson(json);
+}
+
+/// @nodoc
+mixin _$TodaySnapshotDto {
+  @JsonKey(name: 'ca', fromJson: _numFrom)
+  num get ca => throw _privateConstructorUsedError;
+  @JsonKey(name: 'recettes', fromJson: _numFrom)
+  num get recettes => throw _privateConstructorUsedError;
+  @JsonKey(name: 'depenses', fromJson: _numFrom)
+  num get depenses => throw _privateConstructorUsedError;
+  @JsonKey(name: 'solde', fromJson: _numFrom)
+  num get solde => throw _privateConstructorUsedError;
+
+  /// Serializes this TodaySnapshotDto to a JSON map.
+  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
+
+  /// Create a copy of TodaySnapshotDto
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  $TodaySnapshotDtoCopyWith<TodaySnapshotDto> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+abstract class $TodaySnapshotDtoCopyWith<$Res> {
+  factory $TodaySnapshotDtoCopyWith(
+    TodaySnapshotDto value,
+    $Res Function(TodaySnapshotDto) then,
+  ) = _$TodaySnapshotDtoCopyWithImpl<$Res, TodaySnapshotDto>;
+  @useResult
+  $Res call({
+    @JsonKey(name: 'ca', fromJson: _numFrom) num ca,
+    @JsonKey(name: 'recettes', fromJson: _numFrom) num recettes,
+    @JsonKey(name: 'depenses', fromJson: _numFrom) num depenses,
+    @JsonKey(name: 'solde', fromJson: _numFrom) num solde,
+  });
+}
+
+/// @nodoc
+class _$TodaySnapshotDtoCopyWithImpl<$Res, $Val extends TodaySnapshotDto>
+    implements $TodaySnapshotDtoCopyWith<$Res> {
+  _$TodaySnapshotDtoCopyWithImpl(this._value, this._then);
+
+  // ignore: unused_field
+  final $Val _value;
+  // ignore: unused_field
+  final $Res Function($Val) _then;
+
+  /// Create a copy of TodaySnapshotDto
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? ca = null,
+    Object? recettes = null,
+    Object? depenses = null,
+    Object? solde = null,
+  }) {
+    return _then(
+      _value.copyWith(
+            ca: null == ca
+                ? _value.ca
+                : ca // ignore: cast_nullable_to_non_nullable
+                      as num,
+            recettes: null == recettes
+                ? _value.recettes
+                : recettes // ignore: cast_nullable_to_non_nullable
+                      as num,
+            depenses: null == depenses
+                ? _value.depenses
+                : depenses // ignore: cast_nullable_to_non_nullable
+                      as num,
+            solde: null == solde
+                ? _value.solde
+                : solde // ignore: cast_nullable_to_non_nullable
+                      as num,
+          )
+          as $Val,
+    );
+  }
+}
+
+/// @nodoc
+abstract class _$$TodaySnapshotDtoImplCopyWith<$Res>
+    implements $TodaySnapshotDtoCopyWith<$Res> {
+  factory _$$TodaySnapshotDtoImplCopyWith(
+    _$TodaySnapshotDtoImpl value,
+    $Res Function(_$TodaySnapshotDtoImpl) then,
+  ) = __$$TodaySnapshotDtoImplCopyWithImpl<$Res>;
+  @override
+  @useResult
+  $Res call({
+    @JsonKey(name: 'ca', fromJson: _numFrom) num ca,
+    @JsonKey(name: 'recettes', fromJson: _numFrom) num recettes,
+    @JsonKey(name: 'depenses', fromJson: _numFrom) num depenses,
+    @JsonKey(name: 'solde', fromJson: _numFrom) num solde,
+  });
+}
+
+/// @nodoc
+class __$$TodaySnapshotDtoImplCopyWithImpl<$Res>
+    extends _$TodaySnapshotDtoCopyWithImpl<$Res, _$TodaySnapshotDtoImpl>
+    implements _$$TodaySnapshotDtoImplCopyWith<$Res> {
+  __$$TodaySnapshotDtoImplCopyWithImpl(
+    _$TodaySnapshotDtoImpl _value,
+    $Res Function(_$TodaySnapshotDtoImpl) _then,
+  ) : super(_value, _then);
+
+  /// Create a copy of TodaySnapshotDto
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? ca = null,
+    Object? recettes = null,
+    Object? depenses = null,
+    Object? solde = null,
+  }) {
+    return _then(
+      _$TodaySnapshotDtoImpl(
+        ca: null == ca
+            ? _value.ca
+            : ca // ignore: cast_nullable_to_non_nullable
+                  as num,
+        recettes: null == recettes
+            ? _value.recettes
+            : recettes // ignore: cast_nullable_to_non_nullable
+                  as num,
+        depenses: null == depenses
+            ? _value.depenses
+            : depenses // ignore: cast_nullable_to_non_nullable
+                  as num,
+        solde: null == solde
+            ? _value.solde
+            : solde // ignore: cast_nullable_to_non_nullable
+                  as num,
+      ),
+    );
+  }
+}
+
+/// @nodoc
+@JsonSerializable()
+class _$TodaySnapshotDtoImpl implements _TodaySnapshotDto {
+  const _$TodaySnapshotDtoImpl({
+    @JsonKey(name: 'ca', fromJson: _numFrom) this.ca = 0,
+    @JsonKey(name: 'recettes', fromJson: _numFrom) this.recettes = 0,
+    @JsonKey(name: 'depenses', fromJson: _numFrom) this.depenses = 0,
+    @JsonKey(name: 'solde', fromJson: _numFrom) this.solde = 0,
+  });
+
+  factory _$TodaySnapshotDtoImpl.fromJson(Map<String, dynamic> json) =>
+      _$$TodaySnapshotDtoImplFromJson(json);
+
+  @override
+  @JsonKey(name: 'ca', fromJson: _numFrom)
+  final num ca;
+  @override
+  @JsonKey(name: 'recettes', fromJson: _numFrom)
+  final num recettes;
+  @override
+  @JsonKey(name: 'depenses', fromJson: _numFrom)
+  final num depenses;
+  @override
+  @JsonKey(name: 'solde', fromJson: _numFrom)
+  final num solde;
+
+  @override
+  String toString() {
+    return 'TodaySnapshotDto(ca: $ca, recettes: $recettes, depenses: $depenses, solde: $solde)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$TodaySnapshotDtoImpl &&
+            (identical(other.ca, ca) || other.ca == ca) &&
+            (identical(other.recettes, recettes) ||
+                other.recettes == recettes) &&
+            (identical(other.depenses, depenses) ||
+                other.depenses == depenses) &&
+            (identical(other.solde, solde) || other.solde == solde));
+  }
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  int get hashCode => Object.hash(runtimeType, ca, recettes, depenses, solde);
+
+  /// Create a copy of TodaySnapshotDto
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$TodaySnapshotDtoImplCopyWith<_$TodaySnapshotDtoImpl> get copyWith =>
+      __$$TodaySnapshotDtoImplCopyWithImpl<_$TodaySnapshotDtoImpl>(
+        this,
+        _$identity,
+      );
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$$TodaySnapshotDtoImplToJson(this);
+  }
+}
+
+abstract class _TodaySnapshotDto implements TodaySnapshotDto {
+  const factory _TodaySnapshotDto({
+    @JsonKey(name: 'ca', fromJson: _numFrom) final num ca,
+    @JsonKey(name: 'recettes', fromJson: _numFrom) final num recettes,
+    @JsonKey(name: 'depenses', fromJson: _numFrom) final num depenses,
+    @JsonKey(name: 'solde', fromJson: _numFrom) final num solde,
+  }) = _$TodaySnapshotDtoImpl;
+
+  factory _TodaySnapshotDto.fromJson(Map<String, dynamic> json) =
+      _$TodaySnapshotDtoImpl.fromJson;
+
+  @override
+  @JsonKey(name: 'ca', fromJson: _numFrom)
+  num get ca;
+  @override
+  @JsonKey(name: 'recettes', fromJson: _numFrom)
+  num get recettes;
+  @override
+  @JsonKey(name: 'depenses', fromJson: _numFrom)
+  num get depenses;
+  @override
+  @JsonKey(name: 'solde', fromJson: _numFrom)
+  num get solde;
+
+  /// Create a copy of TodaySnapshotDto
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  _$$TodaySnapshotDtoImplCopyWith<_$TodaySnapshotDtoImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }
 

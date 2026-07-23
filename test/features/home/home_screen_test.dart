@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:intl/date_symbol_data_local.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sytium_mobile/core/error/failure.dart';
 import 'package:sytium_mobile/core/result/result.dart';
@@ -162,19 +163,6 @@ const _kStatusPresent = PointageStatus(
   todayCount: 1,
 );
 
-const _kStatusDayClosed = PointageStatus(
-  hasEmployee: true,
-  nextType: null,
-  dayClosed: true,
-  todayCount: 2,
-);
-
-const _kStatusNoEmployee = PointageStatus(
-  hasEmployee: false,
-  nextType: null,
-  dayClosed: false,
-);
-
 MobileCapabilities _caps({bool dashboard = false}) => MobileCapabilities(
       dashboard: dashboard,
       employeeSpace: true,
@@ -283,8 +271,12 @@ Widget _hostHome({
 // ---------------------------------------------------------------------------
 
 void main() {
+  // La salutation formate la date du jour en français.
+  setUpAll(() => initializeDateFormatting('fr_FR'));
+
   group('HomeScreen — profile card', () {
-    testWidgets('affiche le poste seul, sans le département', (tester) async {
+    testWidgets('salue par le prénom, sans nom complet ni poste',
+        (tester) async {
       await tester.pumpWidget(
         await _buildScreen(
           tester,
@@ -294,14 +286,14 @@ void main() {
       );
       await tester.pump();
 
-      expect(find.text('Alice Kouassi'), findsOneWidget);
-      expect(find.text('Ingénieure Logiciel'), findsOneWidget);
-      // Le département faisait une seconde ligne tronquée sans valeur ajoutée.
-      expect(find.textContaining('DSI'), findsNothing);
+      // Une salutation s'adresse à la personne : prénom seul, pas le nom entier
+      // ni l'intitulé de poste.
+      expect(find.text('Bonjour, Alice 👋'), findsOneWidget);
+      expect(find.text('Alice Kouassi'), findsNothing);
+      expect(find.text('Ingénieure Logiciel'), findsNothing);
     });
 
-    testWidgets('renders name without subtitle when poste is absent',
-        (tester) async {
+    testWidgets('salue même sans poste renseigné', (tester) async {
       await tester.pumpWidget(
         await _buildScreen(
           tester,
@@ -311,7 +303,7 @@ void main() {
       );
       await tester.pump();
 
-      expect(find.text('Bob Martin'), findsOneWidget);
+      expect(find.text('Bonjour, Bob 👋'), findsOneWidget);
     });
 
     testWidgets("l'en-tête défile avec le contenu", (tester) async {
@@ -352,8 +344,8 @@ void main() {
       await tester.pump();
 
       final avatar = tester.getCenter(find.byType(AppAvatar)).dx;
-      final name = tester.getCenter(find.text('Alice Kouassi')).dx;
-      expect(avatar, greaterThan(name));
+      final greeting = tester.getCenter(find.text('Bonjour, Alice 👋')).dx;
+      expect(avatar, greaterThan(greeting));
     });
 
     testWidgets("taper l'avatar ouvre l'onglet Explorer", (tester) async {
@@ -373,119 +365,6 @@ void main() {
       await tester.pump();
 
       expect(opened, isTrue);
-    });
-  });
-
-  group('HomeScreen — statut du jour card', () {
-    testWidgets('shows loading indicator while pointage status loads',
-        (tester) async {
-      SharedPreferences.setMockInitialValues({});
-
-      // A Completer gives us control: we complete it after assertions so
-      // no pending timers are left when the widget tree is disposed.
-      final completer = Completer<PointageStatus>();
-
-      final container = ProviderContainer(
-        overrides: [
-          authRepositoryProvider.overrideWithValue(
-            const _AuthRepo(_kUserWithPoste),
-          ),
-          pointageStatusProvider.overrideWith(
-            (ref) => completer.future,
-          ),
-          statsRepositoryProvider.overrideWithValue(const _StatsLoadingRepo()),
-      teamPulseProvider.overrideWith((ref) => Completer<TeamPulse>().future),
-        ],
-      );
-      addTearDown(container.dispose);
-      await container.read(authControllerProvider.future);
-
-      await tester.pumpWidget(
-        UncontrolledProviderScope(
-          container: container,
-          child: MaterialApp(
-            theme: AppTheme.light(),
-            home: Scaffold(
-              body: HomeScreen(
-                user: _kUserWithPoste,
-                capabilities: const MobileCapabilities(
-                  dashboard: true,
-                  employeeSpace: true,
-                  messaging: false,
-                  weeklyObjectives: false,
-                  leaveRequests: false,
-                  permissionRequests: false,
-                  approvals: false,
-                  commercial: false,
-                  finance: false,
-                ),
-                onPointer: () {},
-                onStats: () {},
-                onExplorer: () {},
-              ),
-            ),
-          ),
-        ),
-      );
-      // Provider hasn't resolved yet → loading state shows the spinner.
-      expect(find.byType(CircularProgressIndicator), findsOneWidget);
-
-      // Resolve the completer so the timer/future is cleaned up before teardown.
-      completer.complete(_kStatusPresent);
-      await tester.pumpAndSettle();
-    });
-
-    testWidgets('shows "Pas encore pointé" label when todayCount == 0',
-        (tester) async {
-      await tester.pumpWidget(
-        await _buildScreen(
-          tester,
-          user: _kUserWithPoste,
-          pointageStatus: _kStatusNotPointed,
-        ),
-      );
-      await tester.pump();
-
-      expect(find.textContaining('Pas encore pointé'), findsWidgets);
-    });
-
-    testWidgets('shows "Présent" label when pointed', (tester) async {
-      await tester.pumpWidget(
-        await _buildScreen(
-          tester,
-          user: _kUserWithPoste,
-          pointageStatus: _kStatusPresent,
-        ),
-      );
-      await tester.pump();
-
-      expect(find.text('Présent'), findsOneWidget);
-    });
-
-    testWidgets('shows "Journée terminée" when day closed', (tester) async {
-      await tester.pumpWidget(
-        await _buildScreen(
-          tester,
-          user: _kUserWithPoste,
-          pointageStatus: _kStatusDayClosed,
-        ),
-      );
-      await tester.pump();
-
-      expect(find.text('Journée terminée'), findsOneWidget);
-    });
-
-    testWidgets('shows "Profil RH non lié" when no employee', (tester) async {
-      await tester.pumpWidget(
-        await _buildScreen(
-          tester,
-          user: _kUserNoPoste,
-          pointageStatus: _kStatusNoEmployee,
-        ),
-      );
-      await tester.pump();
-
-      expect(find.text('Profil RH non lié'), findsOneWidget);
     });
   });
 
@@ -575,7 +454,7 @@ void main() {
       expect(repo.statusCalls, 1);
 
       await tester.fling(
-        find.text('Statut du jour'),
+        find.text('À faire'),
         const Offset(0, 300),
         1000,
       );

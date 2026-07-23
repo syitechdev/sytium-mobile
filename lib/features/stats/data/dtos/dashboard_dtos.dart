@@ -40,6 +40,7 @@ class DashboardKpisDto with _$DashboardKpisDto {
     @Default(DashboardKpiValuesDto()) DashboardKpiValuesDto kpis,
     @Default(DashboardKpiDeltasDto()) DashboardKpiDeltasDto deltas,
     PresenceSnapshotDto? presence,
+    TodaySnapshotDto? today,
   }) = _DashboardKpisDto;
 
   factory DashboardKpisDto.fromJson(Map<String, dynamic> json) =>
@@ -77,6 +78,20 @@ class PresenceSnapshotDto with _$PresenceSnapshotDto {
 
   factory PresenceSnapshotDto.fromJson(Map<String, dynamic> json) =>
       _$PresenceSnapshotDtoFromJson(json);
+}
+
+/// Chiffres de la seule journee : facture, encaisse, depense, et le net.
+@freezed
+class TodaySnapshotDto with _$TodaySnapshotDto {
+  const factory TodaySnapshotDto({
+    @JsonKey(name: 'ca', fromJson: _numFrom) @Default(0) num ca,
+    @JsonKey(name: 'recettes', fromJson: _numFrom) @Default(0) num recettes,
+    @JsonKey(name: 'depenses', fromJson: _numFrom) @Default(0) num depenses,
+    @JsonKey(name: 'solde', fromJson: _numFrom) @Default(0) num solde,
+  }) = _TodaySnapshotDto;
+
+  factory TodaySnapshotDto.fromJson(Map<String, dynamic> json) =>
+      _$TodaySnapshotDtoFromJson(json);
 }
 
 @freezed

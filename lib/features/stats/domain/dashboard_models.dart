@@ -33,6 +33,23 @@ class PresenceSnapshot {
   bool get isEmpty => effectifActif == 0;
 }
 
+/// Chiffres du jour meme, hors periode : ce qui a ete facture, encaisse et
+/// depense aujourd'hui. Le solde est le net de la journee, pas la tresorerie.
+@immutable
+class TodaySnapshot {
+  const TodaySnapshot({
+    this.ca = 0,
+    this.recettes = 0,
+    this.depenses = 0,
+    this.solde = 0,
+  });
+
+  final num ca;
+  final num recettes;
+  final num depenses;
+  final num solde;
+}
+
 /// Org-wide KPI snapshot for one period.
 @immutable
 class DashboardKpis {
@@ -49,6 +66,7 @@ class DashboardKpis {
     this.masseSalarialeNet = 0,
     this.effectifActif = 0,
     this.presence,
+    this.today,
     this.deltaCaGlobal,
     this.deltaRecettes,
     this.deltaCharges,
@@ -69,6 +87,9 @@ class DashboardKpis {
   /// Nul quand le serveur ne renvoie pas le bloc : un backend anterieur ne doit
   /// pas se lire comme une organisation sans employe.
   final PresenceSnapshot? presence;
+
+  /// Nul quand le serveur ne renvoie pas le bloc (backend anterieur).
+  final TodaySnapshot? today;
 
   /// Period-over-period % change (null = no comparable base → hide the trend).
   final num? deltaCaGlobal;

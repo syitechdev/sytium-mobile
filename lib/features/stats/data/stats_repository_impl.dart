@@ -66,6 +66,14 @@ class StatsRepositoryImpl implements StatsRepository {
                   enMission: dto.presence!.enMission,
                   absents: dto.presence!.absents,
                 ),
+          today: dto.today == null
+              ? null
+              : TodaySnapshot(
+                  ca: dto.today!.ca,
+                  recettes: dto.today!.recettes,
+                  depenses: dto.today!.depenses,
+                  solde: dto.today!.solde,
+                ),
           deltaCaGlobal: d.caGlobal,
           deltaRecettes: d.recettes,
           deltaCharges: d.charges,

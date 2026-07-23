@@ -1,17 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:sytium_mobile/core/utils/money.dart';
 import 'package:sytium_mobile/features/home/presentation/widgets/presence_strip.dart';
 import 'package:sytium_mobile/features/stats/application/stats_providers.dart';
 import 'package:sytium_mobile/features/stats/domain/dashboard_models.dart';
-import 'package:sytium_mobile/features/stats/presentation/widgets/kpi_card.dart';
 import 'package:sytium_mobile/shared/widgets/error_state.dart';
 import 'package:sytium_mobile/theme/sytium_colors.dart';
 import 'package:sytium_mobile/theme/tokens.dart';
 
 const _kPreviewPeriod = DashboardPeriod.annee;
-const _kKpiAspectRatio = 1.5;
-const _kPreviewKpiCount = 2;
 
 /// Hauteur du bandeau de présence pendant le chargement, calquée sur son
 /// contenu réel : en-tête, barre, comptes.
@@ -50,19 +46,14 @@ class StatsPreviewCard extends ConsumerWidget {
             message: 'Stats indisponibles.',
             onRetry: () => ref.invalidate(dashboardProvider(_kPreviewPeriod)),
           ),
+          // Les chiffres financiers vivent désormais dans la carte « Aujourd'hui »
+          // en tête d'accueil ; l'aperçu ne garde que la présence du jour.
           data: (k) {
             final presence = k.presence;
-            return Column(
-              children: [
-                _PreviewGrid(kpis: k),
-                // Bloc absent de la reponse : on n'affiche rien plutot que
-                // d'annoncer un effectif nul qui serait faux.
-                if (presence != null) ...[
-                  const SizedBox(height: Tokens.space12),
-                  PresenceStrip(presence: presence),
-                ],
-              ],
-            );
+            // Bloc absent de la reponse : on n'affiche rien plutot que
+            // d'annoncer un effectif nul qui serait faux.
+            if (presence == null) return const SizedBox.shrink();
+            return PresenceStrip(presence: presence);
           },
         ),
       ],
@@ -70,71 +61,24 @@ class StatsPreviewCard extends ConsumerWidget {
   }
 }
 
-class _PreviewGrid extends StatelessWidget {
-  const _PreviewGrid({required this.kpis});
-  final DashboardKpis kpis;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.colors;
-    return GridView.count(
-      crossAxisCount: 2,
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      mainAxisSpacing: Tokens.space12,
-      crossAxisSpacing: Tokens.space12,
-      childAspectRatio: _kKpiAspectRatio,
-      children: [
-        KpiCard(
-          label: 'CA consolidé',
-          value: Money.fcfa(kpis.caGlobal),
-          accent: colors.brand,
-          trendPercent: kpis.deltaCaGlobal,
-        ),
-        KpiCard(
-          label: 'Trésorerie nette',
-          value: Money.fcfa(kpis.tresorerieTotale),
-          accent: colors.brand,
-        ),
-      ],
-    );
-  }
-}
-
-/// Squelette calqué sur la forme réelle : deux tuiles puis le bandeau de
-/// présence — pas de saut de mise en page à l'arrivée des données.
+/// Squelette calqué sur le bandeau de présence, seul contenu restant de
+/// l'aperçu — pas de saut de mise en page à l'arrivée des données.
 class _PreviewSkeleton extends StatelessWidget {
   const _PreviewSkeleton();
 
   @override
   Widget build(BuildContext context) {
     final fill = context.colors.border.withValues(alpha: 0.55);
-    final shape = BoxDecoration(
-      color: fill,
-      borderRadius: BorderRadius.circular(Tokens.radiusMd),
-    );
 
-    return Column(
-      children: [
-        GridView.count(
-          crossAxisCount: 2,
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          mainAxisSpacing: Tokens.space12,
-          crossAxisSpacing: Tokens.space12,
-          childAspectRatio: _kKpiAspectRatio,
-          children: [
-            for (var i = 0; i < _kPreviewKpiCount; i++)
-              DecoratedBox(decoration: shape),
-          ],
+    return SizedBox(
+      height: _kPresenceSkeletonHeight,
+      width: double.infinity,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: fill,
+          borderRadius: BorderRadius.circular(Tokens.radiusMd),
         ),
-        const SizedBox(height: Tokens.space12),
-        SizedBox(
-          height: _kPresenceSkeletonHeight,
-          width: double.infinity,
-          child: DecoratedBox(decoration: shape),
-        ),
-      ],
+      ),
     );
   }
 }

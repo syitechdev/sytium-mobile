@@ -12,7 +12,7 @@ import 'package:sytium_mobile/features/home/presentation/widgets/home_daily_reve
 import 'package:sytium_mobile/features/home/presentation/widgets/home_pulse_card.dart';
 import 'package:sytium_mobile/features/home/presentation/widgets/profile_header_card.dart';
 import 'package:sytium_mobile/features/home/presentation/widgets/stats_preview_card.dart';
-import 'package:sytium_mobile/features/home/presentation/widgets/today_status_card.dart';
+import 'package:sytium_mobile/features/home/presentation/widgets/today_summary_card.dart';
 import 'package:sytium_mobile/features/pointage/application/pointage_providers.dart';
 import 'package:sytium_mobile/theme/sytium_colors.dart';
 import 'package:sytium_mobile/theme/tokens.dart';
@@ -56,6 +56,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   Widget build(BuildContext context) {
     final caps = widget.capabilities;
     final showCompta = caps.finance;
+    // La carte « Aujourd'hui » porte des chiffres financiers : réservée aux
+    // profils qui voient le tableau de bord.
+    final showToday = caps.dashboard;
 
     // L'en-tete est un sliver NON epingle : il defile avec le contenu du volet,
     // au lieu de rester fige au-dessus d'une zone de scroll reduite.
@@ -81,29 +84,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     user: widget.user,
                     onAvatarTap: widget.onExplorer,
                   ),
+                  if (showToday) ...[
+                    const SizedBox(height: Tokens.space16),
+                    const TodaySummaryCard(),
+                  ],
                   if (showCompta) ...[
                     const SizedBox(height: Tokens.space16),
-                    SegmentedButton<HomeTab>(
-                      showSelectedIcon: false,
-                      segments: const [
-                        ButtonSegment(
-                          value: HomeTab.stats,
-                          label: Text('Stats'),
-                          icon: Icon(Icons.insights_outlined, size: 18),
-                        ),
-                        ButtonSegment(
-                          value: HomeTab.caisse,
-                          label: Text('Caisse'),
-                          icon: Icon(Icons.point_of_sale_outlined, size: 18),
-                        ),
-                        ButtonSegment(
-                          value: HomeTab.docs,
-                          label: Text('Docs'),
-                          icon: Icon(Icons.folder_outlined, size: 18),
-                        ),
-                      ],
-                      selected: {_tab},
-                      onSelectionChanged: (s) => setState(() => _tab = s.first),
+                    _MinimalTabs(
+                      selected: _tab,
+                      onSelected: (t) => setState(() => _tab = t),
                     ),
                   ],
                   const SizedBox(height: Tokens.space12),
@@ -159,8 +148,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           // Le geste doit partir même quand le contenu tient dans l'écran.
           physics: const AlwaysScrollableScrollPhysics(),
           children: [
-          const TodayStatusCard(),
-          const SizedBox(height: Tokens.space24),
           if (capabilities.approvals) const ApprovalsAlertCard(),
           if (capabilities.dashboard) ...[
             StatsPreviewCard(onSeeAll: onStats),
@@ -194,6 +181,99 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               ),
             ),
         ],
+      ),
+    );
+  }
+}
+
+/// Sélecteur de volet minimaliste : des libellés à plat, seul l'actif est
+/// coloré et souligné. Pas de cadre ni de fond — le contenu porte l'attention,
+/// pas le sélecteur.
+class _MinimalTabs extends StatelessWidget {
+  const _MinimalTabs({required this.selected, required this.onSelected});
+
+  final HomeTab selected;
+  final ValueChanged<HomeTab> onSelected;
+
+  static const _labels = {
+    HomeTab.stats: 'Stats',
+    HomeTab.caisse: 'Caisse',
+    HomeTab.docs: 'Docs',
+  };
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    final theme = Theme.of(context).textTheme;
+
+    return Row(
+      children: [
+        for (final tab in HomeTab.values) ...[
+          _Tab(
+            label: _labels[tab]!,
+            active: tab == selected,
+            activeColor: colors.brand,
+            mutedColor: colors.textMuted,
+            style: theme.titleSmall,
+            onTap: () => onSelected(tab),
+          ),
+          const SizedBox(width: Tokens.space24),
+        ],
+      ],
+    );
+  }
+}
+
+class _Tab extends StatelessWidget {
+  const _Tab({
+    required this.label,
+    required this.active,
+    required this.activeColor,
+    required this.mutedColor,
+    required this.style,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool active;
+  final Color activeColor;
+  final Color mutedColor;
+  final TextStyle? style;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      selected: active,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: Tokens.space8),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                label,
+                style: style?.copyWith(
+                  color: active ? activeColor : mutedColor,
+                  fontWeight: active ? FontWeight.w700 : FontWeight.w500,
+                ),
+              ),
+              const SizedBox(height: Tokens.space4),
+              // Le trait ne prend de la place que sous l'onglet actif ; les
+              // autres gardent un trait transparent pour ne pas décaler le texte.
+              Container(
+                height: 2,
+                width: 20,
+                decoration: BoxDecoration(
+                  color: active ? activeColor : Colors.transparent,
+                  borderRadius: BorderRadius.circular(Tokens.radiusPill),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

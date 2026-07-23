@@ -5,7 +5,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sytium_mobile/core/error/failure.dart';
 import 'package:sytium_mobile/core/result/result.dart';
-import 'package:sytium_mobile/core/utils/money.dart';
 import 'package:sytium_mobile/features/home/presentation/widgets/presence_strip.dart';
 import 'package:sytium_mobile/features/home/presentation/widgets/stats_preview_card.dart';
 import 'package:sytium_mobile/features/stats/application/stats_providers.dart';
@@ -13,7 +12,6 @@ import 'package:sytium_mobile/features/stats/domain/dashboard_models.dart';
 import 'package:sytium_mobile/features/stats/domain/dashboard_series_models.dart';
 import 'package:sytium_mobile/features/stats/domain/stats_models.dart';
 import 'package:sytium_mobile/features/stats/domain/stats_repository.dart';
-import 'package:sytium_mobile/features/stats/presentation/widgets/kpi_card.dart';
 import 'package:sytium_mobile/shared/widgets/error_state.dart';
 import 'package:sytium_mobile/theme/theme.dart';
 
@@ -98,19 +96,19 @@ Widget _host(StatsRepository repo, {VoidCallback? onSeeAll}) => ProviderScope(
     );
 
 void main() {
-  testWidgets('l’aperçu se limite à deux KPI', (tester) async {
+  testWidgets('l’aperçu ne montre plus les chiffres financiers', (
+    tester,
+  ) async {
+    // Ils vivent désormais dans la carte « Aujourd'hui » en tête d'accueil :
+    // l'aperçu ne garde que la présence du jour.
     await tester.pumpWidget(_host(const _OkRepo(_kKpis)));
     await tester.pump();
 
     expect(find.text('Aperçu stats'), findsOneWidget);
     expect(find.text('Voir tout'), findsOneWidget);
-    expect(find.text('CA consolidé'), findsOneWidget);
-    expect(find.text(Money.fcfa(145000000)), findsOneWidget);
-    expect(find.text('Trésorerie nette'), findsOneWidget);
-    expect(find.text(Money.fcfa(87500000)), findsOneWidget);
-    expect(find.byType(KpiCard), findsNWidgets(2));
-    // Le recouvrement reste au tableau de bord complet.
-    expect(find.text('92,5 %'), findsNothing);
+    expect(find.byType(PresenceStrip), findsOneWidget);
+    expect(find.text('CA consolidé'), findsNothing);
+    expect(find.text('Trésorerie nette'), findsNothing);
   });
 
   testWidgets('la présence du jour est répartie en trois comptes', (
@@ -162,8 +160,8 @@ void main() {
 
     expect(find.byType(PresenceStrip), findsNothing);
     expect(find.text('Aucun employé actif.'), findsNothing);
-    // Les KPI, eux, restent affiches.
-    expect(find.byType(KpiCard), findsNWidgets(2));
+    // L'en-tête, lui, reste toujours affiché.
+    expect(find.text('Aperçu stats'), findsOneWidget);
   });
 
   testWidgets('tapping "Voir tout" calls onSeeAll', (tester) async {
@@ -174,11 +172,13 @@ void main() {
     expect(tapped, 1);
   });
 
-  testWidgets('shows a skeleton while loading (no KpiCard, no ErrorState)', (tester) async {
+  testWidgets('pendant le chargement, ni présence ni erreur', (tester) async {
     await tester.pumpWidget(_host(const _LoadingRepo()));
     await tester.pump();
-    expect(find.byType(KpiCard), findsNothing);
+    expect(find.byType(PresenceStrip), findsNothing);
     expect(find.byType(ErrorState), findsNothing);
+    // L'en-tête reste, seule la source est encore en vol.
+    expect(find.text('Aperçu stats'), findsOneWidget);
   });
 
   testWidgets('shows ErrorState + Réessayer on failure', (tester) async {
@@ -198,16 +198,6 @@ void main() {
     await tester.pump(const Duration(milliseconds: 50)); // refetch resolves
 
     expect(find.byType(ErrorState), findsNothing);
-    expect(find.byType(KpiCard), findsNWidgets(2));
-  });
-
-  testWidgets('renders zeros without an empty/error screen', (tester) async {
-    await tester.pumpWidget(_host(const _OkRepo(
-      DashboardKpis(period: 'annee', periodLabel: 'Année 2026'),
-    )));
-    await tester.pump();
-    expect(find.byType(KpiCard), findsNWidgets(2));
-    expect(find.text(Money.fcfa(0)), findsWidgets);
-    expect(find.byType(ErrorState), findsNothing);
+    expect(find.byType(PresenceStrip), findsOneWidget);
   });
 }
