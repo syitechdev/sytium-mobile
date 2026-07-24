@@ -41,15 +41,13 @@ const _kSkeletonBarHeight = 36.0;
 /// Curated quick-reaction emojis (a full keyboard is overkill on mobile chat).
 const _kQuickReactions = ['👍', '❤️', '😂', '🎉', '✅', '🙏'];
 
-/// Polices emoji COULEUR en repli. La police de l'app (Inter) n'a pas les
-/// glyphes emoji ; sans ce repli, ❤ (U+2764) — qui a une forme TEXTE — s'affiche
-/// en NOIR au lieu du cœur rouge. Les emojis sans forme texte (👍…) sont
-/// épargnés. À appliquer à tout `Text` rendant un emoji.
-const kEmojiFontFallback = <String>[
-  'Apple Color Emoji',
-  'Noto Color Emoji',
-  'Segoe UI Emoji',
-];
+/// Police emoji couleur, à mettre en **primaire** (pas juste en repli) sur tout
+/// `Text` rendant un emoji. La police de l'app (Inter) possède un glyphe NOIR
+/// pour ❤ (U+2764, forme « texte ») : un simple `fontFamilyFallback` ne se
+/// déclenchait donc jamais (le repli n'agit que si la police primaire n'a PAS le
+/// glyphe). En primaire, Inter ne rend plus l'emoji → cœur rouge.
+const kEmojiFontFamily = 'Apple Color Emoji'; // iOS
+const kEmojiFontFallback = <String>['Noto Color Emoji', 'Segoe UI Emoji']; // Android+
 
 /// Two messages from the same author closer than this read as one block: the
 /// author name is printed once and the bubbles sit tight against each other.
@@ -722,11 +720,23 @@ class ChatThreadScreenState extends ConsumerState<ChatThreadScreen> {
           children: [
             Padding(
               padding: const EdgeInsets.all(Tokens.space12),
-              child: Text(
-                '$emoji  $count',
-                style: Theme.of(sheetContext).textTheme.titleMedium?.copyWith(
-                  fontFamilyFallback: kEmojiFontFallback,
-                ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    emoji,
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontFamily: kEmojiFontFamily,
+                      fontFamilyFallback: kEmojiFontFallback,
+                    ),
+                  ),
+                  const SizedBox(width: Tokens.space8),
+                  Text(
+                    '$count',
+                    style: Theme.of(sheetContext).textTheme.titleMedium,
+                  ),
+                ],
               ),
             ),
             const Divider(height: 1),
@@ -1774,11 +1784,12 @@ class _ReactionChip extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Emoji SANS `color` (forcer une couleur ternit le glyphe) ET avec
-            // repli police emoji couleur (sinon ❤ rend en noir sous Inter).
+            // Emoji SANS `color` (forcer une couleur ternit le glyphe) ET police
+            // emoji en PRIMAIRE (sinon ❤ rend en noir sous Inter).
             Text(
               reaction.emoji,
               style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                fontFamily: kEmojiFontFamily,
                 fontFamilyFallback: kEmojiFontFallback,
               ),
             ),
@@ -1813,6 +1824,7 @@ class _EmojiButton extends StatelessWidget {
           emoji,
           style: const TextStyle(
             fontSize: 26,
+            fontFamily: kEmojiFontFamily,
             fontFamilyFallback: kEmojiFontFallback,
           ),
         ),
