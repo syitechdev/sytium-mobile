@@ -819,6 +819,27 @@ void main() {
     await tester.pumpWidget(const SizedBox());
   });
 
+  testWidgets('un glissé vers la droite sur une bulle arme la réponse', (
+    tester,
+  ) async {
+    final repo = _RecordingRepo();
+    await tester.pumpWidget(_host(repo));
+    await tester.pump();
+    await tester.pump();
+
+    // Pas encore de bandeau de réponse.
+    expect(find.text('Réponse à Awa Diallo'), findsNothing);
+
+    // Glissé rapide vers la droite, au-delà du seuil de déclenchement.
+    await tester.drag(find.text('Son message'), const Offset(120, 0));
+    await tester.pumpAndSettle(); // laisse le ressort revenir en place
+
+    // Le composer affiche désormais « Réponse à … » : la réponse est armée
+    // sans avoir eu à maintenir le message.
+    expect(find.text('Réponse à Awa Diallo'), findsOneWidget);
+    await tester.pumpWidget(const SizedBox());
+  });
+
   testWidgets('edit action PATCHes the new content', (tester) async {
     final repo = _RecordingRepo();
     await tester.pumpWidget(_host(repo));

@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
@@ -231,7 +232,9 @@ class ChatThreadScreenState extends ConsumerState<ChatThreadScreen> {
     final active = _activeChannel;
     final channelId = _channelId;
     if (active != null) {
-      WidgetsBinding.instance.addPostFrameCallback((_) => active.leave(channelId));
+      WidgetsBinding.instance.addPostFrameCallback(
+        (_) => active.leave(channelId),
+      );
     }
     _poll?.cancel();
     _composer.dispose();
@@ -710,7 +713,8 @@ class ChatThreadScreenState extends ConsumerState<ChatThreadScreen> {
         children: [
           if (page != null && async.hasError)
             StaleDataBanner(
-              onRetry: () => ref.invalidate(channelMessagesProvider(_channelId)),
+              onRetry: () =>
+                  ref.invalidate(channelMessagesProvider(_channelId)),
             ),
           Expanded(
             child: Stack(
@@ -831,6 +835,7 @@ class ChatThreadScreenState extends ConsumerState<ChatThreadScreen> {
             startsGroup: startsGroup,
             showAuthor: widget.conversation.isGroup,
             onLongPress: _longPressFor(message, message.isMine(me)),
+            onReply: _replyFor(message),
             onReactionTap: message.isPending
                 ? null
                 : (emoji) => _toggleReaction(message, emoji),
@@ -849,6 +854,18 @@ class ChatThreadScreenState extends ConsumerState<ChatThreadScreen> {
     }
     if (message.isPending || message.isDeleted || message.isSystem) return null;
     return () => _showActions(message, isMine);
+  }
+
+  /// Cible du glissé-pour-répondre (à la WhatsApp). Mêmes exclusions que le menu :
+  /// on ne répond pas à un message en cours d'envoi, échoué, supprimé ou système.
+  VoidCallback? _replyFor(Message message) {
+    if (message.isPending ||
+        message.isDeleted ||
+        message.isSystem ||
+        message.deliveryState == DeliveryState.failed) {
+      return null;
+    }
+    return () => setState(() => _replyTo = message);
   }
 }
 
@@ -1085,6 +1102,7 @@ class _MessageBubble extends StatelessWidget {
     required this.currentUserId,
     required this.startsGroup,
     this.onLongPress,
+    this.onReply,
     this.onReactionTap,
   });
 
@@ -1097,6 +1115,9 @@ class _MessageBubble extends StatelessWidget {
   /// top margin. Follow-ups sit tight underneath.
   final bool startsGroup;
   final VoidCallback? onLongPress;
+
+  /// Déclenché par le glissé-pour-répondre. Null = message non répondable.
+  final VoidCallback? onReply;
   final void Function(String emoji)? onReactionTap;
 
   @override
@@ -1171,57 +1192,65 @@ class _MessageBubble extends StatelessWidget {
                 ),
               ),
             ),
-          GestureDetector(
-            onLongPress: onLongPress,
-            // A failed bubble is also tappable: long-press alone would hide the
-            // only way to recover the message.
-            onTap: failed ? onLongPress : null,
-            child: Opacity(
-              // Queued messages sit back visually until the server confirms.
-              opacity: message.deliveryState == DeliveryState.sending
-                  ? 0.65
-                  : 1,
-              child: Container(
-                constraints: BoxConstraints(
-                  maxWidth: MediaQuery.of(context).size.width * 0.78,
-                ),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: Tokens.space12,
-                  vertical: Tokens.space8,
-                ),
-                decoration: BoxDecoration(
-                  color: bg,
-                  borderRadius: BorderRadius.circular(Tokens.radiusMd),
-                  border: failed
-                      ? Border.all(color: colors.danger)
-                      : (isMine ? null : Border.all(color: colors.border)),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    if (message.replyTo != null) ...[
-                      _ReplyQuote(reply: message.replyTo!, onBrand: isMine),
-                      const SizedBox(height: Tokens.space8),
+          _SwipeToReply(
+            onReply: onReply,
+            child: GestureDetector(
+              onLongPress: onLongPress,
+              // A failed bubble is also tappable: long-press alone would hide the
+              // only way to recover the message.
+              onTap: failed ? onLongPress : null,
+              child: Opacity(
+                // Queued messages sit back visually until the server confirms.
+                opacity: message.deliveryState == DeliveryState.sending
+                    ? 0.65
+                    : 1,
+                child: Container(
+                  constraints: BoxConstraints(
+                    maxWidth: MediaQuery.of(context).size.width * 0.78,
+                  ),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: Tokens.space12,
+                    vertical: Tokens.space8,
+                  ),
+                  decoration: BoxDecoration(
+                    color: bg,
+                    borderRadius: BorderRadius.circular(Tokens.radiusMd),
+                    border: failed
+                        ? Border.all(color: colors.danger)
+                        : (isMine ? null : Border.all(color: colors.border)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (message.replyTo != null) ...[
+                        _ReplyQuote(reply: message.replyTo!, onBrand: isMine),
+                        const SizedBox(height: Tokens.space8),
+                      ],
+                      if (message.attachments.isNotEmpty) ...[
+                        for (final a in message.attachments)
+                          Padding(
+                            padding: const EdgeInsets.only(
+                              bottom: Tokens.space4,
+                            ),
+                            child: AttachmentView(
+                              attachment: a,
+                              onBrand: isMine,
+                            ),
+                          ),
+                        if (hasText) const SizedBox(height: Tokens.space4),
+                      ],
+                      if (message.isDeleted)
+                        Text(
+                          'Message supprimé',
+                          style: TextStyle(
+                            fontStyle: FontStyle.italic,
+                            color: isMine ? colors.onBrand : colors.textMuted,
+                          ),
+                        )
+                      else if (hasText)
+                        Text(message.content, style: TextStyle(color: fg)),
                     ],
-                    if (message.attachments.isNotEmpty) ...[
-                      for (final a in message.attachments)
-                        Padding(
-                          padding: const EdgeInsets.only(bottom: Tokens.space4),
-                          child: AttachmentView(attachment: a, onBrand: isMine),
-                        ),
-                      if (hasText) const SizedBox(height: Tokens.space4),
-                    ],
-                    if (message.isDeleted)
-                      Text(
-                        'Message supprimé',
-                        style: TextStyle(
-                          fontStyle: FontStyle.italic,
-                          color: isMine ? colors.onBrand : colors.textMuted,
-                        ),
-                      )
-                    else if (hasText)
-                      Text(message.content, style: TextStyle(color: fg)),
-                  ],
+                  ),
                 ),
               ),
             ),
@@ -1263,6 +1292,117 @@ class _MessageBubble extends StatelessWidget {
               ],
             ),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Glissé rapide vers la droite sur une bulle pour y répondre, à la WhatsApp.
+///
+/// La bulle suit le doigt avec une résistance croissante au-delà du seuil, et
+/// une icône de réponse apparaît dans la marge. Au relâchement passé le seuil,
+/// [onReply] est appelé (avec un retour haptique) puis la bulle revient en place.
+/// Le glissé horizontal ne concurrence pas le défilement vertical de la liste.
+///
+/// [onReply] nul → passe-plat sans geste (message non répondable).
+class _SwipeToReply extends StatefulWidget {
+  const _SwipeToReply({required this.child, this.onReply});
+
+  final Widget child;
+  final VoidCallback? onReply;
+
+  @override
+  State<_SwipeToReply> createState() => _SwipeToReplyState();
+}
+
+class _SwipeToReplyState extends State<_SwipeToReply>
+    with SingleTickerProviderStateMixin {
+  /// Distance à franchir pour armer la réponse.
+  static const _trigger = 56.0;
+
+  /// Translation maximale (au-delà du seuil, le glissé résiste fortement).
+  static const _maxDrag = 80.0;
+
+  late final AnimationController _spring;
+
+  double _dx = 0;
+  double _releaseFrom = 0;
+  bool _armed = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // Créé ici, pas en initialiseur paresseux : une init au moment du dispose
+    // (bulle jamais glissée) créerait le ticker sur un contexte déjà désactivé
+    // (« Looking up a deactivated widget's ancestor is unsafe »).
+    _spring =
+        AnimationController(
+          vsync: this,
+          duration: const Duration(milliseconds: 180),
+        )..addListener(() {
+          if (!mounted) return;
+          setState(() {
+            _dx = _releaseFrom * (1 - Curves.easeOut.transform(_spring.value));
+          });
+        });
+  }
+
+  @override
+  void dispose() {
+    _spring.dispose();
+    super.dispose();
+  }
+
+  void _onUpdate(DragUpdateDetails d) {
+    if (_spring.isAnimating) _spring.stop();
+    var next = _dx + d.delta.dx;
+    if (next < 0) next = 0;
+    // Résistance élastique une fois le seuil franchi.
+    if (next > _trigger) next = _trigger + (next - _trigger) * 0.35;
+    if (next > _maxDrag) next = _maxDrag;
+    final armed = next >= _trigger;
+    if (armed && !_armed) HapticFeedback.selectionClick();
+    setState(() {
+      _dx = next;
+      _armed = armed;
+    });
+  }
+
+  void _onEnd(DragEndDetails _) {
+    if (_armed) widget.onReply?.call();
+    _armed = false;
+    _releaseFrom = _dx;
+    _spring
+      ..value = 0
+      ..forward();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // Pas de geste sur un message non répondable : simple passe-plat.
+    if (widget.onReply == null) return widget.child;
+
+    final colors = context.colors;
+    final progress = (_dx / _trigger).clamp(0.0, 1.0);
+
+    return GestureDetector(
+      onHorizontalDragUpdate: _onUpdate,
+      onHorizontalDragEnd: _onEnd,
+      child: Stack(
+        alignment: Alignment.centerLeft,
+        children: [
+          Opacity(
+            opacity: progress,
+            child: Transform.scale(
+              scale: 0.6 + 0.4 * progress,
+              child: Padding(
+                padding: const EdgeInsets.only(left: Tokens.space8),
+                child: Icon(Icons.reply, size: 20, color: colors.textMuted),
+              ),
+            ),
+          ),
+          Transform.translate(offset: Offset(_dx, 0), child: widget.child),
         ],
       ),
     );
