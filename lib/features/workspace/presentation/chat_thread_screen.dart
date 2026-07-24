@@ -969,9 +969,18 @@ class ChatThreadScreenState extends ConsumerState<ChatThreadScreen> {
             ),
           );
         }
+        // Clés stables par identité : au rafraîchissement (le cache périmé est
+        // remplacé par la version fraîche), Flutter réconcilie par clé et REUTILISE
+        // les lignes existantes au lieu de tout reconstruire — seules les nouvelles
+        // s'insèrent. Sans ça, l'arrivée de messages provoquait un flash/saut brutal
+        // de toute la liste.
         return switch (rows[i]) {
-          DayRow(:final day) => _DaySeparator(label: dayLabel(day, now)),
+          DayRow(:final day) => _DaySeparator(
+            key: ValueKey('day-${day.toIso8601String()}'),
+            label: dayLabel(day, now),
+          ),
           MessageRow(:final message, :final startsGroup) => _MessageBubble(
+            key: ValueKey('msg-${message.id}'),
             message: message,
             isMine: message.isMine(me),
             currentUserId: me,
@@ -1123,7 +1132,7 @@ class _ThreadHeader extends ConsumerWidget {
 
 /// Centered day marker between two days of conversation.
 class _DaySeparator extends StatelessWidget {
-  const _DaySeparator({required this.label});
+  const _DaySeparator({required this.label, super.key});
   final String label;
 
   @override
@@ -1254,6 +1263,7 @@ class _MessageBubble extends StatelessWidget {
     required this.showAuthor,
     required this.currentUserId,
     required this.startsGroup,
+    super.key,
     this.onLongPress,
     this.onReply,
     this.onReactionTap,
@@ -1749,12 +1759,24 @@ class _ReactionChip extends StatelessWidget {
           borderRadius: BorderRadius.circular(Tokens.radiusPill),
           border: Border.all(color: mine ? colors.brand : colors.border),
         ),
-        child: Text(
-          '${reaction.emoji} ${reaction.count}',
-          style: Theme.of(context).textTheme.labelSmall?.copyWith(
-            color: mine ? colors.brand : colors.textPrimary,
-            fontWeight: FontWeight.w600,
-          ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Emoji SANS `color` : forcer une couleur ternit le glyphe couleur
+            // (le cœur perdait son rouge). Seul le compteur prend la couleur.
+            Text(
+              reaction.emoji,
+              style: Theme.of(context).textTheme.labelSmall,
+            ),
+            const SizedBox(width: Tokens.space4),
+            Text(
+              '${reaction.count}',
+              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                color: mine ? colors.brand : colors.textPrimary,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
         ),
       ),
     );
