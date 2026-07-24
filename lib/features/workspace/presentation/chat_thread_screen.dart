@@ -163,6 +163,10 @@ class ChatThreadScreenState extends ConsumerState<ChatThreadScreen> {
   bool _loadingOlder = false;
 
   final TextEditingController _composer = TextEditingController();
+
+  /// Focalisé pour ouvrir le clavier dans la foulée d'une réponse (glissé ou
+  /// menu), sans avoir à taper dans le champ.
+  final FocusNode _composerFocus = FocusNode();
   final ImagePicker _imagePicker = ImagePicker();
 
   /// Attachments staged for the next send.
@@ -238,6 +242,7 @@ class ChatThreadScreenState extends ConsumerState<ChatThreadScreen> {
     }
     _poll?.cancel();
     _composer.dispose();
+    _composerFocus.dispose();
     _scroll
       ..removeListener(_onScroll)
       ..dispose();
@@ -537,7 +542,7 @@ class ChatThreadScreenState extends ConsumerState<ChatThreadScreen> {
               title: const Text('Répondre'),
               onTap: () {
                 Navigator.of(sheetContext).pop();
-                setState(() => _replyTo = message);
+                _startReply(message);
               },
             ),
             if (isMine) ...[
@@ -760,6 +765,7 @@ class ChatThreadScreenState extends ConsumerState<ChatThreadScreen> {
           ),
           _Composer(
             controller: _composer,
+            focusNode: _composerFocus,
             pending: _pending,
             replyTo: _replyTo,
             onSend: _send,
@@ -865,7 +871,14 @@ class ChatThreadScreenState extends ConsumerState<ChatThreadScreen> {
         message.deliveryState == DeliveryState.failed) {
       return null;
     }
-    return () => setState(() => _replyTo = message);
+    return () => _startReply(message);
+  }
+
+  /// Arme la réponse et ouvre le clavier dans la foulée — commun au glissé et
+  /// au menu.
+  void _startReply(Message message) {
+    setState(() => _replyTo = message);
+    _composerFocus.requestFocus();
   }
 }
 
@@ -1614,6 +1627,7 @@ class _ThreadSkeleton extends StatelessWidget {
 class _Composer extends StatelessWidget {
   const _Composer({
     required this.controller,
+    required this.focusNode,
     required this.pending,
     required this.replyTo,
     required this.onSend,
@@ -1623,6 +1637,7 @@ class _Composer extends StatelessWidget {
   });
 
   final TextEditingController controller;
+  final FocusNode focusNode;
   final List<_PendingAttachment> pending;
   final Message? replyTo;
   final VoidCallback onSend;
@@ -1664,6 +1679,7 @@ class _Composer extends StatelessWidget {
                   Expanded(
                     child: TextField(
                       controller: controller,
+                      focusNode: focusNode,
                       minLines: 1,
                       maxLines: 5,
                       textInputAction: TextInputAction.newline,

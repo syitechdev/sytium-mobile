@@ -837,6 +837,10 @@ void main() {
     // Le composer affiche désormais « Réponse à … » : la réponse est armée
     // sans avoir eu à maintenir le message.
     expect(find.text('Réponse à Awa Diallo'), findsOneWidget);
+
+    // Et le clavier s'ouvre dans la foulée : le champ prend le focus.
+    final field = tester.widget<TextField>(find.byType(TextField));
+    expect(field.focusNode?.hasFocus, isTrue);
     await tester.pumpWidget(const SizedBox());
   });
 
