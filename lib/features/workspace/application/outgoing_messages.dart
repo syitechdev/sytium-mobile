@@ -10,11 +10,13 @@ class OutgoingAttachment {
     required this.path,
     required this.name,
     required this.isImage,
+    this.isVideo = false,
   });
 
   final String path;
   final String name;
   final bool isImage;
+  final bool isVideo;
 }
 
 /// Everything needed to re-issue a send after a failure. Kept beside the
@@ -78,9 +80,13 @@ class OutgoingMessages extends _$OutgoingMessages {
           Attachment(
             id: a.path,
             fileName: a.name,
-            // The picker already told us whether it is an image; a coarse
-            // `image/*` is enough for `isImage` and never reaches the network.
-            mimeType: a.isImage ? 'image/*' : null,
+            // The picker already told us the kind; a coarse `image/*`/`video/*`
+            // is enough for `isImage`/`isVideo` and never reaches the network.
+            mimeType: a.isImage
+                ? 'image/*'
+                : a.isVideo
+                ? 'video/*'
+                : null,
             localPath: a.path,
           ),
       ],

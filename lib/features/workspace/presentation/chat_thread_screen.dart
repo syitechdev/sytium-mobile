@@ -144,10 +144,12 @@ class _PendingAttachment {
     required this.path,
     required this.name,
     required this.isImage,
+    this.isVideo = false,
   });
   final String path;
   final String name;
   final bool isImage;
+  final bool isVideo;
 }
 
 /// Chat thread: bubbles + pagination + polling, plus a rich composer
@@ -410,14 +412,43 @@ class ChatThreadScreenState extends ConsumerState<ChatThreadScreen> {
         for (final f in result.files) {
           final path = f.path;
           if (path == null) continue;
-          final isImage = _looksLikeImage(f.extension);
           _pending.add(
-            _PendingAttachment(path: path, name: f.name, isImage: isImage),
+            _PendingAttachment(
+              path: path,
+              name: f.name,
+              isImage: _looksLikeImage(f.extension),
+              isVideo: _looksLikeVideo(f.extension),
+            ),
           );
         }
       });
     } catch (_) {
       if (mounted) _toast('Impossible de choisir un fichier.');
+    }
+  }
+
+  /// Sélectionne une vidéo depuis la galerie ou la caméra. `image_picker` renvoie
+  /// le fichier tel quel (pas de recompression vidéo) ; le serveur applique ses
+  /// propres limites de taille (422 remonté proprement en cas de dépassement).
+  Future<void> _pickVideo(ImageSource source) async {
+    try {
+      final file = await _imagePicker.pickVideo(
+        source: source,
+        maxDuration: const Duration(minutes: 5),
+      );
+      if (file == null || !mounted) return;
+      setState(
+        () => _pending.add(
+          _PendingAttachment(
+            path: file.path,
+            name: file.name,
+            isImage: false,
+            isVideo: true,
+          ),
+        ),
+      );
+    } catch (_) {
+      if (mounted) _toast("Impossible d'ajouter la vidéo.");
     }
   }
 
@@ -442,6 +473,22 @@ class ChatThreadScreenState extends ConsumerState<ChatThreadScreen> {
               onTap: () {
                 Navigator.of(sheetContext).pop();
                 _pickImage(ImageSource.camera);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.video_library_outlined),
+              title: const Text('Vidéo'),
+              onTap: () {
+                Navigator.of(sheetContext).pop();
+                _pickVideo(ImageSource.gallery);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.videocam_outlined),
+              title: const Text('Enregistrer une vidéo'),
+              onTap: () {
+                Navigator.of(sheetContext).pop();
+                _pickVideo(ImageSource.camera);
               },
             ),
             ListTile(
@@ -473,7 +520,12 @@ class ChatThreadScreenState extends ConsumerState<ChatThreadScreen> {
 
     final attachments = [
       for (final p in _pending)
-        OutgoingAttachment(path: p.path, name: p.name, isImage: p.isImage),
+        OutgoingAttachment(
+          path: p.path,
+          name: p.name,
+          isImage: p.isImage,
+          isVideo: p.isVideo,
+        ),
     ];
     final replyTo = _replyTo;
 
@@ -1270,6 +1322,11 @@ class ChatThreadScreenState extends ConsumerState<ChatThreadScreen> {
 bool _looksLikeImage(String? ext) {
   const imageExts = {'jpg', 'jpeg', 'png', 'gif', 'webp', 'heic', 'bmp'};
   return ext != null && imageExts.contains(ext.toLowerCase());
+}
+
+bool _looksLikeVideo(String? ext) {
+  const videoExts = {'mp4', 'mov', 'm4v', '3gp', 'webm', 'mkv', 'avi'};
+  return ext != null && videoExts.contains(ext.toLowerCase());
 }
 
 /// The AppBar title: for a DM, the resolved peer (avatar + name + online dot);
@@ -2353,12 +2410,14 @@ class _PendingStrip extends StatelessWidget {
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Icon(
-                              Icons.insert_drive_file_outlined,
+                              p.isVideo
+                                  ? Icons.videocam_outlined
+                                  : Icons.insert_drive_file_outlined,
                               color: colors.textMuted,
                             ),
                             const SizedBox(height: Tokens.space4),
                             Text(
-                              p.name,
+                              p.isVideo ? 'Vidéo' : p.name,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: Theme.of(context).textTheme.labelSmall,

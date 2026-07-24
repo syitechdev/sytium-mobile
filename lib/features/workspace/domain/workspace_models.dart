@@ -258,6 +258,28 @@ class Attachment {
     }
     return false;
   }
+
+  /// Vidéo lisible inline (lecteur vidéo). Détectée par MIME **ou** extension,
+  /// comme le web. Une note vocale m4a est souvent typée `video/mp4` par le
+  /// serveur : [isAudio] gagne donc (vérifié d'abord ici) pour ne pas afficher
+  /// un lecteur vidéo à la place du lecteur audio.
+  bool get isVideo {
+    if (isAudio) return false;
+    if ((mimeType ?? '').startsWith('video/')) return true;
+    final name = fileName.toLowerCase();
+    for (final ext in const [
+      '.mp4',
+      '.mov',
+      '.m4v',
+      '.3gp',
+      '.webm',
+      '.mkv',
+      '.avi',
+    ]) {
+      if (name.endsWith(ext)) return true;
+    }
+    return false;
+  }
 }
 
 /// A lightweight preview of a replied-to message.

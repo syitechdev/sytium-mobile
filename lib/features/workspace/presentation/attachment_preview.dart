@@ -10,6 +10,7 @@ import 'package:sytium_mobile/features/workspace/domain/workspace_models.dart';
 import 'package:sytium_mobile/theme/sytium_colors.dart';
 import 'package:sytium_mobile/theme/tokens.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:video_player/video_player.dart';
 
 /// Renders a single message attachment inside a bubble: an inline image
 /// thumbnail (tap → fullscreen) for images, or a tappable file card (tap →
@@ -40,6 +41,14 @@ class AttachmentView extends StatelessWidget {
     final audioSrc = attachment.url ?? attachment.downloadUrl;
     if (attachment.isAudio && (audioSrc?.isNotEmpty ?? false)) {
       return _AudioAttachment(attachment: attachment, onBrand: onBrand);
+    }
+    // Vidéo : miniature avec bouton lecture → lecture plein écran inline, comme
+    // le web (`<video controls>`). L'URL signée est lisible sans jeton (comme
+    // les images) ; pendant l'upload on lit le fichier local.
+    if (attachment.isVideo &&
+        ((attachment.url?.isNotEmpty ?? false) ||
+            (local?.isNotEmpty ?? false))) {
+      return _VideoAttachment(attachment: attachment);
     }
     return _FileAttachment(attachment: attachment, onBrand: onBrand);
   }
@@ -324,9 +333,9 @@ class _AudioAttachmentState extends ConsumerState<_AudioAttachment> {
                     if (_failed) {
                       return Text(
                         'Lecture impossible',
-                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                          color: colors.danger,
-                        ),
+                        style: Theme.of(
+                          context,
+                        ).textTheme.labelSmall?.copyWith(color: colors.danger),
                       );
                     }
                     final pos = posSnap.data ?? Duration.zero;
@@ -346,6 +355,165 @@ class _AudioAttachmentState extends ConsumerState<_AudioAttachment> {
             ),
           ),
           const SizedBox(width: Tokens.space4),
+        ],
+      ),
+    );
+  }
+}
+
+/// Miniature vidéo dans la bulle : fond noir + bouton lecture. Le tap ouvre le
+/// lecteur plein écran. Volontairement statique (pas de contrôleur par bulle) :
+/// initialiser une vidéo par message tuerait les perfs et la batterie.
+class _VideoAttachment extends StatelessWidget {
+  const _VideoAttachment({required this.attachment});
+  final Attachment attachment;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () => Navigator.of(context).push(
+        PageRouteBuilder<void>(
+          opaque: false,
+          barrierColor: Colors.black,
+          pageBuilder: (_, __, ___) =>
+              _VideoPlayerScreen(attachment: attachment),
+        ),
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(Tokens.radiusSm),
+        child: Container(
+          width: 240,
+          height: 160,
+          color: Colors.black,
+          alignment: Alignment.center,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.play_circle_fill, color: Colors.white, size: 52),
+              if (attachment.fileName.isNotEmpty) ...[
+                const SizedBox(height: Tokens.space4),
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: Tokens.space8,
+                  ),
+                  child: Text(
+                    attachment.fileName,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(color: Colors.white70, fontSize: 12),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Lecteur vidéo plein écran : lit l'URL signée (accessible sans jeton, comme
+/// les images) ou le fichier local pendant l'upload. Tap = play/pause, barre de
+/// progression scrubbable, bouton fermer.
+class _VideoPlayerScreen extends StatefulWidget {
+  const _VideoPlayerScreen({required this.attachment});
+  final Attachment attachment;
+
+  @override
+  State<_VideoPlayerScreen> createState() => _VideoPlayerScreenState();
+}
+
+class _VideoPlayerScreenState extends State<_VideoPlayerScreen> {
+  VideoPlayerController? _controller;
+  bool _failed = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _init();
+  }
+
+  Future<void> _init() async {
+    try {
+      final local = widget.attachment.localPath;
+      final src = widget.attachment.url ?? widget.attachment.downloadUrl;
+      final controller = (local != null && local.isNotEmpty)
+          ? VideoPlayerController.file(File(local))
+          : VideoPlayerController.networkUrl(Uri.parse(src!));
+      _controller = controller;
+      await controller.initialize();
+      await controller.play();
+      if (mounted) setState(() {});
+    } catch (_) {
+      if (mounted) setState(() => _failed = true);
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller?.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final c = _controller;
+    return Scaffold(
+      backgroundColor: Colors.black,
+      body: Stack(
+        children: [
+          Center(
+            child: _failed
+                ? const Text(
+                    'Lecture impossible',
+                    style: TextStyle(color: Colors.white70),
+                  )
+                : (c != null && c.value.isInitialized)
+                ? AspectRatio(
+                    aspectRatio: c.value.aspectRatio <= 0
+                        ? 16 / 9
+                        : c.value.aspectRatio,
+                    child: GestureDetector(
+                      onTap: () => setState(
+                        () => c.value.isPlaying ? c.pause() : c.play(),
+                      ),
+                      child: Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          VideoPlayer(c),
+                          ValueListenableBuilder<VideoPlayerValue>(
+                            valueListenable: c,
+                            builder: (context, value, _) => value.isPlaying
+                                ? const SizedBox.shrink()
+                                : const Icon(
+                                    Icons.play_arrow_rounded,
+                                    color: Colors.white,
+                                    size: 72,
+                                  ),
+                          ),
+                          Positioned(
+                            left: 0,
+                            right: 0,
+                            bottom: 0,
+                            child: VideoProgressIndicator(
+                              c,
+                              allowScrubbing: true,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  )
+                : const CircularProgressIndicator(color: Colors.white),
+          ),
+          Positioned(
+            top: MediaQuery.of(context).padding.top + Tokens.space8,
+            right: Tokens.space8,
+            child: IconButton(
+              icon: const Icon(Icons.close, color: Colors.white, size: 28),
+              onPressed: () => Navigator.of(context).pop(),
+            ),
+          ),
         ],
       ),
     );
