@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:just_audio/just_audio.dart';
 import 'package:sytium_mobile/features/workspace/domain/workspace_models.dart';
 import 'package:sytium_mobile/theme/sytium_colors.dart';
 import 'package:sytium_mobile/theme/tokens.dart';
@@ -30,6 +31,12 @@ class AttachmentView extends StatelessWidget {
     }
     if (attachment.isImage && (attachment.url?.isNotEmpty ?? false)) {
       return _ImageAttachment(attachment: attachment);
+    }
+    // Note vocale / audio : lecteur inline (play/pause + progression), au lieu
+    // d'ouvrir un fichier. Le média est en m4a/AAC, lu nativement iOS + Android.
+    final audioSrc = attachment.url ?? attachment.downloadUrl;
+    if (attachment.isAudio && (audioSrc?.isNotEmpty ?? false)) {
+      return _AudioAttachment(attachment: attachment, onBrand: onBrand);
     }
     return _FileAttachment(attachment: attachment, onBrand: onBrand);
   }
@@ -148,6 +155,184 @@ class _FileAttachment extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Lecteur audio inline (play/pause + progression + durée) pour les notes
+/// vocales. Chargement paresseux : le flux n'est ouvert qu'au premier appui.
+/// Lecture m4a/AAC, native sur iOS et Android.
+class _AudioAttachment extends StatefulWidget {
+  const _AudioAttachment({required this.attachment, required this.onBrand});
+  final Attachment attachment;
+  final bool onBrand;
+
+  @override
+  State<_AudioAttachment> createState() => _AudioAttachmentState();
+}
+
+class _AudioAttachmentState extends State<_AudioAttachment> {
+  final AudioPlayer _player = AudioPlayer();
+  bool _prepared = false;
+  bool _loading = false;
+  bool _failed = false;
+
+  String? get _src => widget.attachment.url ?? widget.attachment.downloadUrl;
+
+  @override
+  void dispose() {
+    _player.dispose();
+    super.dispose();
+  }
+
+  Future<void> _toggle() async {
+    final src = _src;
+    if (src == null || src.isEmpty) return;
+    try {
+      if (!_prepared) {
+        setState(() {
+          _loading = true;
+          _failed = false;
+        });
+        await _player.setUrl(src);
+        _prepared = true;
+        if (!mounted) return;
+        setState(() => _loading = false);
+      }
+      if (_player.playing) {
+        await _player.pause();
+      } else {
+        if (_player.processingState == ProcessingState.completed) {
+          await _player.seek(Duration.zero);
+        }
+        await _player.play();
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _loading = false;
+          _failed = true;
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    final muted = widget.onBrand
+        ? colors.onBrand.withValues(alpha: 0.8)
+        : colors.textMuted;
+    final accent = widget.onBrand ? colors.onBrand : colors.brand;
+
+    return Container(
+      constraints: const BoxConstraints(maxWidth: 260),
+      padding: const EdgeInsets.symmetric(
+        horizontal: Tokens.space4,
+        vertical: Tokens.space4,
+      ),
+      decoration: BoxDecoration(
+        color: (widget.onBrand ? colors.onBrand : colors.textMuted).withValues(
+          alpha: 0.08,
+        ),
+        borderRadius: BorderRadius.circular(Tokens.radiusSm),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          StreamBuilder<PlayerState>(
+            stream: _player.playerStateStream,
+            builder: (context, snap) {
+              final playing = snap.data?.playing ?? false;
+              final completed =
+                  snap.data?.processingState == ProcessingState.completed;
+              final showPause = playing && !completed;
+              return IconButton(
+                onPressed: _loading ? null : _toggle,
+                iconSize: 30,
+                color: accent,
+                icon: _loading
+                    ? SizedBox(
+                        width: 22,
+                        height: 22,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: accent,
+                        ),
+                      )
+                    : Icon(
+                        showPause
+                            ? Icons.pause_rounded
+                            : Icons.play_arrow_rounded,
+                        color: accent,
+                      ),
+              );
+            },
+          ),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                StreamBuilder<Duration>(
+                  stream: _player.positionStream,
+                  builder: (context, posSnap) {
+                    final pos = posSnap.data ?? Duration.zero;
+                    final dur = _player.duration ?? Duration.zero;
+                    final frac = dur.inMilliseconds == 0
+                        ? 0.0
+                        : (pos.inMilliseconds / dur.inMilliseconds).clamp(
+                            0.0,
+                            1.0,
+                          );
+                    return ClipRRect(
+                      borderRadius: BorderRadius.circular(Tokens.radiusPill),
+                      child: LinearProgressIndicator(
+                        value: _failed ? 0 : frac,
+                        minHeight: 4,
+                        backgroundColor: muted.withValues(alpha: 0.3),
+                        valueColor: AlwaysStoppedAnimation<Color>(accent),
+                      ),
+                    );
+                  },
+                ),
+                const SizedBox(height: Tokens.space4),
+                StreamBuilder<Duration>(
+                  stream: _player.positionStream,
+                  builder: (context, posSnap) {
+                    if (_failed) {
+                      return Text(
+                        'Lecture impossible',
+                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                          color: colors.danger,
+                        ),
+                      );
+                    }
+                    final pos = posSnap.data ?? Duration.zero;
+                    final dur = _player.duration;
+                    final label = dur == null
+                        ? _fmtDuration(pos)
+                        : '${_fmtDuration(pos)} / ${_fmtDuration(dur)}';
+                    return Text(
+                      label,
+                      style: Theme.of(
+                        context,
+                      ).textTheme.labelSmall?.copyWith(color: muted),
+                    );
+                  },
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: Tokens.space4),
+        ],
+      ),
+    );
+  }
+}
+
+String _fmtDuration(Duration d) {
+  final m = d.inMinutes;
+  final s = d.inSeconds % 60;
+  return '$m:${s.toString().padLeft(2, '0')}';
 }
 
 Future<void> _openExternal(BuildContext context, Attachment a) async {

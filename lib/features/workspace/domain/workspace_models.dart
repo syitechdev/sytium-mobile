@@ -209,6 +209,10 @@ class Attachment {
   final String? localPath;
 
   bool get isImage => (mimeType ?? '').startsWith('image/');
+
+  /// Note vocale / audio lisible inline (m4a/AAC, mp3…). Le webm/opus du web
+  /// n'est PAS décodable par iOS : le backend le sert désormais en `audio/*`.
+  bool get isAudio => (mimeType ?? '').startsWith('audio/');
 }
 
 /// A lightweight preview of a replied-to message.
