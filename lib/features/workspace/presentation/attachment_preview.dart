@@ -107,9 +107,9 @@ class _FileAttachment extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
-    final fg = onBrand ? colors.onBrand : colors.textPrimary;
+    final fg = onBrand ? colors.onChrome : colors.textPrimary;
     final muted = onBrand
-        ? colors.onBrand.withValues(alpha: 0.8)
+        ? colors.onChrome.withValues(alpha: 0.8)
         : colors.textMuted;
     return InkWell(
       onTap: () => _openExternal(context, attachment),
@@ -118,7 +118,7 @@ class _FileAttachment extends StatelessWidget {
         constraints: const BoxConstraints(maxWidth: 240),
         padding: const EdgeInsets.all(Tokens.space8),
         decoration: BoxDecoration(
-          color: (onBrand ? colors.onBrand : colors.textMuted).withValues(
+          color: (onBrand ? colors.onChrome : colors.textMuted).withValues(
             alpha: 0.08,
           ),
           borderRadius: BorderRadius.circular(Tokens.radiusSm),
@@ -242,9 +242,9 @@ class _AudioAttachmentState extends ConsumerState<_AudioAttachment> {
   Widget build(BuildContext context) {
     final colors = context.colors;
     final muted = widget.onBrand
-        ? colors.onBrand.withValues(alpha: 0.8)
+        ? colors.onChrome.withValues(alpha: 0.8)
         : colors.textMuted;
-    final accent = widget.onBrand ? colors.onBrand : colors.brand;
+    final accent = widget.onBrand ? colors.onChrome : colors.brand;
 
     return Container(
       constraints: const BoxConstraints(maxWidth: 260),
@@ -253,7 +253,7 @@ class _AudioAttachmentState extends ConsumerState<_AudioAttachment> {
         vertical: Tokens.space4,
       ),
       decoration: BoxDecoration(
-        color: (widget.onBrand ? colors.onBrand : colors.textMuted).withValues(
+        color: (widget.onBrand ? colors.onChrome : colors.textMuted).withValues(
           alpha: 0.08,
         ),
         borderRadius: BorderRadius.circular(Tokens.radiusSm),

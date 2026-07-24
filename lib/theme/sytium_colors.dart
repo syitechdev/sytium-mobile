@@ -17,6 +17,7 @@ class SytiumColors extends ThemeExtension<SytiumColors> {
     required this.onBrand,
     required this.ai,
     required this.navy,
+    required this.onChrome,
     required this.success,
     required this.warning,
     required this.danger,
@@ -37,6 +38,7 @@ class SytiumColors extends ThemeExtension<SytiumColors> {
       onBrand: b.onBrand,
       ai: Tokens.ai,
       navy: b.chrome,
+      onChrome: b.onChrome,
       success: Tokens.success,
       warning: Tokens.warning,
       danger: Tokens.danger,
@@ -58,6 +60,7 @@ class SytiumColors extends ThemeExtension<SytiumColors> {
       onBrand: b.onBrand,
       ai: Tokens.ai,
       navy: b.chrome,
+      onChrome: b.onChrome,
       success: Tokens.success,
       warning: Tokens.warning,
       danger: Tokens.danger,
@@ -76,6 +79,7 @@ class SytiumColors extends ThemeExtension<SytiumColors> {
   final Color onBrand;
   final Color ai;
   final Color navy;
+  final Color onChrome;
   final Color success;
   final Color warning;
   final Color danger;
@@ -97,6 +101,7 @@ class SytiumColors extends ThemeExtension<SytiumColors> {
     Color? onBrand,
     Color? ai,
     Color? navy,
+    Color? onChrome,
     Color? success,
     Color? warning,
     Color? danger,
@@ -113,6 +118,7 @@ class SytiumColors extends ThemeExtension<SytiumColors> {
     onBrand: onBrand ?? this.onBrand,
     ai: ai ?? this.ai,
     navy: navy ?? this.navy,
+    onChrome: onChrome ?? this.onChrome,
     success: success ?? this.success,
     warning: warning ?? this.warning,
     danger: danger ?? this.danger,
@@ -134,6 +140,7 @@ class SytiumColors extends ThemeExtension<SytiumColors> {
       onBrand: Color.lerp(onBrand, other.onBrand, t)!,
       ai: Color.lerp(ai, other.ai, t)!,
       navy: Color.lerp(navy, other.navy, t)!,
+      onChrome: Color.lerp(onChrome, other.onChrome, t)!,
       success: Color.lerp(success, other.success, t)!,
       warning: Color.lerp(warning, other.warning, t)!,
       danger: Color.lerp(danger, other.danger, t)!,

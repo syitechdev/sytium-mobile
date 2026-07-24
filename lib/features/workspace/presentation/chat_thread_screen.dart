@@ -1319,8 +1319,11 @@ class _MessageBubble extends StatelessWidget {
     }
 
     final failed = message.deliveryState == DeliveryState.failed;
-    final bg = isMine ? colors.brand : colors.card;
-    final fg = isMine ? colors.onBrand : colors.textPrimary;
+    // Bulle de l'utilisateur : couleur PRIMAIRE de l'org (chrome), foncée, avec
+    // un foreground calculé lisible (onChrome). L'accent vif donnait un texte
+    // peu lisible sur certaines couleurs d'organisation.
+    final bg = isMine ? colors.navy : colors.card;
+    final fg = isMine ? colors.onChrome : colors.textPrimary;
     final align = isMine ? CrossAxisAlignment.end : CrossAxisAlignment.start;
     final hasText = message.content.isNotEmpty;
 
@@ -1401,7 +1404,7 @@ class _MessageBubble extends StatelessWidget {
                           'Message supprimé',
                           style: TextStyle(
                             fontStyle: FontStyle.italic,
-                            color: isMine ? colors.onBrand : colors.textMuted,
+                            color: isMine ? colors.onChrome : colors.textMuted,
                           ),
                         )
                       else if (hasText)
@@ -1416,7 +1419,7 @@ class _MessageBubble extends StatelessWidget {
                               Icons.subtitles_outlined,
                               size: 14,
                               color: isMine
-                                  ? colors.onBrand.withValues(alpha: 0.8)
+                                  ? colors.onChrome.withValues(alpha: 0.8)
                                   : colors.textMuted,
                             ),
                             const SizedBox(width: Tokens.space4),
@@ -1426,7 +1429,7 @@ class _MessageBubble extends StatelessWidget {
                                 style: TextStyle(
                                   fontStyle: FontStyle.italic,
                                   color: isMine
-                                      ? colors.onBrand.withValues(alpha: 0.9)
+                                      ? colors.onChrome.withValues(alpha: 0.9)
                                       : colors.textMuted,
                                 ),
                               ),
@@ -1654,7 +1657,7 @@ class _ReplyQuote extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
-    final accent = onBrand ? colors.onBrand : colors.brand;
+    final accent = onBrand ? colors.onChrome : colors.brand;
     final text = reply.isDeleted ? 'Message supprimé' : reply.content;
     return Container(
       padding: const EdgeInsets.symmetric(
@@ -1662,7 +1665,7 @@ class _ReplyQuote extends StatelessWidget {
         vertical: Tokens.space4,
       ),
       decoration: BoxDecoration(
-        color: (onBrand ? colors.onBrand : colors.brand).withValues(
+        color: (onBrand ? colors.onChrome : colors.brand).withValues(
           alpha: 0.10,
         ),
         borderRadius: BorderRadius.circular(Tokens.radiusSm),
@@ -1673,7 +1676,7 @@ class _ReplyQuote extends StatelessWidget {
         maxLines: 2,
         overflow: TextOverflow.ellipsis,
         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-          color: onBrand ? colors.onBrand : colors.textMuted,
+          color: onBrand ? colors.onChrome : colors.textMuted,
           fontStyle: reply.isDeleted ? FontStyle.italic : FontStyle.normal,
         ),
       ),

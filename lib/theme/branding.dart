@@ -14,6 +14,7 @@ class Branding {
     required this.brand,
     required this.chrome,
     required this.onBrand,
+    required this.onChrome,
   });
 
   /// Default Sytium identity — used before login or when the org sets no colors.
@@ -21,6 +22,7 @@ class Branding {
     brand: Tokens.brand,
     chrome: Tokens.navy,
     onBrand: _readableOn(Tokens.brand),
+    onChrome: _readableOn(Tokens.navy),
   );
 
   /// Builds branding from raw hex strings (org accent → brand, primary →
@@ -28,22 +30,32 @@ class Branding {
   factory Branding.fromHex({String? accent, String? primary}) {
     final brand = parseHexColor(accent) ?? Tokens.brand;
     final chrome = parseHexColor(primary) ?? Tokens.navy;
-    return Branding(brand: brand, chrome: chrome, onBrand: _readableOn(brand));
+    return Branding(
+      brand: brand,
+      chrome: chrome,
+      onBrand: _readableOn(brand),
+      onChrome: _readableOn(chrome),
+    );
   }
 
   final Color brand;
   final Color chrome;
   final Color onBrand;
 
+  /// Foreground lisible sur [chrome] (couleur primaire de l'org). Utilisé par la
+  /// bulle du message de l'utilisateur, posée sur le chrome pour le contraste.
+  final Color onChrome;
+
   @override
   bool operator ==(Object other) =>
       other is Branding &&
       other.brand == brand &&
       other.chrome == chrome &&
-      other.onBrand == onBrand;
+      other.onBrand == onBrand &&
+      other.onChrome == onChrome;
 
   @override
-  int get hashCode => Object.hash(brand, chrome, onBrand);
+  int get hashCode => Object.hash(brand, chrome, onBrand, onChrome);
 
   /// Near-black on light brand colors, white on dark ones (WCAG-ish contrast).
   static Color _readableOn(Color c) => c.computeLuminance() > 0.5
