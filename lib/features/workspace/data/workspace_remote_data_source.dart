@@ -7,6 +7,18 @@ class WorkspaceRemoteDataSource {
   WorkspaceRemoteDataSource(this._dio);
   final Dio _dio;
 
+  /// Télécharge le contenu binaire d'une pièce jointe via le Dio AUTHENTIFIÉ
+  /// (indispensable pour la route `download_url`). [url] peut être absolu (URL
+  /// signée) ou relatif (route API) — Dio gère les deux ; le Bearer est sans
+  /// effet sur une URL signée et requis sur la route API.
+  Future<List<int>> downloadAttachment(String url) async {
+    final res = await _dio.get<List<int>>(
+      url,
+      options: Options(responseType: ResponseType.bytes),
+    );
+    return res.data ?? const <int>[];
+  }
+
   Future<List<ChannelDto>> channels() async {
     final res = await _dio.get<Map<String, dynamic>>('/workspace/channels');
     final list = res.data!['data'] as List<dynamic>;

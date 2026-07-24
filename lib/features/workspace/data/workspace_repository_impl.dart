@@ -19,6 +19,10 @@ class WorkspaceRepositoryImpl implements WorkspaceRepository {
       });
 
   @override
+  Future<Result<List<int>>> downloadAttachment(String url) =>
+      _guard(() => _remote.downloadAttachment(url));
+
+  @override
   Future<Result<List<Member>>> channelMembers(String channelId) =>
       _guard(() async {
         final dtos = await _remote.channelMembers(channelId);

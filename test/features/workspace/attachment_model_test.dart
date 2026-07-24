@@ -12,7 +12,7 @@ void main() {
       expect(att('audio/mpeg').isAudio, isTrue);
     });
 
-    test('un webm (conteneur video) n\'est PAS traité comme audio', () {
+    test("un webm (conteneur video) n'est PAS traité comme audio", () {
       // Le webm sortait en video/webm -> pas de lecteur audio (illisible iOS).
       expect(att('video/webm').isAudio, isFalse);
     });

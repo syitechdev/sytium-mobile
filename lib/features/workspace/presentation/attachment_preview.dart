@@ -2,7 +2,10 @@ import 'dart:io';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:just_audio/just_audio.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:sytium_mobile/features/workspace/application/workspace_providers.dart';
 import 'package:sytium_mobile/features/workspace/domain/workspace_models.dart';
 import 'package:sytium_mobile/theme/sytium_colors.dart';
 import 'package:sytium_mobile/theme/tokens.dart';
@@ -160,22 +163,20 @@ class _FileAttachment extends StatelessWidget {
 /// Lecteur audio inline (play/pause + progression + durée) pour les notes
 /// vocales. Chargement paresseux : le flux n'est ouvert qu'au premier appui.
 /// Lecture m4a/AAC, native sur iOS et Android.
-class _AudioAttachment extends StatefulWidget {
+class _AudioAttachment extends ConsumerStatefulWidget {
   const _AudioAttachment({required this.attachment, required this.onBrand});
   final Attachment attachment;
   final bool onBrand;
 
   @override
-  State<_AudioAttachment> createState() => _AudioAttachmentState();
+  ConsumerState<_AudioAttachment> createState() => _AudioAttachmentState();
 }
 
-class _AudioAttachmentState extends State<_AudioAttachment> {
+class _AudioAttachmentState extends ConsumerState<_AudioAttachment> {
   final AudioPlayer _player = AudioPlayer();
   bool _prepared = false;
   bool _loading = false;
   bool _failed = false;
-
-  String? get _src => widget.attachment.url ?? widget.attachment.downloadUrl;
 
   @override
   void dispose() {
@@ -183,17 +184,39 @@ class _AudioAttachmentState extends State<_AudioAttachment> {
     super.dispose();
   }
 
+  /// Télécharge le média via le Dio AUTHENTIFIÉ dans un fichier temporaire puis
+  /// le lit en local. Plus robuste que streamer l'URL distante : gère l'auth de
+  /// la route `download_url` et évite les soucis de requêtes range/redirections
+  /// (c'est ce qui donnait « Lecture impossible »).
+  Future<void> _prepare() async {
+    final src = widget.attachment.downloadUrl ?? widget.attachment.url;
+    if (src == null || src.isEmpty) {
+      throw StateError('no source');
+    }
+    final res = await ref
+        .read(workspaceRepositoryProvider)
+        .downloadAttachment(src);
+    final bytes = res.valueOrNull;
+    if (bytes == null || bytes.isEmpty) {
+      throw StateError('download failed');
+    }
+    final dir = await getTemporaryDirectory();
+    final file = File(
+      '${dir.path}/sytium_audio_${widget.attachment.id}${_audioExt(widget.attachment)}',
+    );
+    await file.writeAsBytes(bytes, flush: true);
+    await _player.setFilePath(file.path);
+    _prepared = true;
+  }
+
   Future<void> _toggle() async {
-    final src = _src;
-    if (src == null || src.isEmpty) return;
     try {
       if (!_prepared) {
         setState(() {
           _loading = true;
           _failed = false;
         });
-        await _player.setUrl(src);
-        _prepared = true;
+        await _prepare();
         if (!mounted) return;
         setState(() => _loading = false);
       }
@@ -333,6 +356,21 @@ String _fmtDuration(Duration d) {
   final m = d.inMinutes;
   final s = d.inSeconds % 60;
   return '$m:${s.toString().padLeft(2, '0')}';
+}
+
+/// Extension du fichier temporaire : iOS/AVPlayer choisit son décodeur d'après
+/// l'extension. On la déduit du nom d'origine, sinon du MIME (défaut m4a/AAC).
+String _audioExt(Attachment a) {
+  final name = a.fileName.toLowerCase();
+  for (final ext in ['.m4a', '.mp3', '.aac', '.wav', '.caf']) {
+    if (name.endsWith(ext)) return ext;
+  }
+  if (name.endsWith('.mp4')) return '.m4a';
+  final mime = a.mimeType ?? '';
+  if (mime.contains('mpeg') || mime.contains('mp3')) return '.mp3';
+  if (mime.contains('aac')) return '.aac';
+  if (mime.contains('wav')) return '.wav';
+  return '.m4a';
 }
 
 Future<void> _openExternal(BuildContext context, Attachment a) async {

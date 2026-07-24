@@ -51,6 +51,9 @@ class _Repo implements WorkspaceRepository {
               Conversation(id: 'c2', type: ConversationType.private, title: 'direction'),
             ];
 
+  @override
+  Future<Result<List<int>>> downloadAttachment(String url) async => const Ok(<int>[]);
+
   List<Conversation> channels;
   bool fail = false;
   int conversationCalls = 0;

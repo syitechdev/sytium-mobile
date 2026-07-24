@@ -14,6 +14,9 @@ import 'package:sytium_mobile/features/workspace/domain/workspace_repository.dar
 class _SendRepo implements WorkspaceRepository {
   _SendRepo({this.fail = false});
 
+  @override
+  Future<Result<List<int>>> downloadAttachment(String url) async => const Ok(<int>[]);
+
   bool fail;
   final List<String> sent = [];
   final List<List<String>> attachments = [];

@@ -33,6 +33,9 @@ class _FakeAuth extends AuthController {
 
 class _BaseRepo implements WorkspaceRepository {
   @override
+  Future<Result<List<int>>> downloadAttachment(String url) async => const Ok(<int>[]);
+
+  @override
   Future<Result<List<Conversation>>> conversations() async => const Ok([]);
   @override
   Future<Result<List<Member>>> channelMembers(String channelId) async => const Ok([]);

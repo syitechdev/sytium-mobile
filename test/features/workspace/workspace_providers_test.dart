@@ -29,6 +29,9 @@ class _FakeAuth extends AuthController {
 class _Repo implements WorkspaceRepository {
   _Repo({this.conversationsOverride});
 
+  @override
+  Future<Result<List<int>>> downloadAttachment(String url) async => const Ok(<int>[]);
+
   final List<Conversation>? conversationsOverride;
 
   @override

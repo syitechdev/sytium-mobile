@@ -8,6 +8,10 @@ abstract interface class WorkspaceRepository {
   /// All channels + DMs the user belongs to (DM peers NOT resolved here).
   Future<Result<List<Conversation>>> conversations();
 
+  /// Contenu binaire d'une pièce jointe (téléchargement authentifié), pour la
+  /// lecture locale des notes vocales.
+  Future<Result<List<int>>> downloadAttachment(String url);
+
   /// Members of a channel — used to resolve a DM peer and group rosters.
   Future<Result<List<Member>>> channelMembers(String channelId);
 

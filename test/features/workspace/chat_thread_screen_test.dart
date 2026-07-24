@@ -61,6 +61,9 @@ const _kChannel = Conversation(
 );
 
 class _BaseRepo implements WorkspaceRepository {
+  @override
+  Future<Result<List<int>>> downloadAttachment(String url) async => const Ok(<int>[]);
+
   int markReadCalls = 0;
   final List<String?> messageCursors = [];
 
