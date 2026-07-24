@@ -41,6 +41,16 @@ const _kSkeletonBarHeight = 36.0;
 /// Curated quick-reaction emojis (a full keyboard is overkill on mobile chat).
 const _kQuickReactions = ['👍', '❤️', '😂', '🎉', '✅', '🙏'];
 
+/// Polices emoji COULEUR en repli. La police de l'app (Inter) n'a pas les
+/// glyphes emoji ; sans ce repli, ❤ (U+2764) — qui a une forme TEXTE — s'affiche
+/// en NOIR au lieu du cœur rouge. Les emojis sans forme texte (👍…) sont
+/// épargnés. À appliquer à tout `Text` rendant un emoji.
+const kEmojiFontFallback = <String>[
+  'Apple Color Emoji',
+  'Noto Color Emoji',
+  'Segoe UI Emoji',
+];
+
 /// Two messages from the same author closer than this read as one block: the
 /// author name is printed once and the bubbles sit tight against each other.
 const _kGroupWindow = Duration(minutes: 5);
@@ -714,7 +724,9 @@ class ChatThreadScreenState extends ConsumerState<ChatThreadScreen> {
               padding: const EdgeInsets.all(Tokens.space12),
               child: Text(
                 '$emoji  $count',
-                style: Theme.of(sheetContext).textTheme.titleMedium,
+                style: Theme.of(sheetContext).textTheme.titleMedium?.copyWith(
+                  fontFamilyFallback: kEmojiFontFallback,
+                ),
               ),
             ),
             const Divider(height: 1),
@@ -1762,11 +1774,13 @@ class _ReactionChip extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Emoji SANS `color` : forcer une couleur ternit le glyphe couleur
-            // (le cœur perdait son rouge). Seul le compteur prend la couleur.
+            // Emoji SANS `color` (forcer une couleur ternit le glyphe) ET avec
+            // repli police emoji couleur (sinon ❤ rend en noir sous Inter).
             Text(
               reaction.emoji,
-              style: Theme.of(context).textTheme.labelSmall,
+              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                fontFamilyFallback: kEmojiFontFallback,
+              ),
             ),
             const SizedBox(width: Tokens.space4),
             Text(
@@ -1795,7 +1809,13 @@ class _EmojiButton extends StatelessWidget {
       radius: 28,
       child: Padding(
         padding: const EdgeInsets.all(Tokens.space8),
-        child: Text(emoji, style: const TextStyle(fontSize: 26)),
+        child: Text(
+          emoji,
+          style: const TextStyle(
+            fontSize: 26,
+            fontFamilyFallback: kEmojiFontFallback,
+          ),
+        ),
       ),
     );
   }
