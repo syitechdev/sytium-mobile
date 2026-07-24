@@ -45,7 +45,7 @@ final currentUserIdProvider = AutoDisposeProvider<String?>.internal(
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef CurrentUserIdRef = AutoDisposeProviderRef<String?>;
-String _$conversationsHash() => r'a0a23ecd0e19b2c29aa11c36c3b9b3ff2dbc3ac5';
+String _$conversationsHash() => r'8d1b9735db3af79ae12858d69c9dbc2803f88139';
 
 /// Conversations list. Channels keep their name; each DM resolves its peer
 /// (title + avatar) through [dmPeer], which the list endpoint omits.
@@ -492,5 +492,329 @@ class _ChannelMessagesProviderElement
   String get channelId => (origin as ChannelMessagesProvider).channelId;
 }
 
+String _$channelRosterHash() => r'1c7d22d455b1e50163781717c4e3f4d596dabd08';
+
+/// Membres d'un canal (avec rôle) — alimente la feuille « Membres (n) ».
+///
+/// Copied from [channelRoster].
+@ProviderFor(channelRoster)
+const channelRosterProvider = ChannelRosterFamily();
+
+/// Membres d'un canal (avec rôle) — alimente la feuille « Membres (n) ».
+///
+/// Copied from [channelRoster].
+class ChannelRosterFamily extends Family<AsyncValue<List<Member>>> {
+  /// Membres d'un canal (avec rôle) — alimente la feuille « Membres (n) ».
+  ///
+  /// Copied from [channelRoster].
+  const ChannelRosterFamily();
+
+  /// Membres d'un canal (avec rôle) — alimente la feuille « Membres (n) ».
+  ///
+  /// Copied from [channelRoster].
+  ChannelRosterProvider call(String channelId) {
+    return ChannelRosterProvider(channelId);
+  }
+
+  @override
+  ChannelRosterProvider getProviderOverride(
+    covariant ChannelRosterProvider provider,
+  ) {
+    return call(provider.channelId);
+  }
+
+  static const Iterable<ProviderOrFamily>? _dependencies = null;
+
+  @override
+  Iterable<ProviderOrFamily>? get dependencies => _dependencies;
+
+  static const Iterable<ProviderOrFamily>? _allTransitiveDependencies = null;
+
+  @override
+  Iterable<ProviderOrFamily>? get allTransitiveDependencies =>
+      _allTransitiveDependencies;
+
+  @override
+  String? get name => r'channelRosterProvider';
+}
+
+/// Membres d'un canal (avec rôle) — alimente la feuille « Membres (n) ».
+///
+/// Copied from [channelRoster].
+class ChannelRosterProvider extends AutoDisposeFutureProvider<List<Member>> {
+  /// Membres d'un canal (avec rôle) — alimente la feuille « Membres (n) ».
+  ///
+  /// Copied from [channelRoster].
+  ChannelRosterProvider(String channelId)
+    : this._internal(
+        (ref) => channelRoster(ref as ChannelRosterRef, channelId),
+        from: channelRosterProvider,
+        name: r'channelRosterProvider',
+        debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+            ? null
+            : _$channelRosterHash,
+        dependencies: ChannelRosterFamily._dependencies,
+        allTransitiveDependencies:
+            ChannelRosterFamily._allTransitiveDependencies,
+        channelId: channelId,
+      );
+
+  ChannelRosterProvider._internal(
+    super._createNotifier, {
+    required super.name,
+    required super.dependencies,
+    required super.allTransitiveDependencies,
+    required super.debugGetCreateSourceHash,
+    required super.from,
+    required this.channelId,
+  }) : super.internal();
+
+  final String channelId;
+
+  @override
+  Override overrideWith(
+    FutureOr<List<Member>> Function(ChannelRosterRef provider) create,
+  ) {
+    return ProviderOverride(
+      origin: this,
+      override: ChannelRosterProvider._internal(
+        (ref) => create(ref as ChannelRosterRef),
+        from: from,
+        name: null,
+        dependencies: null,
+        allTransitiveDependencies: null,
+        debugGetCreateSourceHash: null,
+        channelId: channelId,
+      ),
+    );
+  }
+
+  @override
+  AutoDisposeFutureProviderElement<List<Member>> createElement() {
+    return _ChannelRosterProviderElement(this);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is ChannelRosterProvider && other.channelId == channelId;
+  }
+
+  @override
+  int get hashCode {
+    var hash = _SystemHash.combine(0, runtimeType.hashCode);
+    hash = _SystemHash.combine(hash, channelId.hashCode);
+
+    return _SystemHash.finish(hash);
+  }
+}
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+mixin ChannelRosterRef on AutoDisposeFutureProviderRef<List<Member>> {
+  /// The parameter `channelId` of this provider.
+  String get channelId;
+}
+
+class _ChannelRosterProviderElement
+    extends AutoDisposeFutureProviderElement<List<Member>>
+    with ChannelRosterRef {
+  _ChannelRosterProviderElement(super.provider);
+
+  @override
+  String get channelId => (origin as ChannelRosterProvider).channelId;
+}
+
+String _$workspaceMentionsHash() => r'e28caacd875399fe050b170d8bb287fada4ada09';
+
+/// Messages où l'utilisateur est mentionné, tous canaux confondus.
+///
+/// Copied from [workspaceMentions].
+@ProviderFor(workspaceMentions)
+final workspaceMentionsProvider =
+    AutoDisposeFutureProvider<List<Message>>.internal(
+      workspaceMentions,
+      name: r'workspaceMentionsProvider',
+      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+          ? null
+          : _$workspaceMentionsHash,
+      dependencies: null,
+      allTransitiveDependencies: null,
+    );
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+typedef WorkspaceMentionsRef = AutoDisposeFutureProviderRef<List<Message>>;
+String _$workspaceBookmarksHash() =>
+    r'd364793d74a52f18f88d7c3d381e84571a930f8c';
+
+/// Messages enregistrés (bookmarks), tous canaux confondus.
+///
+/// Copied from [workspaceBookmarks].
+@ProviderFor(workspaceBookmarks)
+final workspaceBookmarksProvider =
+    AutoDisposeFutureProvider<List<Message>>.internal(
+      workspaceBookmarks,
+      name: r'workspaceBookmarksProvider',
+      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+          ? null
+          : _$workspaceBookmarksHash,
+      dependencies: null,
+      allTransitiveDependencies: null,
+    );
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+typedef WorkspaceBookmarksRef = AutoDisposeFutureProviderRef<List<Message>>;
+String _$channelPinsHash() => r'12c36619e76f86867db9512d4c9d468d0832cb0f';
+
+/// Messages épinglés d'un canal.
+///
+/// Copied from [channelPins].
+@ProviderFor(channelPins)
+const channelPinsProvider = ChannelPinsFamily();
+
+/// Messages épinglés d'un canal.
+///
+/// Copied from [channelPins].
+class ChannelPinsFamily extends Family<AsyncValue<List<Message>>> {
+  /// Messages épinglés d'un canal.
+  ///
+  /// Copied from [channelPins].
+  const ChannelPinsFamily();
+
+  /// Messages épinglés d'un canal.
+  ///
+  /// Copied from [channelPins].
+  ChannelPinsProvider call(String channelId) {
+    return ChannelPinsProvider(channelId);
+  }
+
+  @override
+  ChannelPinsProvider getProviderOverride(
+    covariant ChannelPinsProvider provider,
+  ) {
+    return call(provider.channelId);
+  }
+
+  static const Iterable<ProviderOrFamily>? _dependencies = null;
+
+  @override
+  Iterable<ProviderOrFamily>? get dependencies => _dependencies;
+
+  static const Iterable<ProviderOrFamily>? _allTransitiveDependencies = null;
+
+  @override
+  Iterable<ProviderOrFamily>? get allTransitiveDependencies =>
+      _allTransitiveDependencies;
+
+  @override
+  String? get name => r'channelPinsProvider';
+}
+
+/// Messages épinglés d'un canal.
+///
+/// Copied from [channelPins].
+class ChannelPinsProvider extends AutoDisposeFutureProvider<List<Message>> {
+  /// Messages épinglés d'un canal.
+  ///
+  /// Copied from [channelPins].
+  ChannelPinsProvider(String channelId)
+    : this._internal(
+        (ref) => channelPins(ref as ChannelPinsRef, channelId),
+        from: channelPinsProvider,
+        name: r'channelPinsProvider',
+        debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+            ? null
+            : _$channelPinsHash,
+        dependencies: ChannelPinsFamily._dependencies,
+        allTransitiveDependencies: ChannelPinsFamily._allTransitiveDependencies,
+        channelId: channelId,
+      );
+
+  ChannelPinsProvider._internal(
+    super._createNotifier, {
+    required super.name,
+    required super.dependencies,
+    required super.allTransitiveDependencies,
+    required super.debugGetCreateSourceHash,
+    required super.from,
+    required this.channelId,
+  }) : super.internal();
+
+  final String channelId;
+
+  @override
+  Override overrideWith(
+    FutureOr<List<Message>> Function(ChannelPinsRef provider) create,
+  ) {
+    return ProviderOverride(
+      origin: this,
+      override: ChannelPinsProvider._internal(
+        (ref) => create(ref as ChannelPinsRef),
+        from: from,
+        name: null,
+        dependencies: null,
+        allTransitiveDependencies: null,
+        debugGetCreateSourceHash: null,
+        channelId: channelId,
+      ),
+    );
+  }
+
+  @override
+  AutoDisposeFutureProviderElement<List<Message>> createElement() {
+    return _ChannelPinsProviderElement(this);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is ChannelPinsProvider && other.channelId == channelId;
+  }
+
+  @override
+  int get hashCode {
+    var hash = _SystemHash.combine(0, runtimeType.hashCode);
+    hash = _SystemHash.combine(hash, channelId.hashCode);
+
+    return _SystemHash.finish(hash);
+  }
+}
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+mixin ChannelPinsRef on AutoDisposeFutureProviderRef<List<Message>> {
+  /// The parameter `channelId` of this provider.
+  String get channelId;
+}
+
+class _ChannelPinsProviderElement
+    extends AutoDisposeFutureProviderElement<List<Message>>
+    with ChannelPinsRef {
+  _ChannelPinsProviderElement(super.provider);
+
+  @override
+  String get channelId => (origin as ChannelPinsProvider).channelId;
+}
+
+String _$archivedChannelsHash() => r'eeea94918f3997d23342b5b57f9af43fd81fa0e4';
+
+/// Canaux archivés (vue « Archivés »).
+///
+/// Copied from [archivedChannels].
+@ProviderFor(archivedChannels)
+final archivedChannelsProvider =
+    AutoDisposeFutureProvider<List<Conversation>>.internal(
+      archivedChannels,
+      name: r'archivedChannelsProvider',
+      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+          ? null
+          : _$archivedChannelsHash,
+      dependencies: null,
+      allTransitiveDependencies: null,
+    );
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+typedef ArchivedChannelsRef = AutoDisposeFutureProviderRef<List<Conversation>>;
 // ignore_for_file: type=lint
 // ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package

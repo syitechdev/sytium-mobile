@@ -38,15 +38,37 @@ Future<List<Conversation>> conversations(Ref ref) async {
   final repo = ref.watch(workspaceRepositoryProvider);
 
   final base = await repo.conversations();
-  final channels = base.fold((v) => v, (f) => throw Exception(f.message ?? 'Erreur'));
+  final channels = base.fold(
+    (v) => v,
+    (f) => throw Exception(f.message ?? 'Erreur'),
+  );
 
-  // Resolve DM peers in parallel. `dmPeer` already prefers the org roster's
-  // employee photo over the channel-member avatar, and yields null for a
-  // self-DM or an unresolvable channel — in which case the row keeps its
-  // server-side name.
+  // Org roster is a SINGLE cached call — used to prefer the employee photo over
+  // the DM's server-side avatar. Never sink the list on a roster hiccup.
+  var rosterAvatars = const <String, String>{};
+  try {
+    final roster = await ref.watch(orgMembersProvider.future);
+    rosterAvatars = {
+      for (final m in roster)
+        if (m.avatarUrl?.isNotEmpty ?? false) m.userId: m.avatarUrl!,
+    };
+  } catch (_) {
+    rosterAvatars = const {};
+  }
+
+  // Resolve DM peers. The channel payload now carries `other_user` (→ title,
+  // avatar, peerId set in the repo), so a DM with a resolved peer needs NO
+  // per-DM request — only the employee-photo enrichment from the cached roster.
+  // A DM WITHOUT `other_user` (legacy payloads) still falls back to `dmPeer`.
   final resolved = await Future.wait(
     channels.map((c) async {
       if (c.type != ConversationType.dm) return c;
+      if (c.peerId != null) {
+        final photo = rosterAvatars[c.peerId];
+        if (photo == null || photo == c.avatarUrl) return c;
+        return _withAvatar(c, photo);
+      }
+      // Fallback: `other_user` absent — resolve via members (cached by Riverpod).
       Member? peer;
       try {
         peer = await ref.watch(dmPeerProvider(c.id).future);
@@ -59,6 +81,7 @@ Future<List<Conversation>> conversations(Ref ref) async {
         type: c.type,
         title: peer.fullName.isNotEmpty ? peer.fullName : c.title,
         avatarUrl: peer.avatarUrl,
+        peerId: peer.userId,
         unreadCount: c.unreadCount,
         updatedAt: c.updatedAt,
         lastMessagePreview: c.lastMessagePreview,
@@ -80,6 +103,25 @@ Future<List<Conversation>> conversations(Ref ref) async {
   return resolved;
 }
 
+/// Returns a copy of [c] with a different avatar, preserving every other field.
+/// Used to graft the org-roster employee photo onto a DM whose `other_user`
+/// already resolved the title and a base avatar.
+Conversation _withAvatar(Conversation c, String avatarUrl) => Conversation(
+  id: c.id,
+  type: c.type,
+  title: c.title,
+  avatarUrl: avatarUrl,
+  peerId: c.peerId,
+  unreadCount: c.unreadCount,
+  updatedAt: c.updatedAt,
+  lastMessagePreview: c.lastMessagePreview,
+  lastMessageAt: c.lastMessageAt,
+  lastMessageAuthorId: c.lastMessageAuthorId,
+  lastMessageIsSystem: c.lastMessageIsSystem,
+  isMember: c.isMember,
+  memberCount: c.memberCount,
+);
+
 /// Public channels the current user can discover but hasn't joined yet
 /// (`type == public && !isMember`), most-populated first. Powers the
 /// "browse channels" sheet. Reuses the channels list endpoint (which already
@@ -87,7 +129,10 @@ Future<List<Conversation>> conversations(Ref ref) async {
 @riverpod
 Future<List<Conversation>> joinablePublicChannels(Ref ref) async {
   final result = await ref.watch(workspaceRepositoryProvider).conversations();
-  final all = result.fold((v) => v, (f) => throw Exception(f.message ?? 'Erreur'));
+  final all = result.fold(
+    (v) => v,
+    (f) => throw Exception(f.message ?? 'Erreur'),
+  );
   return all
       .where((c) => c.type == ConversationType.public && !c.isMember)
       .toList()
@@ -97,7 +142,8 @@ Future<List<Conversation>> joinablePublicChannels(Ref ref) async {
 /// Total unread across all conversations — drives the Message tab badge.
 @riverpod
 int workspaceUnread(Ref ref) {
-  final convos = ref.watch(conversationsProvider).valueOrNull ?? const <Conversation>[];
+  final convos =
+      ref.watch(conversationsProvider).valueOrNull ?? const <Conversation>[];
   return convos.fold(0, (sum, c) => sum + c.unreadCount);
 }
 
@@ -176,26 +222,27 @@ List<Member> sortedByPresence(
   List<Member> roster,
   Map<String, Presence> presences,
 ) {
-  final sorted = [...roster]..sort((a, b) {
-    final pa = presences[a.userId];
-    final pb = presences[b.userId];
+  final sorted = [...roster]
+    ..sort((a, b) {
+      final pa = presences[a.userId];
+      final pb = presences[b.userId];
 
-    final onlineA = pa?.online ?? false;
-    final onlineB = pb?.online ?? false;
-    if (onlineA != onlineB) return onlineA ? -1 : 1;
+      final onlineA = pa?.online ?? false;
+      final onlineB = pb?.online ?? false;
+      if (onlineA != onlineB) return onlineA ? -1 : 1;
 
-    final seenA = pa?.lastSeenAt;
-    final seenB = pb?.lastSeenAt;
-    if (seenA != null && seenB != null && seenA != seenB) {
-      return seenB.compareTo(seenA); // le plus récent d'abord
-    }
-    if (seenA != null && seenB == null) return -1;
-    if (seenA == null && seenB != null) return 1;
+      final seenA = pa?.lastSeenAt;
+      final seenB = pb?.lastSeenAt;
+      if (seenA != null && seenB != null && seenA != seenB) {
+        return seenB.compareTo(seenA); // le plus récent d'abord
+      }
+      if (seenA != null && seenB == null) return -1;
+      if (seenA == null && seenB != null) return 1;
 
-    // À égalité de présence, un ordre stable vaut mieux qu'un ordre au hasard :
-    // le trombinoscope ne doit pas se réorganiser à chaque rafraîchissement.
-    return a.fullName.toLowerCase().compareTo(b.fullName.toLowerCase());
-  });
+      // À égalité de présence, un ordre stable vaut mieux qu'un ordre au hasard :
+      // le trombinoscope ne doit pas se réorganiser à chaque rafraîchissement.
+      return a.fullName.toLowerCase().compareTo(b.fullName.toLowerCase());
+    });
   return sorted;
 }
 
@@ -213,8 +260,9 @@ const kThreadCacheWindow = Duration(minutes: 10);
 @riverpod
 Future<MessagesPage> channelMessages(Ref ref, String channelId) async {
   _keepWarm(ref, kThreadCacheWindow);
-  final result =
-      await ref.watch(workspaceRepositoryProvider).messages(channelId, limit: 50);
+  final result = await ref
+      .watch(workspaceRepositoryProvider)
+      .messages(channelId, limit: 50);
   return result.fold((v) => v, (f) => throw Exception(f.message ?? 'Erreur'));
 }
 
@@ -225,4 +273,45 @@ void _keepWarm(Ref ref, Duration window) {
   final link = ref.keepAlive();
   final timer = Timer(window, link.close);
   ref.onDispose(timer.cancel);
+}
+
+/// Membres d'un canal (avec rôle) — alimente la feuille « Membres (n) ».
+@riverpod
+Future<List<Member>> channelRoster(Ref ref, String channelId) async {
+  final result = await ref
+      .watch(workspaceRepositoryProvider)
+      .channelMembers(channelId);
+  return result.fold((v) => v, (f) => throw Exception(f.message ?? 'Erreur'));
+}
+
+/// Messages où l'utilisateur est mentionné, tous canaux confondus.
+@riverpod
+Future<List<Message>> workspaceMentions(Ref ref) async {
+  final result = await ref.watch(workspaceRepositoryProvider).mentions();
+  return result.fold((v) => v, (f) => throw Exception(f.message ?? 'Erreur'));
+}
+
+/// Messages enregistrés (bookmarks), tous canaux confondus.
+@riverpod
+Future<List<Message>> workspaceBookmarks(Ref ref) async {
+  final result = await ref.watch(workspaceRepositoryProvider).bookmarks();
+  return result.fold((v) => v, (f) => throw Exception(f.message ?? 'Erreur'));
+}
+
+/// Messages épinglés d'un canal.
+@riverpod
+Future<List<Message>> channelPins(Ref ref, String channelId) async {
+  final result = await ref
+      .watch(workspaceRepositoryProvider)
+      .channelPins(channelId);
+  return result.fold((v) => v, (f) => throw Exception(f.message ?? 'Erreur'));
+}
+
+/// Canaux archivés (vue « Archivés »).
+@riverpod
+Future<List<Conversation>> archivedChannels(Ref ref) async {
+  final result = await ref
+      .watch(workspaceRepositoryProvider)
+      .archivedChannels();
+  return result.fold((v) => v, (f) => throw Exception(f.message ?? 'Erreur'));
 }

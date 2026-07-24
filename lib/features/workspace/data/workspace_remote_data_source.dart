@@ -36,9 +36,8 @@ class WorkspaceRemoteDataSource {
     '/workspace/messages/$messageId/bookmark',
   );
 
-  Future<void> unbookmark(String messageId) => _dio.delete<Map<String, dynamic>>(
-    '/workspace/messages/$messageId/bookmark',
-  );
+  Future<void> unbookmark(String messageId) => _dio
+      .delete<Map<String, dynamic>>('/workspace/messages/$messageId/bookmark');
 
   /// Transcrit une note vocale déjà envoyée via l'IA. Persiste `audio_transcript`
   /// et diffuse `workspace.message.updated`. Renvoie le texte transcrit.
@@ -51,8 +50,11 @@ class WorkspaceRemoteDataSource {
     return data is Map ? data['text']?.toString() : null;
   }
 
-  Future<List<ChannelDto>> channels() async {
-    final res = await _dio.get<Map<String, dynamic>>('/workspace/channels');
+  Future<List<ChannelDto>> channels({bool archived = false}) async {
+    final res = await _dio.get<Map<String, dynamic>>(
+      '/workspace/channels',
+      queryParameters: {if (archived) 'archived': 1},
+    );
     final list = res.data!['data'] as List<dynamic>;
     return list
         .map((e) => ChannelDto.fromJson(e as Map<String, dynamic>))
@@ -123,6 +125,31 @@ class WorkspaceRemoteDataSource {
     );
   }
 
+  /// Ajoute des membres à un canal. `role` optionnel (`member`/`admin`). 403 si
+  /// l'appelant n'est pas owner/admin — remonté tel quel via le mapper d'erreur.
+  Future<void> addMembers(
+    String channelId,
+    List<String> userIds, {
+    String? role,
+  }) async {
+    await _dio.post<Map<String, dynamic>>(
+      '/workspace/channels/$channelId/members',
+      data: {'user_ids': userIds, if (role != null) 'role': role},
+    );
+  }
+
+  /// Archive ou désarchive un canal (`PATCH` partiel comme le web).
+  Future<ChannelDto> updateChannelArchived(
+    String channelId, {
+    required bool isArchived,
+  }) async {
+    final res = await _dio.patch<Map<String, dynamic>>(
+      '/workspace/channels/$channelId',
+      data: {'is_archived': isArchived},
+    );
+    return ChannelDto.fromJson(res.data!['data'] as Map<String, dynamic>);
+  }
+
   Future<MessagesPageDto> messages(
     String channelId, {
     String? cursor,
@@ -166,10 +193,12 @@ class WorkspaceRemoteDataSource {
       if (content.isNotEmpty) form.fields.add(MapEntry('content', content));
       if (parentId != null) form.fields.add(MapEntry('parent_id', parentId));
       for (final path in attachmentPaths) {
-        form.files.add(MapEntry(
-          'attachments[]',
-          await MultipartFile.fromFile(path, filename: path.split('/').last),
-        ));
+        form.files.add(
+          MapEntry(
+            'attachments[]',
+            await MultipartFile.fromFile(path, filename: path.split('/').last),
+          ),
+        );
       }
       payload = form;
     }
@@ -215,5 +244,24 @@ class WorkspaceRemoteDataSource {
     await _dio.post<Map<String, dynamic>>(
       '/workspace/channels/$channelId/read',
     );
+  }
+
+  /// Messages où l'utilisateur est mentionné, tous canaux confondus. Liste plate
+  /// `{data: message[]}` (chaque message porte son `channel_id`).
+  Future<List<MessageDto>> mentions() => _messageList('/workspace/mentions');
+
+  /// Messages enregistrés (bookmarks) de l'utilisateur, tous canaux confondus.
+  Future<List<MessageDto>> bookmarks() => _messageList('/workspace/bookmarks');
+
+  /// Messages épinglés d'un canal donné.
+  Future<List<MessageDto>> channelPins(String channelId) =>
+      _messageList('/workspace/channels/$channelId/pins');
+
+  Future<List<MessageDto>> _messageList(String path) async {
+    final res = await _dio.get<Map<String, dynamic>>(path);
+    final list = res.data!['data'] as List<dynamic>? ?? const [];
+    return list
+        .map((e) => MessageDto.fromJson(e as Map<String, dynamic>))
+        .toList();
   }
 }

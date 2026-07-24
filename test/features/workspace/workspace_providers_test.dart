@@ -44,6 +44,25 @@ class _Repo implements WorkspaceRepository {
   @override
   Future<Result<void>> sendTyping(String channelId) async => const Ok(null);
 
+  @override
+  Future<Result<void>> addMembers(String channelId, List<String> userIds, {String? role}) async => const Ok(null);
+
+  @override
+  Future<Result<Conversation>> setChannelArchived(String channelId, {required bool isArchived}) async =>
+      const Ok(Conversation(id: 'c', type: ConversationType.public, title: 'C'));
+
+  @override
+  Future<Result<List<Conversation>>> archivedChannels() async => const Ok(<Conversation>[]);
+
+  @override
+  Future<Result<List<Message>>> mentions() async => const Ok(<Message>[]);
+
+  @override
+  Future<Result<List<Message>>> bookmarks() async => const Ok(<Message>[]);
+
+  @override
+  Future<Result<List<Message>>> channelPins(String channelId) async => const Ok(<Message>[]);
+
   final List<Conversation>? conversationsOverride;
 
   @override
@@ -363,7 +382,7 @@ class _StubRemote extends WorkspaceRemoteDataSource {
   _StubRemote() : super(Dio());
 
   @override
-  Future<List<ChannelDto>> channels() async => [
+  Future<List<ChannelDto>> channels({bool archived = false}) async => [
         ChannelDto.fromJson(const {
           'id': 'c1',
           'name': 'Général',
@@ -384,7 +403,7 @@ class _StubRemoteNoMessage extends WorkspaceRemoteDataSource {
   _StubRemoteNoMessage() : super(Dio());
 
   @override
-  Future<List<ChannelDto>> channels() async => [
+  Future<List<ChannelDto>> channels({bool archived = false}) async => [
         ChannelDto.fromJson(const {'id': 'c2', 'name': 'Vide', 'type': 'public'}),
       ];
 }

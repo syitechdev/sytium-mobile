@@ -52,6 +52,31 @@ abstract interface class WorkspaceRepository {
   /// Joins a public channel.
   Future<Result<void>> joinChannel(String channelId);
 
+  /// Ajoute des membres à un canal (réservé owner/admin — 403 sinon).
+  Future<Result<void>> addMembers(
+    String channelId,
+    List<String> userIds, {
+    String? role,
+  });
+
+  /// Archive/désarchive un canal ; renvoie la conversation mise à jour.
+  Future<Result<Conversation>> setChannelArchived(
+    String channelId, {
+    required bool isArchived,
+  });
+
+  /// Canaux archivés (vue « Archivés »).
+  Future<Result<List<Conversation>>> archivedChannels();
+
+  /// Messages où l'utilisateur est mentionné, tous canaux confondus.
+  Future<Result<List<Message>>> mentions();
+
+  /// Messages enregistrés (bookmarks), tous canaux confondus.
+  Future<Result<List<Message>>> bookmarks();
+
+  /// Messages épinglés d'un canal.
+  Future<Result<List<Message>>> channelPins(String channelId);
+
   /// One page of messages (oldest→newest). [cursor] paginates older messages.
   Future<Result<MessagesPage>> messages(
     String channelId, {

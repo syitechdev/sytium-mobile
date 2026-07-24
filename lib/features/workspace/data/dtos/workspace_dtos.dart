@@ -40,6 +40,9 @@ class ChannelDto with _$ChannelDto {
     @Default(0)
     int memberCount,
     @JsonKey(name: 'is_member') @Default(true) bool isMember,
+    // Sur un DM, l'autre participant, résolu côté serveur : évite un GET members
+    // par conversation (N+1) pour peupler titre/avatar. Absent des canaux.
+    @JsonKey(name: 'other_user') OtherUserDto? otherUser,
     @JsonKey(name: 'created_at', fromJson: _dateFrom) DateTime? createdAt,
     @JsonKey(name: 'updated_at', fromJson: _dateFrom) DateTime? updatedAt,
     @JsonKey(name: 'last_read_at', fromJson: _dateFrom) DateTime? lastReadAt,
@@ -48,6 +51,21 @@ class ChannelDto with _$ChannelDto {
 
   factory ChannelDto.fromJson(Map<String, dynamic> json) =>
       _$ChannelDtoFromJson(json);
+}
+
+/// L'autre participant d'un DM (`other_user`), résolu côté serveur pour éviter
+/// un appel `channelMembers` par conversation. Présent uniquement sur les DM.
+@freezed
+class OtherUserDto with _$OtherUserDto {
+  const factory OtherUserDto({
+    @Default('') String id,
+    @JsonKey(name: 'full_name') @Default('') String fullName,
+    @Default('') String email,
+    @JsonKey(name: 'avatar_url') String? avatarUrl,
+  }) = _OtherUserDto;
+
+  factory OtherUserDto.fromJson(Map<String, dynamic> json) =>
+      _$OtherUserDtoFromJson(json);
 }
 
 @freezed
@@ -145,6 +163,8 @@ class MessageDto with _$MessageDto {
     @JsonKey(name: 'is_system') @Default(false) bool isSystem,
     @JsonKey(name: 'deleted_at', fromJson: _dateFrom) DateTime? deletedAt,
     @JsonKey(name: 'created_at', fromJson: _dateFrom) DateTime? createdAt,
+    // Masqué pour l'utilisateur courant (« supprimer pour moi ») : filtré du fil.
+    @Default(false) bool hidden,
     @Default(false) bool pinned,
     @JsonKey(name: 'pinned_at', fromJson: _dateFrom) DateTime? pinnedAt,
     @Default(false) bool bookmarked,

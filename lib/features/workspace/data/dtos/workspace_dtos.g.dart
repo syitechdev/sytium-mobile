@@ -22,6 +22,9 @@ _$ChannelDtoImpl _$$ChannelDtoImplFromJson(Map<String, dynamic> json) =>
           ? 0
           : _intFrom(json['member_count']),
       isMember: json['is_member'] as bool? ?? true,
+      otherUser: json['other_user'] == null
+          ? null
+          : OtherUserDto.fromJson(json['other_user'] as Map<String, dynamic>),
       createdAt: _dateFrom(json['created_at']),
       updatedAt: _dateFrom(json['updated_at']),
       lastReadAt: _dateFrom(json['last_read_at']),
@@ -44,10 +47,27 @@ Map<String, dynamic> _$$ChannelDtoImplToJson(_$ChannelDtoImpl instance) =>
       'unread_count': instance.unreadCount,
       'member_count': instance.memberCount,
       'is_member': instance.isMember,
+      'other_user': instance.otherUser,
       'created_at': instance.createdAt?.toIso8601String(),
       'updated_at': instance.updatedAt?.toIso8601String(),
       'last_read_at': instance.lastReadAt?.toIso8601String(),
       'last_message': instance.lastMessage,
+    };
+
+_$OtherUserDtoImpl _$$OtherUserDtoImplFromJson(Map<String, dynamic> json) =>
+    _$OtherUserDtoImpl(
+      id: json['id'] as String? ?? '',
+      fullName: json['full_name'] as String? ?? '',
+      email: json['email'] as String? ?? '',
+      avatarUrl: json['avatar_url'] as String?,
+    );
+
+Map<String, dynamic> _$$OtherUserDtoImplToJson(_$OtherUserDtoImpl instance) =>
+    <String, dynamic>{
+      'id': instance.id,
+      'full_name': instance.fullName,
+      'email': instance.email,
+      'avatar_url': instance.avatarUrl,
     };
 
 _$LastMessageDtoImpl _$$LastMessageDtoImplFromJson(Map<String, dynamic> json) =>
@@ -171,6 +191,7 @@ _$MessageDtoImpl _$$MessageDtoImplFromJson(Map<String, dynamic> json) =>
       isSystem: json['is_system'] as bool? ?? false,
       deletedAt: _dateFrom(json['deleted_at']),
       createdAt: _dateFrom(json['created_at']),
+      hidden: json['hidden'] as bool? ?? false,
       pinned: json['pinned'] as bool? ?? false,
       pinnedAt: _dateFrom(json['pinned_at']),
       bookmarked: json['bookmarked'] as bool? ?? false,
@@ -208,6 +229,7 @@ Map<String, dynamic> _$$MessageDtoImplToJson(_$MessageDtoImpl instance) =>
       'is_system': instance.isSystem,
       'deleted_at': instance.deletedAt?.toIso8601String(),
       'created_at': instance.createdAt?.toIso8601String(),
+      'hidden': instance.hidden,
       'pinned': instance.pinned,
       'pinned_at': instance.pinnedAt?.toIso8601String(),
       'bookmarked': instance.bookmarked,

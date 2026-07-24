@@ -27,6 +27,7 @@ class Conversation {
     this.lastMessageIsSystem = false,
     this.isMember = true,
     this.memberCount = 0,
+    this.peerId,
   });
 
   final String id;
@@ -37,6 +38,11 @@ class Conversation {
 
   /// For a DM, the resolved peer avatar; null for a channel (renders `#`).
   final String? avatarUrl;
+
+  /// For a DM, the peer's user id (from `other_user`), when the server resolved
+  /// it. Lets the list enrich the avatar from the cached org roster without a
+  /// per-DM `channelMembers` call (the old N+1). Null for channels.
+  final String? peerId;
   final int unreadCount;
   final DateTime? updatedAt;
 
@@ -277,12 +283,20 @@ class Member {
     required this.fullName,
     this.avatarUrl,
     this.poste,
+    this.role,
   });
 
   final String userId;
   final String fullName;
   final String? avatarUrl;
   final String? poste;
+
+  /// Rôle dans le canal (`owner`/`admin`/`member`) quand la source est la liste
+  /// des membres d'un canal ; null pour le roster de l'organisation.
+  final String? role;
+
+  /// Owner ou admin : peut ajouter des membres (le bouton n'apparaît que là).
+  bool get canManage => role == 'owner' || role == 'admin';
 }
 
 /// A colleague's realtime presence (« statuts d'équipe »).

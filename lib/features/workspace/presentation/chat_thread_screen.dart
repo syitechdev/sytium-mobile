@@ -17,6 +17,9 @@ import 'package:sytium_mobile/features/workspace/application/workspace_providers
 import 'package:sytium_mobile/features/workspace/domain/workspace_models.dart';
 import 'package:sytium_mobile/features/workspace/domain/workspace_repository.dart';
 import 'package:sytium_mobile/features/workspace/presentation/attachment_preview.dart';
+import 'package:sytium_mobile/features/workspace/presentation/channel_members_sheet.dart';
+import 'package:sytium_mobile/features/workspace/presentation/mention_text.dart';
+import 'package:sytium_mobile/features/workspace/presentation/workspace_message_list_screen.dart';
 import 'package:sytium_mobile/shared/widgets/app_avatar.dart';
 import 'package:sytium_mobile/shared/widgets/app_sheet.dart';
 import 'package:sytium_mobile/shared/widgets/error_state.dart';
@@ -47,7 +50,10 @@ const _kQuickReactions = ['👍', '❤️', '😂', '🎉', '✅', '🙏'];
 /// déclenchait donc jamais (le repli n'agit que si la police primaire n'a PAS le
 /// glyphe). En primaire, Inter ne rend plus l'emoji → cœur rouge.
 const kEmojiFontFamily = 'Apple Color Emoji'; // iOS
-const kEmojiFontFallback = <String>['Noto Color Emoji', 'Segoe UI Emoji']; // Android+
+const kEmojiFontFallback = <String>[
+  'Noto Color Emoji',
+  'Segoe UI Emoji',
+]; // Android+
 
 /// Two messages from the same author closer than this read as one block: the
 /// author name is printed once and the bubbles sit tight against each other.
@@ -186,6 +192,11 @@ class ChatThreadScreenState extends ConsumerState<ChatThreadScreen> {
 
   /// The message being replied to (null when composing a fresh message).
   Message? _replyTo;
+
+  /// Rejoindre un canal public : en cours, et bascule locale une fois rejoint
+  /// (la conversation reçue à la construction est immuable).
+  bool _joining = false;
+  bool _joinedLocally = false;
 
   /// Drives the "back to bottom" button. `reverse: true` puts the newest
   /// message at offset 0, so "scrolled up" means a positive offset.
@@ -668,7 +679,9 @@ class ChatThreadScreenState extends ConsumerState<ChatThreadScreen> {
     if (!mounted) return;
     if (result.isOk) {
       _refresh();
-      _toast(message.bookmarked ? 'Retiré des favoris.' : 'Ajouté aux favoris.');
+      _toast(
+        message.bookmarked ? 'Retiré des favoris.' : 'Ajouté aux favoris.',
+      );
     } else {
       _toast(result.failureOrNull?.message ?? 'Action impossible.');
     }
@@ -701,7 +714,8 @@ class ChatThreadScreenState extends ConsumerState<ChatThreadScreen> {
     }
     if (reaction == null || reaction.userIds.isEmpty) return;
     final count = reaction.count;
-    final members = ref.read(orgMembersProvider).valueOrNull ?? const <Member>[];
+    final members =
+        ref.read(orgMembersProvider).valueOrNull ?? const <Member>[];
     final me = ref.read(currentUserIdProvider);
     final byId = {for (final m in members) m.userId: m.fullName};
     final names = reaction.userIds
@@ -745,6 +759,99 @@ class ChatThreadScreenState extends ConsumerState<ChatThreadScreen> {
         ),
       ),
     );
+  }
+
+  /// Picker de mention : liste cherchable des collaborateurs. Le choix insère le
+  /// format `@[Nom](uuid)` — la SEULE forme que le backend (`syncMentions`)
+  /// reconnaît pour créer la mention + sa notification (identique au web).
+  Future<void> _pickMention() async {
+    final members =
+        ref.read(orgMembersProvider).valueOrNull ?? const <Member>[];
+    final me = ref.read(currentUserIdProvider);
+    final selectable = members.where((m) => m.userId != me).toList();
+    if (!mounted) return;
+    final chosen = await showAppSheet<Member>(
+      context,
+      builder: (sheetContext) {
+        var query = '';
+        return StatefulBuilder(
+          builder: (ctx, setSheet) {
+            final q = query.toLowerCase();
+            final filtered = selectable
+                .where((m) => m.fullName.toLowerCase().contains(q))
+                .take(30)
+                .toList();
+            return SafeArea(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.all(Tokens.space12),
+                    child: TextField(
+                      autofocus: true,
+                      decoration: const InputDecoration(
+                        hintText: 'Rechercher un collaborateur…',
+                        prefixIcon: Icon(Icons.search),
+                        isDense: true,
+                      ),
+                      onChanged: (v) => setSheet(() => query = v),
+                    ),
+                  ),
+                  const Divider(height: 1),
+                  if (filtered.isEmpty)
+                    const Padding(
+                      padding: EdgeInsets.all(Tokens.space16),
+                      child: Text('Aucun collaborateur'),
+                    )
+                  else
+                    Flexible(
+                      child: ListView.builder(
+                        shrinkWrap: true,
+                        itemCount: filtered.length,
+                        itemBuilder: (c, i) {
+                          final m = filtered[i];
+                          return ListTile(
+                            dense: true,
+                            leading: AppAvatar(
+                              name: m.fullName,
+                              imageUrl: m.avatarUrl,
+                              radius: 16,
+                            ),
+                            title: Text(m.fullName),
+                            subtitle: (m.poste?.isNotEmpty ?? false)
+                                ? Text(m.poste!)
+                                : null,
+                            onTap: () => Navigator.of(ctx).pop(m),
+                          );
+                        },
+                      ),
+                    ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+    if (chosen != null) _insertMention(chosen);
+  }
+
+  /// Insère `@[Nom](uuid) ` à la position du curseur (ou en fin si aucune
+  /// sélection), puis rend le focus au champ de saisie.
+  void _insertMention(Member m) {
+    final label = m.fullName.isNotEmpty ? m.fullName : 'Utilisateur';
+    final insert = '@[$label](${m.userId}) ';
+    final value = _composer.value;
+    final base = value.text;
+    final sel = value.selection;
+    final start = sel.start >= 0 ? sel.start : base.length;
+    final end = sel.end >= 0 ? sel.end : base.length;
+    final next = base.replaceRange(start, end, insert);
+    _composer.value = TextEditingValue(
+      text: next,
+      selection: TextSelection.collapsed(offset: start + insert.length),
+    );
+    _composerFocus.requestFocus();
   }
 
   Future<void> _editMessage(Message message) async {
@@ -870,6 +977,42 @@ class ChatThreadScreenState extends ConsumerState<ChatThreadScreen> {
             tooltip: 'Appel vidéo',
             onPressed: () => _startCall(CallKind.video),
           ),
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.more_vert),
+            tooltip: 'Plus',
+            onSelected: _onHeaderMenu,
+            itemBuilder: (_) => [
+              if (widget.conversation.isGroup)
+                const PopupMenuItem(
+                  value: 'members',
+                  child: ListTile(
+                    dense: true,
+                    contentPadding: EdgeInsets.zero,
+                    leading: Icon(Icons.group_outlined),
+                    title: Text('Membres'),
+                  ),
+                ),
+              const PopupMenuItem(
+                value: 'pins',
+                child: ListTile(
+                  dense: true,
+                  contentPadding: EdgeInsets.zero,
+                  leading: Icon(Icons.push_pin_outlined),
+                  title: Text('Épinglés'),
+                ),
+              ),
+              if (widget.conversation.isGroup)
+                const PopupMenuItem(
+                  value: 'archive',
+                  child: ListTile(
+                    dense: true,
+                    contentPadding: EdgeInsets.zero,
+                    leading: Icon(Icons.archive_outlined),
+                    title: Text('Archiver le canal'),
+                  ),
+                ),
+            ],
+          ),
         ],
       ),
       body: Column(
@@ -921,18 +1064,89 @@ class ChatThreadScreenState extends ConsumerState<ChatThreadScreen> {
               ],
             ),
           ),
-          _TypingIndicator(channelId: _channelId),
-          _Composer(
-            controller: _composer,
-            focusNode: _composerFocus,
-            pending: _pending,
-            replyTo: _replyTo,
-            onSend: _send,
-            onAttach: _showAttachMenu,
-            onRemovePending: (i) => setState(() => _pending.removeAt(i)),
-            onCancelReply: () => setState(() => _replyTo = null),
-          ),
+          if (widget.conversation.type == ConversationType.public &&
+              !widget.conversation.isMember &&
+              !_joinedLocally)
+            _JoinBar(joining: _joining, onJoin: _joinChannel)
+          else ...[
+            _TypingIndicator(channelId: _channelId),
+            _Composer(
+              controller: _composer,
+              focusNode: _composerFocus,
+              pending: _pending,
+              replyTo: _replyTo,
+              onSend: _send,
+              onAttach: _showAttachMenu,
+              onMention: _pickMention,
+              onRemovePending: (i) => setState(() => _pending.removeAt(i)),
+              onCancelReply: () => setState(() => _replyTo = null),
+            ),
+          ],
         ],
+      ),
+    );
+  }
+
+  void _onHeaderMenu(String value) {
+    switch (value) {
+      case 'members':
+        showChannelMembersSheet(context, conversation: widget.conversation);
+      case 'pins':
+        Navigator.of(context).push(
+          MaterialPageRoute<void>(
+            builder: (_) => WorkspaceMessageListScreen(
+              title: 'Messages épinglés',
+              emptyText: 'Aucun message épinglé.',
+              provider: channelPinsProvider(_channelId),
+            ),
+          ),
+        );
+      case 'archive':
+        _archiveChannel();
+    }
+  }
+
+  /// Archive le canal courant, puis rafraîchit la liste et ferme le fil.
+  Future<void> _archiveChannel() async {
+    final result = await ref
+        .read(workspaceRepositoryProvider)
+        .setChannelArchived(_channelId, isArchived: true);
+    if (!mounted) return;
+    result.fold(
+      (_) {
+        ref
+          ..invalidate(conversationsProvider)
+          ..invalidate(archivedChannelsProvider);
+        Navigator.of(context).pop();
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Canal archivé.')));
+      },
+      (f) => ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(f.message ?? 'Archivage impossible.')),
+      ),
+    );
+  }
+
+  /// Rejoint le canal public courant, puis réactive le composer et rafraîchit la
+  /// liste (le canal bascule côté « rejoint »).
+  Future<void> _joinChannel() async {
+    if (_joining) return;
+    setState(() => _joining = true);
+    final result = await ref
+        .read(workspaceRepositoryProvider)
+        .joinChannel(_channelId);
+    if (!mounted) return;
+    setState(() => _joining = false);
+    result.fold(
+      (_) {
+        setState(() => _joinedLocally = true);
+        ref
+          ..invalidate(conversationsProvider)
+          ..invalidate(channelMessagesProvider(_channelId));
+      },
+      (f) => ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(f.message ?? 'Impossible de rejoindre.')),
       ),
     );
   }
@@ -1440,7 +1654,10 @@ class _MessageBubble extends StatelessWidget {
                           ),
                         )
                       else if (hasText)
-                        Text(message.content, style: TextStyle(color: fg)),
+                        MentionText(
+                          message.content,
+                          style: TextStyle(color: fg),
+                        ),
                       if (!message.isDeleted &&
                           (message.audioTranscript?.isNotEmpty ?? false)) ...[
                         const SizedBox(height: Tokens.space4),
@@ -1742,7 +1959,9 @@ class _ReactionsRow extends StatelessWidget {
             reaction: r,
             mine: r.reactedBy(currentUserId),
             onTap: onTap == null ? null : () => onTap!(r.emoji),
-            onLongPress: onLongPress == null ? null : () => onLongPress!(r.emoji),
+            onLongPress: onLongPress == null
+                ? null
+                : () => onLongPress!(r.emoji),
             colors: colors,
           ),
       ],
@@ -1897,6 +2116,53 @@ class _TypingIndicator extends ConsumerWidget {
   }
 }
 
+/// Barre affichée à la place du composer sur un canal public non rejoint :
+/// écrire exige d'abord de rejoindre (parité web).
+class _JoinBar extends StatelessWidget {
+  const _JoinBar({required this.joining, required this.onJoin});
+
+  final bool joining;
+  final VoidCallback onJoin;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    return SafeArea(
+      top: false,
+      child: Container(
+        decoration: BoxDecoration(
+          color: colors.card,
+          border: Border(top: BorderSide(color: colors.border)),
+        ),
+        padding: const EdgeInsets.all(Tokens.space12),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                'Rejoignez ce canal pour y participer.',
+                style: Theme.of(
+                  context,
+                ).textTheme.bodySmall?.copyWith(color: colors.textMuted),
+              ),
+            ),
+            const SizedBox(width: Tokens.space12),
+            FilledButton(
+              onPressed: joining ? null : onJoin,
+              child: joining
+                  ? const SizedBox(
+                      height: 18,
+                      width: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Text('Rejoindre'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _Composer extends StatelessWidget {
   const _Composer({
     required this.controller,
@@ -1905,6 +2171,7 @@ class _Composer extends StatelessWidget {
     required this.replyTo,
     required this.onSend,
     required this.onAttach,
+    required this.onMention,
     required this.onRemovePending,
     required this.onCancelReply,
   });
@@ -1915,6 +2182,7 @@ class _Composer extends StatelessWidget {
   final Message? replyTo;
   final VoidCallback onSend;
   final VoidCallback onAttach;
+  final VoidCallback onMention;
   final void Function(int index) onRemovePending;
   final VoidCallback onCancelReply;
 
@@ -1948,6 +2216,12 @@ class _Composer extends StatelessWidget {
                     color: colors.textMuted,
                     tooltip: 'Joindre',
                     onPressed: onAttach,
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.alternate_email),
+                    color: colors.textMuted,
+                    tooltip: 'Mentionner',
+                    onPressed: onMention,
                   ),
                   Expanded(
                     child: TextField(

@@ -6,10 +6,12 @@ import 'package:intl/intl.dart';
 import 'package:sytium_mobile/app/lifecycle/app_foreground.dart';
 import 'package:sytium_mobile/features/workspace/application/workspace_providers.dart';
 import 'package:sytium_mobile/features/workspace/domain/workspace_models.dart';
+import 'package:sytium_mobile/features/workspace/presentation/archived_channels_screen.dart';
 import 'package:sytium_mobile/features/workspace/presentation/browse_channels_sheet.dart';
 import 'package:sytium_mobile/features/workspace/presentation/chat_thread_screen.dart';
 import 'package:sytium_mobile/features/workspace/presentation/create_channel_sheet.dart';
 import 'package:sytium_mobile/features/workspace/presentation/new_dm_sheet.dart';
+import 'package:sytium_mobile/features/workspace/presentation/workspace_message_list_screen.dart';
 import 'package:sytium_mobile/shared/widgets/app_avatar.dart';
 import 'package:sytium_mobile/shared/widgets/app_sheet.dart';
 import 'package:sytium_mobile/shared/widgets/error_state.dart';
@@ -75,15 +77,14 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
 
   void _openConversation(Conversation c) {
     Navigator.of(context).push(
-      MaterialPageRoute<void>(builder: (_) => ChatThreadScreen(conversation: c)),
+      MaterialPageRoute<void>(
+        builder: (_) => ChatThreadScreen(conversation: c),
+      ),
     );
   }
 
   Future<void> _startDm() async {
-    await showAppSheet<void>(
-      context,
-      builder: (_) => const NewDmSheet(),
-    );
+    await showAppSheet<void>(context, builder: (_) => const NewDmSheet());
   }
 
   Future<void> _createChannel() async {
@@ -158,7 +159,9 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
             // liste reste lisible, coiffée d'un bandeau. L'écran d'erreur plein
             // est réservé au cas où l'on n'a strictement rien à montrer.
             if (convos != null && async.hasError)
-              StaleDataBanner(onRetry: () => ref.invalidate(conversationsProvider)),
+              StaleDataBanner(
+                onRetry: () => ref.invalidate(conversationsProvider),
+              ),
             Expanded(
               child: RefreshIndicator(
                 onRefresh: _refresh,
@@ -240,6 +243,40 @@ class _Header extends StatelessWidget {
               ],
             ),
           ),
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.more_horiz),
+            tooltip: 'Plus',
+            onSelected: (v) => _onMenu(context, v),
+            itemBuilder: (_) => const [
+              PopupMenuItem(
+                value: 'mentions',
+                child: ListTile(
+                  dense: true,
+                  contentPadding: EdgeInsets.zero,
+                  leading: Icon(Icons.alternate_email),
+                  title: Text('Mentions'),
+                ),
+              ),
+              PopupMenuItem(
+                value: 'bookmarks',
+                child: ListTile(
+                  dense: true,
+                  contentPadding: EdgeInsets.zero,
+                  leading: Icon(Icons.bookmark_outline),
+                  title: Text('Enregistrés'),
+                ),
+              ),
+              PopupMenuItem(
+                value: 'archived',
+                child: ListTile(
+                  dense: true,
+                  contentPadding: EdgeInsets.zero,
+                  leading: Icon(Icons.archive_outlined),
+                  title: Text('Archivés'),
+                ),
+              ),
+            ],
+          ),
           IconButton.filledTonal(
             onPressed: onCreate,
             icon: const Icon(Icons.add),
@@ -248,6 +285,29 @@ class _Header extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  void _onMenu(BuildContext context, String value) {
+    Widget screen;
+    switch (value) {
+      case 'mentions':
+        screen = WorkspaceMessageListScreen(
+          title: 'Mentions',
+          emptyText: 'Personne ne vous a mentionné pour l’instant.',
+          provider: workspaceMentionsProvider,
+        );
+      case 'bookmarks':
+        screen = WorkspaceMessageListScreen(
+          title: 'Enregistrés',
+          emptyText: 'Aucun message enregistré.',
+          provider: workspaceBookmarksProvider,
+        );
+      case 'archived':
+        screen = const ArchivedChannelsScreen();
+      default:
+        return;
+    }
+    Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => screen));
   }
 }
 
@@ -307,10 +367,7 @@ class _Body extends ConsumerWidget {
       padding: const EdgeInsets.only(bottom: Tokens.space48),
       children: [
         if (query.isEmpty) const _TeamStatusStrip(),
-        _SectionHeader(
-          label: 'Canaux officiels',
-          onAdd: onCreateChannel,
-        ),
+        _SectionHeader(label: 'Canaux officiels', onAdd: onCreateChannel),
         if (channels.isEmpty)
           const _EmptyLine(text: 'Aucun canal.')
         else
@@ -321,8 +378,7 @@ class _Body extends ConsumerWidget {
         if (dms.isEmpty)
           const _EmptyLine(text: 'Aucune discussion. Démarrez-en une.')
         else
-          for (final c in dms)
-            _DmRow(conversation: c, onTap: () => onOpen(c)),
+          for (final c in dms) _DmRow(conversation: c, onTap: () => onOpen(c)),
       ],
     );
   }
@@ -348,7 +404,8 @@ class _TeamStatusStripState extends ConsumerState<_TeamStatusStrip> {
     final colors = context.colors;
     final membersAsync = ref.watch(orgMembersProvider);
     final presences =
-        ref.watch(presenceByUserProvider).valueOrNull ?? const <String, Presence>{};
+        ref.watch(presenceByUserProvider).valueOrNull ??
+        const <String, Presence>{};
     final me = ref.watch(currentUserIdProvider);
 
     final members = membersAsync.valueOrNull ?? const <Member>[];
@@ -416,7 +473,9 @@ class _TeamStatusStripState extends ConsumerState<_TeamStatusStrip> {
         );
       },
       (f) => ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(f.message ?? 'Impossible d’ouvrir la discussion.')),
+        SnackBar(
+          content: Text(f.message ?? 'Impossible d’ouvrir la discussion.'),
+        ),
       ),
     );
   }
@@ -514,10 +573,10 @@ class _SectionHeader extends StatelessWidget {
             child: Text(
               label.toUpperCase(),
               style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                    color: colors.textMuted,
-                    letterSpacing: 1,
-                    fontWeight: FontWeight.w700,
-                  ),
+                color: colors.textMuted,
+                letterSpacing: 1,
+                fontWeight: FontWeight.w700,
+              ),
             ),
           ),
           if (onAdd != null)
@@ -619,7 +678,10 @@ class _UnreadPill extends StatelessWidget {
     // non bornée), un Container avec alignment s'étire sur toute la largeur et
     // casse la mise en page. La pastille reste ajustée à son contenu.
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: Tokens.space8, vertical: 2),
+      padding: const EdgeInsets.symmetric(
+        horizontal: Tokens.space8,
+        vertical: 2,
+      ),
       decoration: BoxDecoration(
         color: colors.danger,
         borderRadius: BorderRadius.circular(Tokens.radiusPill),
@@ -641,18 +703,17 @@ class _EmptyLine extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.symmetric(
-          horizontal: Tokens.space16,
-          vertical: Tokens.space12,
-        ),
-        child: Text(
-          text,
-          style: Theme.of(context)
-              .textTheme
-              .bodySmall
-              ?.copyWith(color: context.colors.textMuted),
-        ),
-      );
+    padding: const EdgeInsets.symmetric(
+      horizontal: Tokens.space16,
+      vertical: Tokens.space12,
+    ),
+    child: Text(
+      text,
+      style: Theme.of(
+        context,
+      ).textTheme.bodySmall?.copyWith(color: context.colors.textMuted),
+    ),
+  );
 }
 
 class _ListSkeleton extends StatelessWidget {
@@ -692,7 +753,8 @@ class _ListSkeleton extends StatelessWidget {
 String activityLabel(DateTime? at) {
   if (at == null) return '';
   final now = DateTime.now();
-  final isToday = at.year == now.year && at.month == now.month && at.day == now.day;
+  final isToday =
+      at.year == now.year && at.month == now.month && at.day == now.day;
   return isToday
       ? DateFormat('HH:mm', 'fr_FR').format(at)
       : DateFormat('dd/MM', 'fr_FR').format(at);

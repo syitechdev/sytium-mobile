@@ -36,7 +36,10 @@ mixin _$ChannelDto {
   @JsonKey(name: 'member_count', fromJson: _intFrom)
   int get memberCount => throw _privateConstructorUsedError;
   @JsonKey(name: 'is_member')
-  bool get isMember => throw _privateConstructorUsedError;
+  bool get isMember => throw _privateConstructorUsedError; // Sur un DM, l'autre participant, résolu côté serveur : évite un GET members
+  // par conversation (N+1) pour peupler titre/avatar. Absent des canaux.
+  @JsonKey(name: 'other_user')
+  OtherUserDto? get otherUser => throw _privateConstructorUsedError;
   @JsonKey(name: 'created_at', fromJson: _dateFrom)
   DateTime? get createdAt => throw _privateConstructorUsedError;
   @JsonKey(name: 'updated_at', fromJson: _dateFrom)
@@ -74,12 +77,14 @@ abstract class $ChannelDtoCopyWith<$Res> {
     @JsonKey(name: 'unread_count', fromJson: _intFrom) int unreadCount,
     @JsonKey(name: 'member_count', fromJson: _intFrom) int memberCount,
     @JsonKey(name: 'is_member') bool isMember,
+    @JsonKey(name: 'other_user') OtherUserDto? otherUser,
     @JsonKey(name: 'created_at', fromJson: _dateFrom) DateTime? createdAt,
     @JsonKey(name: 'updated_at', fromJson: _dateFrom) DateTime? updatedAt,
     @JsonKey(name: 'last_read_at', fromJson: _dateFrom) DateTime? lastReadAt,
     @JsonKey(name: 'last_message') LastMessageDto? lastMessage,
   });
 
+  $OtherUserDtoCopyWith<$Res>? get otherUser;
   $LastMessageDtoCopyWith<$Res>? get lastMessage;
 }
 
@@ -108,6 +113,7 @@ class _$ChannelDtoCopyWithImpl<$Res, $Val extends ChannelDto>
     Object? unreadCount = null,
     Object? memberCount = null,
     Object? isMember = null,
+    Object? otherUser = freezed,
     Object? createdAt = freezed,
     Object? updatedAt = freezed,
     Object? lastReadAt = freezed,
@@ -155,6 +161,10 @@ class _$ChannelDtoCopyWithImpl<$Res, $Val extends ChannelDto>
                 ? _value.isMember
                 : isMember // ignore: cast_nullable_to_non_nullable
                       as bool,
+            otherUser: freezed == otherUser
+                ? _value.otherUser
+                : otherUser // ignore: cast_nullable_to_non_nullable
+                      as OtherUserDto?,
             createdAt: freezed == createdAt
                 ? _value.createdAt
                 : createdAt // ignore: cast_nullable_to_non_nullable
@@ -174,6 +184,20 @@ class _$ChannelDtoCopyWithImpl<$Res, $Val extends ChannelDto>
           )
           as $Val,
     );
+  }
+
+  /// Create a copy of ChannelDto
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @pragma('vm:prefer-inline')
+  $OtherUserDtoCopyWith<$Res>? get otherUser {
+    if (_value.otherUser == null) {
+      return null;
+    }
+
+    return $OtherUserDtoCopyWith<$Res>(_value.otherUser!, (value) {
+      return _then(_value.copyWith(otherUser: value) as $Val);
+    });
   }
 
   /// Create a copy of ChannelDto
@@ -211,12 +235,15 @@ abstract class _$$ChannelDtoImplCopyWith<$Res>
     @JsonKey(name: 'unread_count', fromJson: _intFrom) int unreadCount,
     @JsonKey(name: 'member_count', fromJson: _intFrom) int memberCount,
     @JsonKey(name: 'is_member') bool isMember,
+    @JsonKey(name: 'other_user') OtherUserDto? otherUser,
     @JsonKey(name: 'created_at', fromJson: _dateFrom) DateTime? createdAt,
     @JsonKey(name: 'updated_at', fromJson: _dateFrom) DateTime? updatedAt,
     @JsonKey(name: 'last_read_at', fromJson: _dateFrom) DateTime? lastReadAt,
     @JsonKey(name: 'last_message') LastMessageDto? lastMessage,
   });
 
+  @override
+  $OtherUserDtoCopyWith<$Res>? get otherUser;
   @override
   $LastMessageDtoCopyWith<$Res>? get lastMessage;
 }
@@ -245,6 +272,7 @@ class __$$ChannelDtoImplCopyWithImpl<$Res>
     Object? unreadCount = null,
     Object? memberCount = null,
     Object? isMember = null,
+    Object? otherUser = freezed,
     Object? createdAt = freezed,
     Object? updatedAt = freezed,
     Object? lastReadAt = freezed,
@@ -292,6 +320,10 @@ class __$$ChannelDtoImplCopyWithImpl<$Res>
             ? _value.isMember
             : isMember // ignore: cast_nullable_to_non_nullable
                   as bool,
+        otherUser: freezed == otherUser
+            ? _value.otherUser
+            : otherUser // ignore: cast_nullable_to_non_nullable
+                  as OtherUserDto?,
         createdAt: freezed == createdAt
             ? _value.createdAt
             : createdAt // ignore: cast_nullable_to_non_nullable
@@ -327,6 +359,7 @@ class _$ChannelDtoImpl implements _ChannelDto {
     @JsonKey(name: 'unread_count', fromJson: _intFrom) this.unreadCount = 0,
     @JsonKey(name: 'member_count', fromJson: _intFrom) this.memberCount = 0,
     @JsonKey(name: 'is_member') this.isMember = true,
+    @JsonKey(name: 'other_user') this.otherUser,
     @JsonKey(name: 'created_at', fromJson: _dateFrom) this.createdAt,
     @JsonKey(name: 'updated_at', fromJson: _dateFrom) this.updatedAt,
     @JsonKey(name: 'last_read_at', fromJson: _dateFrom) this.lastReadAt,
@@ -365,6 +398,11 @@ class _$ChannelDtoImpl implements _ChannelDto {
   @override
   @JsonKey(name: 'is_member')
   final bool isMember;
+  // Sur un DM, l'autre participant, résolu côté serveur : évite un GET members
+  // par conversation (N+1) pour peupler titre/avatar. Absent des canaux.
+  @override
+  @JsonKey(name: 'other_user')
+  final OtherUserDto? otherUser;
   @override
   @JsonKey(name: 'created_at', fromJson: _dateFrom)
   final DateTime? createdAt;
@@ -380,7 +418,7 @@ class _$ChannelDtoImpl implements _ChannelDto {
 
   @override
   String toString() {
-    return 'ChannelDto(id: $id, organizationId: $organizationId, name: $name, description: $description, type: $type, isArchived: $isArchived, isSystem: $isSystem, unreadCount: $unreadCount, memberCount: $memberCount, isMember: $isMember, createdAt: $createdAt, updatedAt: $updatedAt, lastReadAt: $lastReadAt, lastMessage: $lastMessage)';
+    return 'ChannelDto(id: $id, organizationId: $organizationId, name: $name, description: $description, type: $type, isArchived: $isArchived, isSystem: $isSystem, unreadCount: $unreadCount, memberCount: $memberCount, isMember: $isMember, otherUser: $otherUser, createdAt: $createdAt, updatedAt: $updatedAt, lastReadAt: $lastReadAt, lastMessage: $lastMessage)';
   }
 
   @override
@@ -405,6 +443,8 @@ class _$ChannelDtoImpl implements _ChannelDto {
                 other.memberCount == memberCount) &&
             (identical(other.isMember, isMember) ||
                 other.isMember == isMember) &&
+            (identical(other.otherUser, otherUser) ||
+                other.otherUser == otherUser) &&
             (identical(other.createdAt, createdAt) ||
                 other.createdAt == createdAt) &&
             (identical(other.updatedAt, updatedAt) ||
@@ -429,6 +469,7 @@ class _$ChannelDtoImpl implements _ChannelDto {
     unreadCount,
     memberCount,
     isMember,
+    otherUser,
     createdAt,
     updatedAt,
     lastReadAt,
@@ -461,6 +502,7 @@ abstract class _ChannelDto implements ChannelDto {
     @JsonKey(name: 'unread_count', fromJson: _intFrom) final int unreadCount,
     @JsonKey(name: 'member_count', fromJson: _intFrom) final int memberCount,
     @JsonKey(name: 'is_member') final bool isMember,
+    @JsonKey(name: 'other_user') final OtherUserDto? otherUser,
     @JsonKey(name: 'created_at', fromJson: _dateFrom) final DateTime? createdAt,
     @JsonKey(name: 'updated_at', fromJson: _dateFrom) final DateTime? updatedAt,
     @JsonKey(name: 'last_read_at', fromJson: _dateFrom)
@@ -496,7 +538,11 @@ abstract class _ChannelDto implements ChannelDto {
   int get memberCount;
   @override
   @JsonKey(name: 'is_member')
-  bool get isMember;
+  bool get isMember; // Sur un DM, l'autre participant, résolu côté serveur : évite un GET members
+  // par conversation (N+1) pour peupler titre/avatar. Absent des canaux.
+  @override
+  @JsonKey(name: 'other_user')
+  OtherUserDto? get otherUser;
   @override
   @JsonKey(name: 'created_at', fromJson: _dateFrom)
   DateTime? get createdAt;
@@ -515,6 +561,239 @@ abstract class _ChannelDto implements ChannelDto {
   @override
   @JsonKey(includeFromJson: false, includeToJson: false)
   _$$ChannelDtoImplCopyWith<_$ChannelDtoImpl> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+OtherUserDto _$OtherUserDtoFromJson(Map<String, dynamic> json) {
+  return _OtherUserDto.fromJson(json);
+}
+
+/// @nodoc
+mixin _$OtherUserDto {
+  String get id => throw _privateConstructorUsedError;
+  @JsonKey(name: 'full_name')
+  String get fullName => throw _privateConstructorUsedError;
+  String get email => throw _privateConstructorUsedError;
+  @JsonKey(name: 'avatar_url')
+  String? get avatarUrl => throw _privateConstructorUsedError;
+
+  /// Serializes this OtherUserDto to a JSON map.
+  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
+
+  /// Create a copy of OtherUserDto
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  $OtherUserDtoCopyWith<OtherUserDto> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+abstract class $OtherUserDtoCopyWith<$Res> {
+  factory $OtherUserDtoCopyWith(
+    OtherUserDto value,
+    $Res Function(OtherUserDto) then,
+  ) = _$OtherUserDtoCopyWithImpl<$Res, OtherUserDto>;
+  @useResult
+  $Res call({
+    String id,
+    @JsonKey(name: 'full_name') String fullName,
+    String email,
+    @JsonKey(name: 'avatar_url') String? avatarUrl,
+  });
+}
+
+/// @nodoc
+class _$OtherUserDtoCopyWithImpl<$Res, $Val extends OtherUserDto>
+    implements $OtherUserDtoCopyWith<$Res> {
+  _$OtherUserDtoCopyWithImpl(this._value, this._then);
+
+  // ignore: unused_field
+  final $Val _value;
+  // ignore: unused_field
+  final $Res Function($Val) _then;
+
+  /// Create a copy of OtherUserDto
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? id = null,
+    Object? fullName = null,
+    Object? email = null,
+    Object? avatarUrl = freezed,
+  }) {
+    return _then(
+      _value.copyWith(
+            id: null == id
+                ? _value.id
+                : id // ignore: cast_nullable_to_non_nullable
+                      as String,
+            fullName: null == fullName
+                ? _value.fullName
+                : fullName // ignore: cast_nullable_to_non_nullable
+                      as String,
+            email: null == email
+                ? _value.email
+                : email // ignore: cast_nullable_to_non_nullable
+                      as String,
+            avatarUrl: freezed == avatarUrl
+                ? _value.avatarUrl
+                : avatarUrl // ignore: cast_nullable_to_non_nullable
+                      as String?,
+          )
+          as $Val,
+    );
+  }
+}
+
+/// @nodoc
+abstract class _$$OtherUserDtoImplCopyWith<$Res>
+    implements $OtherUserDtoCopyWith<$Res> {
+  factory _$$OtherUserDtoImplCopyWith(
+    _$OtherUserDtoImpl value,
+    $Res Function(_$OtherUserDtoImpl) then,
+  ) = __$$OtherUserDtoImplCopyWithImpl<$Res>;
+  @override
+  @useResult
+  $Res call({
+    String id,
+    @JsonKey(name: 'full_name') String fullName,
+    String email,
+    @JsonKey(name: 'avatar_url') String? avatarUrl,
+  });
+}
+
+/// @nodoc
+class __$$OtherUserDtoImplCopyWithImpl<$Res>
+    extends _$OtherUserDtoCopyWithImpl<$Res, _$OtherUserDtoImpl>
+    implements _$$OtherUserDtoImplCopyWith<$Res> {
+  __$$OtherUserDtoImplCopyWithImpl(
+    _$OtherUserDtoImpl _value,
+    $Res Function(_$OtherUserDtoImpl) _then,
+  ) : super(_value, _then);
+
+  /// Create a copy of OtherUserDto
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? id = null,
+    Object? fullName = null,
+    Object? email = null,
+    Object? avatarUrl = freezed,
+  }) {
+    return _then(
+      _$OtherUserDtoImpl(
+        id: null == id
+            ? _value.id
+            : id // ignore: cast_nullable_to_non_nullable
+                  as String,
+        fullName: null == fullName
+            ? _value.fullName
+            : fullName // ignore: cast_nullable_to_non_nullable
+                  as String,
+        email: null == email
+            ? _value.email
+            : email // ignore: cast_nullable_to_non_nullable
+                  as String,
+        avatarUrl: freezed == avatarUrl
+            ? _value.avatarUrl
+            : avatarUrl // ignore: cast_nullable_to_non_nullable
+                  as String?,
+      ),
+    );
+  }
+}
+
+/// @nodoc
+@JsonSerializable()
+class _$OtherUserDtoImpl implements _OtherUserDto {
+  const _$OtherUserDtoImpl({
+    this.id = '',
+    @JsonKey(name: 'full_name') this.fullName = '',
+    this.email = '',
+    @JsonKey(name: 'avatar_url') this.avatarUrl,
+  });
+
+  factory _$OtherUserDtoImpl.fromJson(Map<String, dynamic> json) =>
+      _$$OtherUserDtoImplFromJson(json);
+
+  @override
+  @JsonKey()
+  final String id;
+  @override
+  @JsonKey(name: 'full_name')
+  final String fullName;
+  @override
+  @JsonKey()
+  final String email;
+  @override
+  @JsonKey(name: 'avatar_url')
+  final String? avatarUrl;
+
+  @override
+  String toString() {
+    return 'OtherUserDto(id: $id, fullName: $fullName, email: $email, avatarUrl: $avatarUrl)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$OtherUserDtoImpl &&
+            (identical(other.id, id) || other.id == id) &&
+            (identical(other.fullName, fullName) ||
+                other.fullName == fullName) &&
+            (identical(other.email, email) || other.email == email) &&
+            (identical(other.avatarUrl, avatarUrl) ||
+                other.avatarUrl == avatarUrl));
+  }
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  int get hashCode => Object.hash(runtimeType, id, fullName, email, avatarUrl);
+
+  /// Create a copy of OtherUserDto
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$OtherUserDtoImplCopyWith<_$OtherUserDtoImpl> get copyWith =>
+      __$$OtherUserDtoImplCopyWithImpl<_$OtherUserDtoImpl>(this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$$OtherUserDtoImplToJson(this);
+  }
+}
+
+abstract class _OtherUserDto implements OtherUserDto {
+  const factory _OtherUserDto({
+    final String id,
+    @JsonKey(name: 'full_name') final String fullName,
+    final String email,
+    @JsonKey(name: 'avatar_url') final String? avatarUrl,
+  }) = _$OtherUserDtoImpl;
+
+  factory _OtherUserDto.fromJson(Map<String, dynamic> json) =
+      _$OtherUserDtoImpl.fromJson;
+
+  @override
+  String get id;
+  @override
+  @JsonKey(name: 'full_name')
+  String get fullName;
+  @override
+  String get email;
+  @override
+  @JsonKey(name: 'avatar_url')
+  String? get avatarUrl;
+
+  /// Create a copy of OtherUserDto
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  _$$OtherUserDtoImplCopyWith<_$OtherUserDtoImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }
 
@@ -2024,7 +2303,8 @@ mixin _$MessageDto {
   @JsonKey(name: 'deleted_at', fromJson: _dateFrom)
   DateTime? get deletedAt => throw _privateConstructorUsedError;
   @JsonKey(name: 'created_at', fromJson: _dateFrom)
-  DateTime? get createdAt => throw _privateConstructorUsedError;
+  DateTime? get createdAt => throw _privateConstructorUsedError; // Masqué pour l'utilisateur courant (« supprimer pour moi ») : filtré du fil.
+  bool get hidden => throw _privateConstructorUsedError;
   bool get pinned => throw _privateConstructorUsedError;
   @JsonKey(name: 'pinned_at', fromJson: _dateFrom)
   DateTime? get pinnedAt => throw _privateConstructorUsedError;
@@ -2064,6 +2344,7 @@ abstract class $MessageDtoCopyWith<$Res> {
     @JsonKey(name: 'is_system') bool isSystem,
     @JsonKey(name: 'deleted_at', fromJson: _dateFrom) DateTime? deletedAt,
     @JsonKey(name: 'created_at', fromJson: _dateFrom) DateTime? createdAt,
+    bool hidden,
     bool pinned,
     @JsonKey(name: 'pinned_at', fromJson: _dateFrom) DateTime? pinnedAt,
     bool bookmarked,
@@ -2103,6 +2384,7 @@ class _$MessageDtoCopyWithImpl<$Res, $Val extends MessageDto>
     Object? isSystem = null,
     Object? deletedAt = freezed,
     Object? createdAt = freezed,
+    Object? hidden = null,
     Object? pinned = null,
     Object? pinnedAt = freezed,
     Object? bookmarked = null,
@@ -2147,6 +2429,10 @@ class _$MessageDtoCopyWithImpl<$Res, $Val extends MessageDto>
                 ? _value.createdAt
                 : createdAt // ignore: cast_nullable_to_non_nullable
                       as DateTime?,
+            hidden: null == hidden
+                ? _value.hidden
+                : hidden // ignore: cast_nullable_to_non_nullable
+                      as bool,
             pinned: null == pinned
                 ? _value.pinned
                 : pinned // ignore: cast_nullable_to_non_nullable
@@ -2249,6 +2535,7 @@ abstract class _$$MessageDtoImplCopyWith<$Res>
     @JsonKey(name: 'is_system') bool isSystem,
     @JsonKey(name: 'deleted_at', fromJson: _dateFrom) DateTime? deletedAt,
     @JsonKey(name: 'created_at', fromJson: _dateFrom) DateTime? createdAt,
+    bool hidden,
     bool pinned,
     @JsonKey(name: 'pinned_at', fromJson: _dateFrom) DateTime? pinnedAt,
     bool bookmarked,
@@ -2290,6 +2577,7 @@ class __$$MessageDtoImplCopyWithImpl<$Res>
     Object? isSystem = null,
     Object? deletedAt = freezed,
     Object? createdAt = freezed,
+    Object? hidden = null,
     Object? pinned = null,
     Object? pinnedAt = freezed,
     Object? bookmarked = null,
@@ -2334,6 +2622,10 @@ class __$$MessageDtoImplCopyWithImpl<$Res>
             ? _value.createdAt
             : createdAt // ignore: cast_nullable_to_non_nullable
                   as DateTime?,
+        hidden: null == hidden
+            ? _value.hidden
+            : hidden // ignore: cast_nullable_to_non_nullable
+                  as bool,
         pinned: null == pinned
             ? _value.pinned
             : pinned // ignore: cast_nullable_to_non_nullable
@@ -2387,6 +2679,7 @@ class _$MessageDtoImpl implements _MessageDto {
     @JsonKey(name: 'is_system') this.isSystem = false,
     @JsonKey(name: 'deleted_at', fromJson: _dateFrom) this.deletedAt,
     @JsonKey(name: 'created_at', fromJson: _dateFrom) this.createdAt,
+    this.hidden = false,
     this.pinned = false,
     @JsonKey(name: 'pinned_at', fromJson: _dateFrom) this.pinnedAt,
     this.bookmarked = false,
@@ -2426,6 +2719,10 @@ class _$MessageDtoImpl implements _MessageDto {
   @override
   @JsonKey(name: 'created_at', fromJson: _dateFrom)
   final DateTime? createdAt;
+  // Masqué pour l'utilisateur courant (« supprimer pour moi ») : filtré du fil.
+  @override
+  @JsonKey()
+  final bool hidden;
   @override
   @JsonKey()
   final bool pinned;
@@ -2466,7 +2763,7 @@ class _$MessageDtoImpl implements _MessageDto {
 
   @override
   String toString() {
-    return 'MessageDto(id: $id, channelId: $channelId, userId: $userId, content: $content, isEdited: $isEdited, isSystem: $isSystem, deletedAt: $deletedAt, createdAt: $createdAt, pinned: $pinned, pinnedAt: $pinnedAt, bookmarked: $bookmarked, audioTranscript: $audioTranscript, author: $author, parent: $parent, reactions: $reactions, attachments: $attachments, deliverySummary: $deliverySummary)';
+    return 'MessageDto(id: $id, channelId: $channelId, userId: $userId, content: $content, isEdited: $isEdited, isSystem: $isSystem, deletedAt: $deletedAt, createdAt: $createdAt, hidden: $hidden, pinned: $pinned, pinnedAt: $pinnedAt, bookmarked: $bookmarked, audioTranscript: $audioTranscript, author: $author, parent: $parent, reactions: $reactions, attachments: $attachments, deliverySummary: $deliverySummary)';
   }
 
   @override
@@ -2487,6 +2784,7 @@ class _$MessageDtoImpl implements _MessageDto {
                 other.deletedAt == deletedAt) &&
             (identical(other.createdAt, createdAt) ||
                 other.createdAt == createdAt) &&
+            (identical(other.hidden, hidden) || other.hidden == hidden) &&
             (identical(other.pinned, pinned) || other.pinned == pinned) &&
             (identical(other.pinnedAt, pinnedAt) ||
                 other.pinnedAt == pinnedAt) &&
@@ -2520,6 +2818,7 @@ class _$MessageDtoImpl implements _MessageDto {
     isSystem,
     deletedAt,
     createdAt,
+    hidden,
     pinned,
     pinnedAt,
     bookmarked,
@@ -2555,6 +2854,7 @@ abstract class _MessageDto implements MessageDto {
     @JsonKey(name: 'is_system') final bool isSystem,
     @JsonKey(name: 'deleted_at', fromJson: _dateFrom) final DateTime? deletedAt,
     @JsonKey(name: 'created_at', fromJson: _dateFrom) final DateTime? createdAt,
+    final bool hidden,
     final bool pinned,
     @JsonKey(name: 'pinned_at', fromJson: _dateFrom) final DateTime? pinnedAt,
     final bool bookmarked,
@@ -2591,7 +2891,9 @@ abstract class _MessageDto implements MessageDto {
   DateTime? get deletedAt;
   @override
   @JsonKey(name: 'created_at', fromJson: _dateFrom)
-  DateTime? get createdAt;
+  DateTime? get createdAt; // Masqué pour l'utilisateur courant (« supprimer pour moi ») : filtré du fil.
+  @override
+  bool get hidden;
   @override
   bool get pinned;
   @override

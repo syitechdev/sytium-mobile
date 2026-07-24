@@ -14,9 +14,9 @@ class WorkspaceRepositoryImpl implements WorkspaceRepository {
 
   @override
   Future<Result<List<Conversation>>> conversations() => _guard(() async {
-        final dtos = await _remote.channels();
-        return dtos.map(_channelToConversation).toList();
-      });
+    final dtos = await _remote.channels();
+    return dtos.map(_channelToConversation).toList();
+  });
 
   @override
   Future<Result<List<int>>> downloadAttachment(String url) =>
@@ -24,9 +24,7 @@ class WorkspaceRepositoryImpl implements WorkspaceRepository {
 
   @override
   Future<Result<void>> setPinned(String messageId, {required bool pinned}) =>
-      _guard(
-        () => pinned ? _remote.pin(messageId) : _remote.unpin(messageId),
-      );
+      _guard(() => pinned ? _remote.pin(messageId) : _remote.unpin(messageId));
 
   @override
   Future<Result<void>> setBookmarked(
@@ -55,39 +53,41 @@ class WorkspaceRepositoryImpl implements WorkspaceRepository {
 
   @override
   Future<Result<List<Member>>> orgMembers() => _guard(() async {
-        final dtos = await _remote.members();
-        return dtos
-            .where((d) => !d.pending)
-            .map(
-              (d) => Member(
-                userId: d.id,
-                fullName: d.fullName,
-                avatarUrl: d.avatarUrl,
-                poste: d.poste,
-              ),
-            )
-            .toList();
-      });
+    final dtos = await _remote.members();
+    return dtos
+        .where((d) => !d.pending)
+        .map(
+          (d) => Member(
+            userId: d.id,
+            fullName: d.fullName,
+            avatarUrl: d.avatarUrl,
+            poste: d.poste,
+          ),
+        )
+        .toList();
+  });
 
   @override
   Future<Result<Conversation>> openDm(String userId) => _guard(() async {
-        final dto = await _remote.openDm(userId);
-        return _channelToConversation(dto);
-      });
+    final dto = await _remote.openDm(userId);
+    return _channelToConversation(dto);
+  });
 
   @override
   Future<Result<List<Presence>>> presence() => _guard(() async {
-        final dtos = await _remote.presence();
-        return dtos
-            .map((d) => Presence(
-                  userId: d.userId,
-                  online: d.online,
-                  lastSeenAt: d.lastSeenAt,
-                  fullName: d.profile?.fullName,
-                  avatarUrl: d.profile?.avatarUrl,
-                ))
-            .toList();
-      });
+    final dtos = await _remote.presence();
+    return dtos
+        .map(
+          (d) => Presence(
+            userId: d.userId,
+            online: d.online,
+            lastSeenAt: d.lastSeenAt,
+            fullName: d.profile?.fullName,
+            avatarUrl: d.profile?.avatarUrl,
+          ),
+        )
+        .toList();
+  });
 
   @override
   Future<Result<void>> heartbeat({String? channelId}) =>
@@ -98,35 +98,85 @@ class WorkspaceRepositoryImpl implements WorkspaceRepository {
     required String name,
     required String type,
     String? description,
-  }) =>
-      _guard(() async {
-        final dto = await _remote.createChannel(
-          name: name,
-          type: type,
-          description: description,
-        );
-        return _channelToConversation(dto);
-      });
+  }) => _guard(() async {
+    final dto = await _remote.createChannel(
+      name: name,
+      type: type,
+      description: description,
+    );
+    return _channelToConversation(dto);
+  });
 
   @override
   Future<Result<void>> joinChannel(String channelId) =>
       _guard(() async => _remote.joinChannel(channelId));
 
   @override
+  Future<Result<void>> addMembers(
+    String channelId,
+    List<String> userIds, {
+    String? role,
+  }) => _guard(() async => _remote.addMembers(channelId, userIds, role: role));
+
+  @override
+  Future<Result<Conversation>> setChannelArchived(
+    String channelId, {
+    required bool isArchived,
+  }) => _guard(() async {
+    final dto = await _remote.updateChannelArchived(
+      channelId,
+      isArchived: isArchived,
+    );
+    return _channelToConversation(dto);
+  });
+
+  @override
+  Future<Result<List<Conversation>>> archivedChannels() => _guard(() async {
+    final dtos = await _remote.channels(archived: true);
+    return dtos.map(_channelToConversation).toList();
+  });
+
+  @override
+  Future<Result<List<Message>>> mentions() => _guard(() async {
+    final dtos = await _remote.mentions();
+    return dtos.map(_messageToDomain).toList();
+  });
+
+  @override
+  Future<Result<List<Message>>> bookmarks() => _guard(() async {
+    final dtos = await _remote.bookmarks();
+    return dtos.map(_messageToDomain).toList();
+  });
+
+  @override
+  Future<Result<List<Message>>> channelPins(String channelId) =>
+      _guard(() async {
+        final dtos = await _remote.channelPins(channelId);
+        return dtos.map(_messageToDomain).toList();
+      });
+
+  @override
   Future<Result<MessagesPage>> messages(
     String channelId, {
     String? cursor,
     int limit = 50,
-  }) =>
-      _guard(() async {
-        final page =
-            await _remote.messages(channelId, cursor: cursor, limit: limit);
-        return MessagesPage(
-          messages: page.data.map(_messageToDomain).toList(),
-          nextCursor: page.meta.nextCursor,
-          hasMore: page.meta.hasMore,
-        );
-      });
+  }) => _guard(() async {
+    final page = await _remote.messages(
+      channelId,
+      cursor: cursor,
+      limit: limit,
+    );
+    return MessagesPage(
+      // `hidden` = « supprimé pour moi » côté serveur : jamais rendu (le
+      // web fait pareil). Filtré au plus tôt pour ne pas fuir en présentation.
+      messages: page.data
+          .where((d) => !d.hidden)
+          .map(_messageToDomain)
+          .toList(),
+      nextCursor: page.meta.nextCursor,
+      hasMore: page.meta.hasMore,
+    );
+  });
 
   @override
   Future<Result<Message>> sendMessage(
@@ -134,16 +184,15 @@ class WorkspaceRepositoryImpl implements WorkspaceRepository {
     String content = '',
     List<String> attachmentPaths = const <String>[],
     String? parentId,
-  }) =>
-      _guard(() async {
-        final dto = await _remote.sendMessage(
-          channelId,
-          content: content,
-          attachmentPaths: attachmentPaths,
-          parentId: parentId,
-        );
-        return _messageToDomain(dto);
-      });
+  }) => _guard(() async {
+    final dto = await _remote.sendMessage(
+      channelId,
+      content: content,
+      attachmentPaths: attachmentPaths,
+      parentId: parentId,
+    );
+    return _messageToDomain(dto);
+  });
 
   @override
   Future<Result<Message>> editMessage(String messageId, String content) =>
@@ -175,10 +224,19 @@ class WorkspaceRepositoryImpl implements WorkspaceRepository {
 
   Conversation _channelToConversation(ChannelDto d) {
     final lm = d.lastMessage;
+    // Sur un DM, `other_user` porte déjà le titre/avatar du pair : on l'utilise
+    // directement pour ne pas déclencher un GET members par conversation.
+    final peer = d.otherUser;
+    final isDm = conversationTypeFromApi(d.type) == ConversationType.dm;
+    final peerTitle = (peer != null && peer.fullName.isNotEmpty)
+        ? peer.fullName
+        : d.name;
     return Conversation(
       id: d.id,
       type: conversationTypeFromApi(d.type),
-      title: d.name,
+      title: isDm ? peerTitle : d.name,
+      avatarUrl: isDm ? peer?.avatarUrl : null,
+      peerId: isDm ? (peer?.id.isNotEmpty ?? false ? peer!.id : null) : null,
       unreadCount: d.unreadCount,
       updatedAt: d.updatedAt,
       // A present last_message carries content even when empty (e.g. an
@@ -202,54 +260,59 @@ class WorkspaceRepositoryImpl implements WorkspaceRepository {
   }
 
   Member _channelMemberToDomain(ChannelMemberDto d) => Member(
-        userId: d.userId,
-        fullName: d.profile?.fullName ?? '',
-        avatarUrl: d.profile?.avatarUrl,
-      );
+    userId: d.userId,
+    fullName: d.profile?.fullName ?? '',
+    avatarUrl: d.profile?.avatarUrl,
+    role: d.role,
+  );
 
   Message _messageToDomain(MessageDto d) => Message(
-        id: d.id,
-        channelId: d.channelId,
-        authorId: d.userId,
-        content: d.content,
-        authorName: d.author?.fullName,
-        authorAvatarUrl: d.author?.avatarUrl,
-        isEdited: d.isEdited,
-        isSystem: d.isSystem,
-        isDeleted: d.deletedAt != null,
-        createdAt: d.createdAt,
-        pinned: d.pinned,
-        pinnedAt: d.pinnedAt,
-        bookmarked: d.bookmarked,
-        audioTranscript: d.audioTranscript,
-        reactions: d.reactions
-            .where((r) => r.emoji.isNotEmpty)
-            .map((r) => MessageReaction(
-                  emoji: r.emoji,
-                  count: r.count,
-                  userIds: r.userIds,
-                ))
-            .toList(),
-        attachments: d.attachments
-            .map((a) => Attachment(
-                  id: a.id,
-                  fileName: a.fileName,
-                  mimeType: a.mimeType,
-                  sizeBytes: a.sizeBytes,
-                  url: a.url,
-                  downloadUrl: a.downloadUrl,
-                ))
-            .toList(),
-        replyTo: d.parent == null
-            ? null
-            : ReplyPreview(
-                id: d.parent!.id,
-                content: d.parent!.content,
-                authorId: d.parent!.userId,
-                isDeleted: d.parent!.deletedAt != null,
-              ),
-        deliveryState: deliveryStateFromApi(d.deliverySummary?.state),
-      );
+    id: d.id,
+    channelId: d.channelId,
+    authorId: d.userId,
+    content: d.content,
+    authorName: d.author?.fullName,
+    authorAvatarUrl: d.author?.avatarUrl,
+    isEdited: d.isEdited,
+    isSystem: d.isSystem,
+    isDeleted: d.deletedAt != null,
+    createdAt: d.createdAt,
+    pinned: d.pinned,
+    pinnedAt: d.pinnedAt,
+    bookmarked: d.bookmarked,
+    audioTranscript: d.audioTranscript,
+    reactions: d.reactions
+        .where((r) => r.emoji.isNotEmpty)
+        .map(
+          (r) => MessageReaction(
+            emoji: r.emoji,
+            count: r.count,
+            userIds: r.userIds,
+          ),
+        )
+        .toList(),
+    attachments: d.attachments
+        .map(
+          (a) => Attachment(
+            id: a.id,
+            fileName: a.fileName,
+            mimeType: a.mimeType,
+            sizeBytes: a.sizeBytes,
+            url: a.url,
+            downloadUrl: a.downloadUrl,
+          ),
+        )
+        .toList(),
+    replyTo: d.parent == null
+        ? null
+        : ReplyPreview(
+            id: d.parent!.id,
+            content: d.parent!.content,
+            authorId: d.parent!.userId,
+            isDeleted: d.parent!.deletedAt != null,
+          ),
+    deliveryState: deliveryStateFromApi(d.deliverySummary?.state),
+  );
 
   Future<Result<T>> _guard<T>(Future<T> Function() run) async {
     try {
