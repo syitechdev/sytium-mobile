@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:sytium_mobile/app/lifecycle/app_foreground.dart';
-import 'package:sytium_mobile/features/auth/application/auth_controller.dart';
 import 'package:sytium_mobile/features/workspace/application/workspace_providers.dart';
 import 'package:sytium_mobile/features/workspace/domain/workspace_models.dart';
 import 'package:sytium_mobile/features/workspace/presentation/browse_channels_sheet.dart';
@@ -184,7 +183,6 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
                 },
               ),
             ),
-            const _UserFooter(),
           ],
         ),
       ),
@@ -643,72 +641,6 @@ class _EmptyLine extends StatelessWidget {
               ?.copyWith(color: context.colors.textMuted),
         ),
       );
-}
-
-class _UserFooter extends ConsumerWidget {
-  const _UserFooter();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final colors = context.colors;
-    final theme = Theme.of(context).textTheme;
-    final auth = ref.watch(authControllerProvider).valueOrNull;
-    if (auth is! Authenticated) return const SizedBox.shrink();
-    final user = auth.session.user;
-    return Container(
-      decoration: BoxDecoration(
-        color: colors.card,
-        border: Border(top: BorderSide(color: colors.border)),
-      ),
-      padding: const EdgeInsets.symmetric(
-        horizontal: Tokens.space16,
-        vertical: Tokens.space8,
-      ),
-      child: Row(
-        children: [
-          AppAvatar(name: user.name, imageUrl: user.photoUrl, radius: 16),
-          const SizedBox(width: Tokens.space12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  user.name,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: theme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
-                ),
-                Row(
-                  children: [
-                    Container(
-                      width: 8,
-                      height: 8,
-                      decoration: BoxDecoration(
-                        color: colors.brand,
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                    const SizedBox(width: 6),
-                    Flexible(
-                      child: Text(
-                        'En ligne${user.roleLabel.isNotEmpty ? ' · ${user.roleLabel}' : ''}',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: theme.bodySmall?.copyWith(
-                          color: colors.textMuted,
-                          fontSize: 11,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 }
 
 class _ListSkeleton extends StatelessWidget {
