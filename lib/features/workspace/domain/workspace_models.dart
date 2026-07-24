@@ -232,9 +232,26 @@ class Attachment {
 
   bool get isImage => (mimeType ?? '').startsWith('image/');
 
-  /// Note vocale / audio lisible inline (m4a/AAC, mp3…). Le webm/opus du web
-  /// n'est PAS décodable par iOS : le backend le sert désormais en `audio/*`.
-  bool get isAudio => (mimeType ?? '').startsWith('audio/');
+  /// Note vocale / audio lisible inline. On détecte par le MIME **et** par
+  /// l'extension : un m4a est un conteneur MP4 que le serveur type souvent
+  /// `video/mp4`, ce qui l'afficherait à tort en fichier vidéo. Le webm/opus
+  /// (illisible iOS) n'est volontairement PAS dans la liste.
+  bool get isAudio {
+    if ((mimeType ?? '').startsWith('audio/')) return true;
+    final name = fileName.toLowerCase();
+    for (final ext in const [
+      '.m4a',
+      '.aac',
+      '.mp3',
+      '.ogg',
+      '.opus',
+      '.wav',
+      '.caf',
+    ]) {
+      if (name.endsWith(ext)) return true;
+    }
+    return false;
+  }
 }
 
 /// A lightweight preview of a replied-to message.

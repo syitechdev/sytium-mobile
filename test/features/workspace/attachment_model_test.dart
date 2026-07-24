@@ -2,8 +2,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:sytium_mobile/features/workspace/domain/workspace_models.dart';
 
 void main() {
-  Attachment att(String? mime) =>
-      Attachment(id: 'a', fileName: 'f', mimeType: mime);
+  Attachment att(String? mime, {String fileName = 'f'}) =>
+      Attachment(id: 'a', fileName: fileName, mimeType: mime);
 
   group('Attachment.isAudio / isImage', () {
     test('reconnaît un audio m4a/AAC (nouveau format cross-plateforme)', () {
@@ -12,9 +12,18 @@ void main() {
       expect(att('audio/mpeg').isAudio, isTrue);
     });
 
+    test('reconnaît un .m4a même typé video/mp4 (conteneur MP4 mal typé)', () {
+      // Cas réel : le serveur renvoie video/mp4 pour un m4a → il s'affichait en
+      // fichier vidéo. On rattrape par l'extension du nom.
+      expect(
+        att('video/mp4', fileName: 'message-vocal-2026-07.m4a').isAudio,
+        isTrue,
+      );
+    });
+
     test("un webm (conteneur video) n'est PAS traité comme audio", () {
       // Le webm sortait en video/webm -> pas de lecteur audio (illisible iOS).
-      expect(att('video/webm').isAudio, isFalse);
+      expect(att('video/webm', fileName: 'message-vocal.webm').isAudio, isFalse);
     });
 
     test('image et null gérés', () {
