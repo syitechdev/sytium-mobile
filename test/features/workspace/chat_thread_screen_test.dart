@@ -73,6 +73,9 @@ class _BaseRepo implements WorkspaceRepository {
   @override
   Future<Result<String?>> transcribeMessage(String messageId) async => const Ok(null);
 
+  @override
+  Future<Result<void>> sendTyping(String channelId) async => const Ok(null);
+
   int markReadCalls = 0;
   final List<String?> messageCursors = [];
 

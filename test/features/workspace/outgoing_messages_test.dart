@@ -26,6 +26,9 @@ class _SendRepo implements WorkspaceRepository {
   @override
   Future<Result<String?>> transcribeMessage(String messageId) async => const Ok(null);
 
+  @override
+  Future<Result<void>> sendTyping(String channelId) async => const Ok(null);
+
   bool fail;
   final List<String> sent = [];
   final List<List<String>> attachments = [];

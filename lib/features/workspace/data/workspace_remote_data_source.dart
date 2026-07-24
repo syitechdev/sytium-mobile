@@ -19,6 +19,11 @@ class WorkspaceRemoteDataSource {
     return res.data ?? const <int>[];
   }
 
+  /// Signale que l'utilisateur est en train d'écrire (204 ; à throttler côté
+  /// client). Le serveur diffuse `workspace.typing` aux autres membres.
+  Future<void> sendTyping(String channelId) =>
+      _dio.post<void>('/workspace/channels/$channelId/typing');
+
   /// Épingle un message (endpoint dédié ; diffuse `workspace.message.updated`).
   Future<void> pin(String messageId) =>
       _dio.post<Map<String, dynamic>>('/workspace/messages/$messageId/pin');

@@ -43,6 +43,10 @@ class WorkspaceRepositoryImpl implements WorkspaceRepository {
       _guard(() => _remote.transcribeMessage(messageId));
 
   @override
+  Future<Result<void>> sendTyping(String channelId) =>
+      _guard(() => _remote.sendTyping(channelId));
+
+  @override
   Future<Result<List<Member>>> channelMembers(String channelId) =>
       _guard(() async {
         final dtos = await _remote.channelMembers(channelId);

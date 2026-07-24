@@ -12,6 +12,7 @@ import 'package:sytium_mobile/features/calls/application/call_controller.dart';
 import 'package:sytium_mobile/features/calls/domain/call_models.dart';
 import 'package:sytium_mobile/features/workspace/application/active_chat_channel.dart';
 import 'package:sytium_mobile/features/workspace/application/outgoing_messages.dart';
+import 'package:sytium_mobile/features/workspace/application/typing_indicator.dart';
 import 'package:sytium_mobile/features/workspace/application/workspace_providers.dart';
 import 'package:sytium_mobile/features/workspace/domain/workspace_models.dart';
 import 'package:sytium_mobile/features/workspace/domain/workspace_repository.dart';
@@ -169,6 +170,9 @@ class ChatThreadScreenState extends ConsumerState<ChatThreadScreen> {
   final FocusNode _composerFocus = FocusNode();
   final ImagePicker _imagePicker = ImagePicker();
 
+  /// Throttle des signaux « en train d'écrire » (~2,5 s).
+  Timer? _typingThrottle;
+
   /// Attachments staged for the next send.
   final List<_PendingAttachment> _pending = [];
 
@@ -197,6 +201,7 @@ class ChatThreadScreenState extends ConsumerState<ChatThreadScreen> {
   void initState() {
     super.initState();
     _scroll.addListener(_onScroll);
+    _composer.addListener(_onComposerChanged);
     _activeChannel = ref.read(activeChatChannelProvider.notifier);
     // Mark the channel read on open (purges the unread badge); refresh the
     // conversations list so the badge updates.
@@ -241,7 +246,10 @@ class ChatThreadScreenState extends ConsumerState<ChatThreadScreen> {
       );
     }
     _poll?.cancel();
-    _composer.dispose();
+    _typingThrottle?.cancel();
+    _composer
+      ..removeListener(_onComposerChanged)
+      ..dispose();
     _composerFocus.dispose();
     _scroll
       ..removeListener(_onScroll)
@@ -334,6 +342,15 @@ class ChatThreadScreenState extends ConsumerState<ChatThreadScreen> {
         _hasMore = page.hasMore;
       }
     });
+  }
+
+  /// Émet un signal « en train d'écrire » au plus une fois toutes les ~2,5 s,
+  /// tant que le champ n'est pas vide (ne pas notifier sur un effacement).
+  void _onComposerChanged() {
+    if (_composer.text.trim().isEmpty) return;
+    if (_typingThrottle?.isActive ?? false) return;
+    _typingThrottle = Timer(const Duration(milliseconds: 2500), () {});
+    unawaited(ref.read(workspaceRepositoryProvider).sendTyping(_channelId));
   }
 
   void _refresh() {
@@ -882,6 +899,7 @@ class ChatThreadScreenState extends ConsumerState<ChatThreadScreen> {
               ],
             ),
           ),
+          _TypingIndicator(channelId: _channelId),
           _Composer(
             controller: _composer,
             focusNode: _composerFocus,
@@ -1781,6 +1799,43 @@ class _ThreadSkeleton extends StatelessWidget {
             ),
           ),
       ],
+    );
+  }
+}
+
+/// Bandeau « <untel> est en train d'écrire… » au-dessus du composer. Scoped en
+/// `Consumer` pour ne rebâtir que lui quand l'état de frappe change.
+class _TypingIndicator extends ConsumerWidget {
+  const _TypingIndicator({required this.channelId});
+  final String channelId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final typing = ref.watch(
+      typingUsersProvider.select((m) => m[channelId] ?? const <TypingUser>[]),
+    );
+    if (typing.isEmpty) return const SizedBox.shrink();
+    final colors = context.colors;
+    final label = typing.length == 1
+        ? '${typing.first.name} est en train d’écrire…'
+        : typing.length == 2
+        ? '${typing[0].name} et ${typing[1].name} écrivent…'
+        : '${typing.length} personnes écrivent…';
+    return Padding(
+      padding: const EdgeInsets.symmetric(
+        horizontal: Tokens.space12,
+        vertical: Tokens.space4,
+      ),
+      child: Align(
+        alignment: Alignment.centerLeft,
+        child: Text(
+          label,
+          style: Theme.of(context).textTheme.labelSmall?.copyWith(
+            color: colors.textMuted,
+            fontStyle: FontStyle.italic,
+          ),
+        ),
+      ),
     );
   }
 }

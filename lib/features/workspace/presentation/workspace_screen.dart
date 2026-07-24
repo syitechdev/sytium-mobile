@@ -330,11 +330,20 @@ class _Body extends ConsumerWidget {
 
 /// Horizontal « statuts d'équipe » — org roster avatars with an online ring;
 /// tapping one starts/opens a DM with that colleague.
-class _TeamStatusStrip extends ConsumerWidget {
+class _TeamStatusStrip extends ConsumerStatefulWidget {
   const _TeamStatusStrip();
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_TeamStatusStrip> createState() => _TeamStatusStripState();
+}
+
+class _TeamStatusStripState extends ConsumerState<_TeamStatusStrip> {
+  /// Garde anti-race : id du dernier DM demandé (seule la dernière résolution
+  /// s'applique si l'utilisateur tape plusieurs collègues vite).
+  String? _dmOpening;
+
+  @override
+  Widget build(BuildContext context) {
     final theme = Theme.of(context).textTheme;
     final colors = context.colors;
     final membersAsync = ref.watch(orgMembersProvider);
@@ -382,7 +391,7 @@ class _TeamStatusStrip extends ConsumerWidget {
               return _TeamAvatar(
                 member: m,
                 online: presences[m.userId]?.online ?? false,
-                onTap: () => _openDm(context, ref, m.userId),
+                onTap: () => _openDm(context, m.userId),
               );
             },
           ),
@@ -391,9 +400,12 @@ class _TeamStatusStrip extends ConsumerWidget {
     );
   }
 
-  Future<void> _openDm(BuildContext context, WidgetRef ref, String userId) async {
+  Future<void> _openDm(BuildContext context, String userId) async {
+    _dmOpening = userId;
     final result = await ref.read(workspaceRepositoryProvider).openDm(userId);
-    if (!context.mounted) return;
+    // Une demande plus récente a pris le relais → on ignore ce résultat périmé.
+    if (!context.mounted || _dmOpening != userId) return;
+    _dmOpening = null;
     result.fold(
       (convo) {
         ref.invalidate(conversationsProvider);

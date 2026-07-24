@@ -10,12 +10,23 @@ import 'package:sytium_mobile/theme/tokens.dart';
 
 /// Bottom sheet listing org members to start a 1-to-1 DM. Tapping a member
 /// opens (or reopens) the DM and pushes its thread, closing the sheet.
-class NewDmSheet extends ConsumerWidget {
+class NewDmSheet extends ConsumerStatefulWidget {
   const NewDmSheet({super.key});
 
-  Future<void> _openDm(BuildContext context, WidgetRef ref, Member member) async {
+  @override
+  ConsumerState<NewDmSheet> createState() => _NewDmSheetState();
+}
+
+class _NewDmSheetState extends ConsumerState<NewDmSheet> {
+  /// Garde anti-race : id du dernier DM demandé. Si l'utilisateur tape plusieurs
+  /// contacts vite, seule la dernière résolution s'applique.
+  String? _dmOpening;
+
+  Future<void> _openDm(BuildContext context, Member member) async {
+    _dmOpening = member.userId;
     final result = await ref.read(workspaceRepositoryProvider).openDm(member.userId);
-    if (!context.mounted) return;
+    if (!context.mounted || _dmOpening != member.userId) return;
+    _dmOpening = null;
     final conversation = result.valueOrNull;
     if (conversation == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -34,7 +45,7 @@ class NewDmSheet extends ConsumerWidget {
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final async = ref.watch(orgMembersProvider);
     return SafeArea(
       child: Padding(
@@ -83,7 +94,7 @@ class NewDmSheet extends ConsumerWidget {
                                     m.poste!,
                                     style: TextStyle(color: context.colors.textMuted),
                                   ),
-                            onTap: () => _openDm(context, ref, m),
+                            onTap: () => _openDm(context, m),
                           );
                         },
                       ),

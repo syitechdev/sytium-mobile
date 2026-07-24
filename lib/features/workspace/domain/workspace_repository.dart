@@ -24,6 +24,9 @@ abstract interface class WorkspaceRepository {
   /// Transcrit une note vocale déjà envoyée ; renvoie le texte (ou null).
   Future<Result<String?>> transcribeMessage(String messageId);
 
+  /// Signale que l'utilisateur est en train d'écrire dans [channelId].
+  Future<Result<void>> sendTyping(String channelId);
+
   /// Members of a channel — used to resolve a DM peer and group rosters.
   Future<Result<List<Member>>> channelMembers(String channelId);
 

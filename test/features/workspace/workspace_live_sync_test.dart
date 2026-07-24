@@ -63,6 +63,9 @@ class _Repo implements WorkspaceRepository {
   @override
   Future<Result<String?>> transcribeMessage(String messageId) async => const Ok(null);
 
+  @override
+  Future<Result<void>> sendTyping(String channelId) async => const Ok(null);
+
   List<Conversation> channels;
   bool fail = false;
   int conversationCalls = 0;

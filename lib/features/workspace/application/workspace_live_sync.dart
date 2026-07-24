@@ -6,6 +6,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:sytium_mobile/app/lifecycle/app_foreground.dart';
 import 'package:sytium_mobile/features/auth/application/auth_controller.dart';
 import 'package:sytium_mobile/features/workspace/application/active_chat_channel.dart';
+import 'package:sytium_mobile/features/workspace/application/typing_indicator.dart';
 import 'package:sytium_mobile/features/workspace/application/workspace_providers.dart';
 import 'package:sytium_mobile/features/workspace/domain/workspace_models.dart';
 import 'package:sytium_mobile/features/workspace/realtime/workspace_realtime.dart';
@@ -20,6 +21,12 @@ const kWorkspaceSyncInterval = Duration(seconds: 20);
 
 /// Broadcast events that mean "this conversation moved".
 const _kMessageEvents = ['workspace.message.created', 'workspace.message.updated'];
+
+/// Événement « en train d'écrire » (broadcast serveur, pas un whisper client).
+const _kTypingEvent = 'workspace.typing';
+
+/// Tous les événements auxquels on s'abonne par canal.
+const _kSubscribedEvents = [..._kMessageEvents, _kTypingEvent];
 
 /// Keeps the messaging state live app-wide, not just while a thread is open.
 ///
@@ -146,7 +153,7 @@ class WorkspaceLiveSync {
       realtime.unsubscribe(name);
     }
     for (final name in fresh) {
-      realtime.subscribe(name, _onEvent, events: _kMessageEvents);
+      realtime.subscribe(name, _onEvent, events: _kSubscribedEvents);
     }
     if (gone.isNotEmpty || fresh.isNotEmpty) {
       _log('${wanted.length} conversations suivies '
@@ -163,7 +170,12 @@ class WorkspaceLiveSync {
   }
 
   void _onEvent(RealtimeEvent event) {
-    if (!_started || !_kMessageEvents.contains(event.event)) return;
+    if (!_started) return;
+    if (event.event == _kTypingEvent) {
+      _handleTyping(event);
+      return;
+    }
+    if (!_kMessageEvents.contains(event.event)) return;
     _log('message reçu sur ${event.data['channel_id']} → rafraîchissement');
 
     // The event carries ids only — refetch rather than trust a partial payload.
@@ -186,12 +198,36 @@ class WorkspaceLiveSync {
     _ref.invalidate(channelMessagesProvider(channelId));
   }
 
+  /// `workspace.typing` : marque l'auteur comme en train d'écrire dans son canal
+  /// (auto-expire côté provider). On ne s'affiche jamais soi-même.
+  void _handleTyping(RealtimeEvent event) {
+    final channelId = event.data['channel_id'];
+    final userId = event.data['user_id'];
+    if (channelId is! String ||
+        channelId.isEmpty ||
+        userId is! String ||
+        userId.isEmpty) {
+      return;
+    }
+    if (userId == _me) return;
+    final name = (event.data['name'] as String?)?.trim();
+    _ref.read(typingUsersProvider.notifier).mark(
+          channelId,
+          TypingUser(userId, (name == null || name.isEmpty) ? 'Quelqu’un' : name),
+        );
+  }
+
   void _refreshConversations() {
     if (!_started || !_isForeground) return;
     _ref.invalidate(conversationsProvider);
   }
 
   bool get _isForeground => _ref.read(appForegroundProvider);
+
+  String? get _me {
+    final auth = _ref.read(authControllerProvider).valueOrNull;
+    return auth is Authenticated ? auth.session.user.id : null;
+  }
 
   String? get _organizationId {
     final auth = _ref.read(authControllerProvider).valueOrNull;
