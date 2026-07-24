@@ -32,6 +32,15 @@ class _Repo implements WorkspaceRepository {
   @override
   Future<Result<List<int>>> downloadAttachment(String url) async => const Ok(<int>[]);
 
+  @override
+  Future<Result<void>> setPinned(String messageId, {required bool pinned}) async => const Ok(null);
+
+  @override
+  Future<Result<void>> setBookmarked(String messageId, {required bool bookmarked}) async => const Ok(null);
+
+  @override
+  Future<Result<String?>> transcribeMessage(String messageId) async => const Ok(null);
+
   final List<Conversation>? conversationsOverride;
 
   @override

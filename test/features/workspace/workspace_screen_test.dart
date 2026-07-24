@@ -36,6 +36,15 @@ class _BaseRepo implements WorkspaceRepository {
   Future<Result<List<int>>> downloadAttachment(String url) async => const Ok(<int>[]);
 
   @override
+  Future<Result<void>> setPinned(String messageId, {required bool pinned}) async => const Ok(null);
+
+  @override
+  Future<Result<void>> setBookmarked(String messageId, {required bool bookmarked}) async => const Ok(null);
+
+  @override
+  Future<Result<String?>> transcribeMessage(String messageId) async => const Ok(null);
+
+  @override
   Future<Result<List<Conversation>>> conversations() async => const Ok([]);
   @override
   Future<Result<List<Member>>> channelMembers(String channelId) async => const Ok([]);

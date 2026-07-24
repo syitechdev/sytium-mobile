@@ -171,6 +171,10 @@ _$MessageDtoImpl _$$MessageDtoImplFromJson(Map<String, dynamic> json) =>
       isSystem: json['is_system'] as bool? ?? false,
       deletedAt: _dateFrom(json['deleted_at']),
       createdAt: _dateFrom(json['created_at']),
+      pinned: json['pinned'] as bool? ?? false,
+      pinnedAt: _dateFrom(json['pinned_at']),
+      bookmarked: json['bookmarked'] as bool? ?? false,
+      audioTranscript: json['audio_transcript'] as String?,
       author: json['author'] == null
           ? null
           : MessageAuthorDto.fromJson(json['author'] as Map<String, dynamic>),
@@ -204,6 +208,10 @@ Map<String, dynamic> _$$MessageDtoImplToJson(_$MessageDtoImpl instance) =>
       'is_system': instance.isSystem,
       'deleted_at': instance.deletedAt?.toIso8601String(),
       'created_at': instance.createdAt?.toIso8601String(),
+      'pinned': instance.pinned,
+      'pinned_at': instance.pinnedAt?.toIso8601String(),
+      'bookmarked': instance.bookmarked,
+      'audio_transcript': instance.audioTranscript,
       'author': instance.author,
       'parent': instance.parent,
       'reactions': instance.reactions,

@@ -12,6 +12,18 @@ abstract interface class WorkspaceRepository {
   /// lecture locale des notes vocales.
   Future<Result<List<int>>> downloadAttachment(String url);
 
+  /// Épingle / désépingle un message (endpoint dédié).
+  Future<Result<void>> setPinned(String messageId, {required bool pinned});
+
+  /// Met / retire un message des favoris (serveur).
+  Future<Result<void>> setBookmarked(
+    String messageId, {
+    required bool bookmarked,
+  });
+
+  /// Transcrit une note vocale déjà envoyée ; renvoie le texte (ou null).
+  Future<Result<String?>> transcribeMessage(String messageId);
+
   /// Members of a channel — used to resolve a DM peer and group rosters.
   Future<Result<List<Member>>> channelMembers(String channelId);
 

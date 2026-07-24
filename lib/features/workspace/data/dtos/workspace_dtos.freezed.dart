@@ -2025,6 +2025,12 @@ mixin _$MessageDto {
   DateTime? get deletedAt => throw _privateConstructorUsedError;
   @JsonKey(name: 'created_at', fromJson: _dateFrom)
   DateTime? get createdAt => throw _privateConstructorUsedError;
+  bool get pinned => throw _privateConstructorUsedError;
+  @JsonKey(name: 'pinned_at', fromJson: _dateFrom)
+  DateTime? get pinnedAt => throw _privateConstructorUsedError;
+  bool get bookmarked => throw _privateConstructorUsedError;
+  @JsonKey(name: 'audio_transcript')
+  String? get audioTranscript => throw _privateConstructorUsedError;
   MessageAuthorDto? get author => throw _privateConstructorUsedError;
   ParentMessageDto? get parent => throw _privateConstructorUsedError;
   List<ReactionDto> get reactions => throw _privateConstructorUsedError;
@@ -2058,6 +2064,10 @@ abstract class $MessageDtoCopyWith<$Res> {
     @JsonKey(name: 'is_system') bool isSystem,
     @JsonKey(name: 'deleted_at', fromJson: _dateFrom) DateTime? deletedAt,
     @JsonKey(name: 'created_at', fromJson: _dateFrom) DateTime? createdAt,
+    bool pinned,
+    @JsonKey(name: 'pinned_at', fromJson: _dateFrom) DateTime? pinnedAt,
+    bool bookmarked,
+    @JsonKey(name: 'audio_transcript') String? audioTranscript,
     MessageAuthorDto? author,
     ParentMessageDto? parent,
     List<ReactionDto> reactions,
@@ -2093,6 +2103,10 @@ class _$MessageDtoCopyWithImpl<$Res, $Val extends MessageDto>
     Object? isSystem = null,
     Object? deletedAt = freezed,
     Object? createdAt = freezed,
+    Object? pinned = null,
+    Object? pinnedAt = freezed,
+    Object? bookmarked = null,
+    Object? audioTranscript = freezed,
     Object? author = freezed,
     Object? parent = freezed,
     Object? reactions = null,
@@ -2133,6 +2147,22 @@ class _$MessageDtoCopyWithImpl<$Res, $Val extends MessageDto>
                 ? _value.createdAt
                 : createdAt // ignore: cast_nullable_to_non_nullable
                       as DateTime?,
+            pinned: null == pinned
+                ? _value.pinned
+                : pinned // ignore: cast_nullable_to_non_nullable
+                      as bool,
+            pinnedAt: freezed == pinnedAt
+                ? _value.pinnedAt
+                : pinnedAt // ignore: cast_nullable_to_non_nullable
+                      as DateTime?,
+            bookmarked: null == bookmarked
+                ? _value.bookmarked
+                : bookmarked // ignore: cast_nullable_to_non_nullable
+                      as bool,
+            audioTranscript: freezed == audioTranscript
+                ? _value.audioTranscript
+                : audioTranscript // ignore: cast_nullable_to_non_nullable
+                      as String?,
             author: freezed == author
                 ? _value.author
                 : author // ignore: cast_nullable_to_non_nullable
@@ -2219,6 +2249,10 @@ abstract class _$$MessageDtoImplCopyWith<$Res>
     @JsonKey(name: 'is_system') bool isSystem,
     @JsonKey(name: 'deleted_at', fromJson: _dateFrom) DateTime? deletedAt,
     @JsonKey(name: 'created_at', fromJson: _dateFrom) DateTime? createdAt,
+    bool pinned,
+    @JsonKey(name: 'pinned_at', fromJson: _dateFrom) DateTime? pinnedAt,
+    bool bookmarked,
+    @JsonKey(name: 'audio_transcript') String? audioTranscript,
     MessageAuthorDto? author,
     ParentMessageDto? parent,
     List<ReactionDto> reactions,
@@ -2256,6 +2290,10 @@ class __$$MessageDtoImplCopyWithImpl<$Res>
     Object? isSystem = null,
     Object? deletedAt = freezed,
     Object? createdAt = freezed,
+    Object? pinned = null,
+    Object? pinnedAt = freezed,
+    Object? bookmarked = null,
+    Object? audioTranscript = freezed,
     Object? author = freezed,
     Object? parent = freezed,
     Object? reactions = null,
@@ -2296,6 +2334,22 @@ class __$$MessageDtoImplCopyWithImpl<$Res>
             ? _value.createdAt
             : createdAt // ignore: cast_nullable_to_non_nullable
                   as DateTime?,
+        pinned: null == pinned
+            ? _value.pinned
+            : pinned // ignore: cast_nullable_to_non_nullable
+                  as bool,
+        pinnedAt: freezed == pinnedAt
+            ? _value.pinnedAt
+            : pinnedAt // ignore: cast_nullable_to_non_nullable
+                  as DateTime?,
+        bookmarked: null == bookmarked
+            ? _value.bookmarked
+            : bookmarked // ignore: cast_nullable_to_non_nullable
+                  as bool,
+        audioTranscript: freezed == audioTranscript
+            ? _value.audioTranscript
+            : audioTranscript // ignore: cast_nullable_to_non_nullable
+                  as String?,
         author: freezed == author
             ? _value.author
             : author // ignore: cast_nullable_to_non_nullable
@@ -2333,6 +2387,10 @@ class _$MessageDtoImpl implements _MessageDto {
     @JsonKey(name: 'is_system') this.isSystem = false,
     @JsonKey(name: 'deleted_at', fromJson: _dateFrom) this.deletedAt,
     @JsonKey(name: 'created_at', fromJson: _dateFrom) this.createdAt,
+    this.pinned = false,
+    @JsonKey(name: 'pinned_at', fromJson: _dateFrom) this.pinnedAt,
+    this.bookmarked = false,
+    @JsonKey(name: 'audio_transcript') this.audioTranscript,
     this.author,
     this.parent,
     final List<ReactionDto> reactions = const <ReactionDto>[],
@@ -2369,6 +2427,18 @@ class _$MessageDtoImpl implements _MessageDto {
   @JsonKey(name: 'created_at', fromJson: _dateFrom)
   final DateTime? createdAt;
   @override
+  @JsonKey()
+  final bool pinned;
+  @override
+  @JsonKey(name: 'pinned_at', fromJson: _dateFrom)
+  final DateTime? pinnedAt;
+  @override
+  @JsonKey()
+  final bool bookmarked;
+  @override
+  @JsonKey(name: 'audio_transcript')
+  final String? audioTranscript;
+  @override
   final MessageAuthorDto? author;
   @override
   final ParentMessageDto? parent;
@@ -2396,7 +2466,7 @@ class _$MessageDtoImpl implements _MessageDto {
 
   @override
   String toString() {
-    return 'MessageDto(id: $id, channelId: $channelId, userId: $userId, content: $content, isEdited: $isEdited, isSystem: $isSystem, deletedAt: $deletedAt, createdAt: $createdAt, author: $author, parent: $parent, reactions: $reactions, attachments: $attachments, deliverySummary: $deliverySummary)';
+    return 'MessageDto(id: $id, channelId: $channelId, userId: $userId, content: $content, isEdited: $isEdited, isSystem: $isSystem, deletedAt: $deletedAt, createdAt: $createdAt, pinned: $pinned, pinnedAt: $pinnedAt, bookmarked: $bookmarked, audioTranscript: $audioTranscript, author: $author, parent: $parent, reactions: $reactions, attachments: $attachments, deliverySummary: $deliverySummary)';
   }
 
   @override
@@ -2417,6 +2487,13 @@ class _$MessageDtoImpl implements _MessageDto {
                 other.deletedAt == deletedAt) &&
             (identical(other.createdAt, createdAt) ||
                 other.createdAt == createdAt) &&
+            (identical(other.pinned, pinned) || other.pinned == pinned) &&
+            (identical(other.pinnedAt, pinnedAt) ||
+                other.pinnedAt == pinnedAt) &&
+            (identical(other.bookmarked, bookmarked) ||
+                other.bookmarked == bookmarked) &&
+            (identical(other.audioTranscript, audioTranscript) ||
+                other.audioTranscript == audioTranscript) &&
             (identical(other.author, author) || other.author == author) &&
             (identical(other.parent, parent) || other.parent == parent) &&
             const DeepCollectionEquality().equals(
@@ -2443,6 +2520,10 @@ class _$MessageDtoImpl implements _MessageDto {
     isSystem,
     deletedAt,
     createdAt,
+    pinned,
+    pinnedAt,
+    bookmarked,
+    audioTranscript,
     author,
     parent,
     const DeepCollectionEquality().hash(_reactions),
@@ -2474,6 +2555,10 @@ abstract class _MessageDto implements MessageDto {
     @JsonKey(name: 'is_system') final bool isSystem,
     @JsonKey(name: 'deleted_at', fromJson: _dateFrom) final DateTime? deletedAt,
     @JsonKey(name: 'created_at', fromJson: _dateFrom) final DateTime? createdAt,
+    final bool pinned,
+    @JsonKey(name: 'pinned_at', fromJson: _dateFrom) final DateTime? pinnedAt,
+    final bool bookmarked,
+    @JsonKey(name: 'audio_transcript') final String? audioTranscript,
     final MessageAuthorDto? author,
     final ParentMessageDto? parent,
     final List<ReactionDto> reactions,
@@ -2507,6 +2592,16 @@ abstract class _MessageDto implements MessageDto {
   @override
   @JsonKey(name: 'created_at', fromJson: _dateFrom)
   DateTime? get createdAt;
+  @override
+  bool get pinned;
+  @override
+  @JsonKey(name: 'pinned_at', fromJson: _dateFrom)
+  DateTime? get pinnedAt;
+  @override
+  bool get bookmarked;
+  @override
+  @JsonKey(name: 'audio_transcript')
+  String? get audioTranscript;
   @override
   MessageAuthorDto? get author;
   @override

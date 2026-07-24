@@ -23,6 +23,26 @@ class WorkspaceRepositoryImpl implements WorkspaceRepository {
       _guard(() => _remote.downloadAttachment(url));
 
   @override
+  Future<Result<void>> setPinned(String messageId, {required bool pinned}) =>
+      _guard(
+        () => pinned ? _remote.pin(messageId) : _remote.unpin(messageId),
+      );
+
+  @override
+  Future<Result<void>> setBookmarked(
+    String messageId, {
+    required bool bookmarked,
+  }) => _guard(
+    () => bookmarked
+        ? _remote.bookmark(messageId)
+        : _remote.unbookmark(messageId),
+  );
+
+  @override
+  Future<Result<String?>> transcribeMessage(String messageId) =>
+      _guard(() => _remote.transcribeMessage(messageId));
+
+  @override
   Future<Result<List<Member>>> channelMembers(String channelId) =>
       _guard(() async {
         final dtos = await _remote.channelMembers(channelId);
@@ -194,6 +214,10 @@ class WorkspaceRepositoryImpl implements WorkspaceRepository {
         isSystem: d.isSystem,
         isDeleted: d.deletedAt != null,
         createdAt: d.createdAt,
+        pinned: d.pinned,
+        pinnedAt: d.pinnedAt,
+        bookmarked: d.bookmarked,
+        audioTranscript: d.audioTranscript,
         reactions: d.reactions
             .where((r) => r.emoji.isNotEmpty)
             .map((r) => MessageReaction(

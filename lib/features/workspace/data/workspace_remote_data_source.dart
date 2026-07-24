@@ -19,6 +19,33 @@ class WorkspaceRemoteDataSource {
     return res.data ?? const <int>[];
   }
 
+  /// Épingle un message (endpoint dédié ; diffuse `workspace.message.updated`).
+  Future<void> pin(String messageId) =>
+      _dio.post<Map<String, dynamic>>('/workspace/messages/$messageId/pin');
+
+  Future<void> unpin(String messageId) =>
+      _dio.delete<Map<String, dynamic>>('/workspace/messages/$messageId/pin');
+
+  /// Met/retire le message des favoris de l'utilisateur (serveur).
+  Future<void> bookmark(String messageId) => _dio.post<Map<String, dynamic>>(
+    '/workspace/messages/$messageId/bookmark',
+  );
+
+  Future<void> unbookmark(String messageId) => _dio.delete<Map<String, dynamic>>(
+    '/workspace/messages/$messageId/bookmark',
+  );
+
+  /// Transcrit une note vocale déjà envoyée via l'IA. Persiste `audio_transcript`
+  /// et diffuse `workspace.message.updated`. Renvoie le texte transcrit.
+  Future<String?> transcribeMessage(String messageId) async {
+    final res = await _dio.post<Map<String, dynamic>>(
+      '/ai/workspace',
+      data: {'action': 'transcribe', 'message_id': messageId},
+    );
+    final data = res.data?['data'];
+    return data is Map ? data['text']?.toString() : null;
+  }
+
   Future<List<ChannelDto>> channels() async {
     final res = await _dio.get<Map<String, dynamic>>('/workspace/channels');
     final list = res.data!['data'] as List<dynamic>;

@@ -545,6 +545,30 @@ class ChatThreadScreenState extends ConsumerState<ChatThreadScreen> {
                 _startReply(message);
               },
             ),
+            ListTile(
+              leading: Icon(
+                message.pinned ? Icons.push_pin : Icons.push_pin_outlined,
+              ),
+              title: Text(message.pinned ? 'Désépingler' : 'Épingler'),
+              onTap: () {
+                Navigator.of(sheetContext).pop();
+                _togglePin(message);
+              },
+            ),
+            ListTile(
+              leading: Icon(
+                message.bookmarked ? Icons.bookmark : Icons.bookmark_outline,
+              ),
+              title: Text(
+                message.bookmarked
+                    ? 'Retirer des favoris'
+                    : 'Ajouter aux favoris',
+              ),
+              onTap: () {
+                Navigator.of(sheetContext).pop();
+                _toggleBookmark(message);
+              },
+            ),
             if (isMine) ...[
               ListTile(
                 leading: const Icon(Icons.edit_outlined),
@@ -586,6 +610,32 @@ class ChatThreadScreenState extends ConsumerState<ChatThreadScreen> {
       _refresh();
     } else {
       _toast(result.failureOrNull?.message ?? 'Réaction impossible.');
+    }
+  }
+
+  Future<void> _togglePin(Message message) async {
+    final result = await ref
+        .read(workspaceRepositoryProvider)
+        .setPinned(message.id, pinned: !message.pinned);
+    if (!mounted) return;
+    if (result.isOk) {
+      _refresh();
+      _toast(message.pinned ? 'Message désépinglé.' : 'Message épinglé.');
+    } else {
+      _toast(result.failureOrNull?.message ?? 'Épinglage impossible.');
+    }
+  }
+
+  Future<void> _toggleBookmark(Message message) async {
+    final result = await ref
+        .read(workspaceRepositoryProvider)
+        .setBookmarked(message.id, bookmarked: !message.bookmarked);
+    if (!mounted) return;
+    if (result.isOk) {
+      _refresh();
+      _toast(message.bookmarked ? 'Retiré des favoris.' : 'Ajouté aux favoris.');
+    } else {
+      _toast(result.failureOrNull?.message ?? 'Action impossible.');
     }
   }
 

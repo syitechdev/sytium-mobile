@@ -95,6 +95,10 @@ class Message {
     this.isSystem = false,
     this.isDeleted = false,
     this.createdAt,
+    this.pinned = false,
+    this.pinnedAt,
+    this.bookmarked = false,
+    this.audioTranscript,
     this.reactions = const <MessageReaction>[],
     this.attachments = const <Attachment>[],
     this.replyTo,
@@ -111,6 +115,16 @@ class Message {
   final bool isSystem;
   final bool isDeleted;
   final DateTime? createdAt;
+
+  /// Épinglé dans le canal (endpoint dédié `pin/unpin`, pas la réaction 📌).
+  final bool pinned;
+  final DateTime? pinnedAt;
+
+  /// Mis en favori par l'utilisateur (serveur, synchro multi-appareils).
+  final bool bookmarked;
+
+  /// Transcription d'une note vocale (générée à la demande via l'IA).
+  final String? audioTranscript;
 
   /// Emoji reactions aggregated by emoji (empty when none).
   final List<MessageReaction> reactions;
@@ -142,6 +156,10 @@ class Message {
     bool? isEdited,
     bool? isDeleted,
     DateTime? createdAt,
+    bool? pinned,
+    DateTime? pinnedAt,
+    bool? bookmarked,
+    String? audioTranscript,
     List<MessageReaction>? reactions,
     List<Attachment>? attachments,
     DeliveryState? deliveryState,
@@ -156,6 +174,10 @@ class Message {
     isSystem: isSystem,
     isDeleted: isDeleted ?? this.isDeleted,
     createdAt: createdAt ?? this.createdAt,
+    pinned: pinned ?? this.pinned,
+    pinnedAt: pinnedAt ?? this.pinnedAt,
+    bookmarked: bookmarked ?? this.bookmarked,
+    audioTranscript: audioTranscript ?? this.audioTranscript,
     reactions: reactions ?? this.reactions,
     attachments: attachments ?? this.attachments,
     replyTo: replyTo,
