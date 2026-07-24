@@ -49,14 +49,23 @@ class AppSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        const _SheetBar(),
-        // Flexible et non Expanded : une feuille courte garde sa hauteur
-        // naturelle au lieu d'être étirée jusqu'au plafond.
-        Flexible(child: child),
-      ],
+    // Réserve la hauteur du clavier : sans ça, une feuille avec champ de saisie
+    // (recherche, ajout de membres) voit le bas de sa liste passer SOUS le
+    // clavier, hors d'atteinte. La feuille étant ancrée en bas, ce padding
+    // remonte le contenu au-dessus du clavier ; la liste `Flexible` se réduit
+    // pour rester défilable dans l'espace visible restant.
+    final keyboardInset = MediaQuery.viewInsetsOf(context).bottom;
+    return Padding(
+      padding: EdgeInsets.only(bottom: keyboardInset),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const _SheetBar(),
+          // Flexible et non Expanded : une feuille courte garde sa hauteur
+          // naturelle au lieu d'être étirée jusqu'au plafond.
+          Flexible(child: child),
+        ],
+      ),
     );
   }
 }

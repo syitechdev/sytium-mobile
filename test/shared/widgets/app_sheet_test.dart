@@ -28,14 +28,20 @@ Widget _host(Widget content, {void Function(String?)? onClosed}) => MaterialApp(
 
 void main() {
   setUp(() {
-    TestWidgetsFlutterBinding.instance.platformDispatcher.views.first
-        .physicalSize = _kPhone;
     TestWidgetsFlutterBinding
-        .instance
-        .platformDispatcher
-        .views
-        .first
-        .devicePixelRatio = 1.0;
+            .instance
+            .platformDispatcher
+            .views
+            .first
+            .physicalSize =
+        _kPhone;
+    TestWidgetsFlutterBinding
+            .instance
+            .platformDispatcher
+            .views
+            .first
+            .devicePixelRatio =
+        1.0;
   });
 
   tearDown(() {
@@ -87,6 +93,27 @@ void main() {
 
     // Flexible et non Expanded : la feuille ne doit pas être étirée au plafond.
     expect(tester.getSize(find.byType(AppSheet)).height, lessThan(400));
+  });
+
+  testWidgets('réserve la hauteur du clavier : le contenu reste au-dessus', (
+    tester,
+  ) async {
+    const keyboard = 300.0;
+    tester.view.viewInsets = const FakeViewPadding(bottom: keyboard);
+    addTearDown(tester.view.resetViewInsets);
+
+    await tester.pumpWidget(
+      _host(const SizedBox(key: ValueKey('marker'), height: 100)),
+    );
+    await tester.tap(find.text('ouvrir'));
+    await tester.pumpAndSettle();
+
+    // Le bas du contenu doit remonter au-dessus de la ligne du clavier, sinon
+    // il serait masqué et hors d'atteinte (bug feuille d'ajout de membres).
+    final markerBottom = tester
+        .getBottomLeft(find.byKey(const ValueKey('marker')))
+        .dy;
+    expect(markerBottom, lessThanOrEqualTo(_kPhone.height - keyboard + 1));
   });
 
   testWidgets('la feuille se ferme au toucher de la barrière', (tester) async {
