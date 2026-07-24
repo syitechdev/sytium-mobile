@@ -46,3 +46,6 @@ app.*.map.json
 
 # Cle Google Maps (voir ios/Flutter/Secrets.xcconfig.example)
 **/ios/Flutter/Secrets.xcconfig
+
+# Golden test failure diffs (generated on mismatch)
+test/golden/failures/
