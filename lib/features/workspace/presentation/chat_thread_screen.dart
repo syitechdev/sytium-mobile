@@ -569,6 +569,16 @@ class ChatThreadScreenState extends ConsumerState<ChatThreadScreen> {
                 _toggleBookmark(message);
               },
             ),
+            if (message.attachments.any((a) => a.isAudio) &&
+                (message.audioTranscript?.isEmpty ?? true))
+              ListTile(
+                leading: const Icon(Icons.subtitles_outlined),
+                title: const Text('Transcrire'),
+                onTap: () {
+                  Navigator.of(sheetContext).pop();
+                  _transcribe(message);
+                },
+              ),
             if (isMine) ...[
               ListTile(
                 leading: const Icon(Icons.edit_outlined),
@@ -637,6 +647,65 @@ class ChatThreadScreenState extends ConsumerState<ChatThreadScreen> {
     } else {
       _toast(result.failureOrNull?.message ?? 'Action impossible.');
     }
+  }
+
+  Future<void> _transcribe(Message message) async {
+    _toast('Transcription en cours…');
+    final result = await ref
+        .read(workspaceRepositoryProvider)
+        .transcribeMessage(message.id);
+    if (!mounted) return;
+    if (result.isOk) {
+      // `audio_transcript` persisté côté serveur + workspace.message.updated ;
+      // on recharge pour l'afficher sous la note vocale.
+      _refresh();
+    } else {
+      _toast('Transcription indisponible pour le moment.');
+    }
+  }
+
+  /// « Qui a réagi » : liste les auteurs d'une réaction (résolus via le
+  /// trombinoscope de l'organisation ; « Vous » pour soi).
+  Future<void> _showReactors(Message message, String emoji) async {
+    MessageReaction? reaction;
+    for (final r in message.reactions) {
+      if (r.emoji == emoji) {
+        reaction = r;
+        break;
+      }
+    }
+    if (reaction == null || reaction.userIds.isEmpty) return;
+    final count = reaction.count;
+    final members = ref.read(orgMembersProvider).valueOrNull ?? const <Member>[];
+    final me = ref.read(currentUserIdProvider);
+    final byId = {for (final m in members) m.userId: m.fullName};
+    final names = reaction.userIds
+        .map(
+          (id) => id == me
+              ? 'Vous'
+              : ((byId[id]?.isNotEmpty ?? false) ? byId[id]! : 'Membre'),
+        )
+        .toList();
+    if (!mounted) return;
+    await showAppSheet<void>(
+      context,
+      builder: (sheetContext) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(Tokens.space12),
+              child: Text(
+                '$emoji  $count',
+                style: Theme.of(sheetContext).textTheme.titleMedium,
+              ),
+            ),
+            const Divider(height: 1),
+            for (final n in names) ListTile(dense: true, title: Text(n)),
+          ],
+        ),
+      ),
+    );
   }
 
   Future<void> _editMessage(Message message) async {
@@ -895,6 +964,9 @@ class ChatThreadScreenState extends ConsumerState<ChatThreadScreen> {
             onReactionTap: message.isPending
                 ? null
                 : (emoji) => _toggleReaction(message, emoji),
+            onReactionLongPress: message.isPending
+                ? null
+                : (emoji) => _showReactors(message, emoji),
           ),
         };
       },
@@ -1167,6 +1239,7 @@ class _MessageBubble extends StatelessWidget {
     this.onLongPress,
     this.onReply,
     this.onReactionTap,
+    this.onReactionLongPress,
   });
 
   final Message message;
@@ -1182,6 +1255,9 @@ class _MessageBubble extends StatelessWidget {
   /// Déclenché par le glissé-pour-répondre. Null = message non répondable.
   final VoidCallback? onReply;
   final void Function(String emoji)? onReactionTap;
+
+  /// Appui long sur une pastille de réaction → « qui a réagi ».
+  final void Function(String emoji)? onReactionLongPress;
 
   @override
   Widget build(BuildContext context) {
@@ -1312,6 +1388,34 @@ class _MessageBubble extends StatelessWidget {
                         )
                       else if (hasText)
                         Text(message.content, style: TextStyle(color: fg)),
+                      if (!message.isDeleted &&
+                          (message.audioTranscript?.isNotEmpty ?? false)) ...[
+                        const SizedBox(height: Tokens.space4),
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Icon(
+                              Icons.subtitles_outlined,
+                              size: 14,
+                              color: isMine
+                                  ? colors.onBrand.withValues(alpha: 0.8)
+                                  : colors.textMuted,
+                            ),
+                            const SizedBox(width: Tokens.space4),
+                            Flexible(
+                              child: Text(
+                                message.audioTranscript!,
+                                style: TextStyle(
+                                  fontStyle: FontStyle.italic,
+                                  color: isMine
+                                      ? colors.onBrand.withValues(alpha: 0.9)
+                                      : colors.textMuted,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
                     ],
                   ),
                 ),
@@ -1322,6 +1426,7 @@ class _MessageBubble extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.only(top: Tokens.space4),
               child: _ReactionsRow(
+                onLongPress: onReactionLongPress,
                 reactions: message.reactions,
                 currentUserId: currentUserId,
                 onTap: onReactionTap,
@@ -1564,11 +1669,13 @@ class _ReactionsRow extends StatelessWidget {
     required this.reactions,
     required this.currentUserId,
     this.onTap,
+    this.onLongPress,
   });
 
   final List<MessageReaction> reactions;
   final String? currentUserId;
   final void Function(String emoji)? onTap;
+  final void Function(String emoji)? onLongPress;
 
   @override
   Widget build(BuildContext context) {
@@ -1582,6 +1689,7 @@ class _ReactionsRow extends StatelessWidget {
             reaction: r,
             mine: r.reactedBy(currentUserId),
             onTap: onTap == null ? null : () => onTap!(r.emoji),
+            onLongPress: onLongPress == null ? null : () => onLongPress!(r.emoji),
             colors: colors,
           ),
       ],
@@ -1595,17 +1703,20 @@ class _ReactionChip extends StatelessWidget {
     required this.mine,
     required this.colors,
     this.onTap,
+    this.onLongPress,
   });
 
   final MessageReaction reaction;
   final bool mine;
   final SytiumColors colors;
   final VoidCallback? onTap;
+  final VoidCallback? onLongPress;
 
   @override
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
+      onLongPress: onLongPress,
       borderRadius: BorderRadius.circular(Tokens.radiusPill),
       child: Container(
         padding: const EdgeInsets.symmetric(
