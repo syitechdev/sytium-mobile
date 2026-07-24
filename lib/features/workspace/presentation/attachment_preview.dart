@@ -151,7 +151,11 @@ class _FileAttachment extends StatelessWidget {
 }
 
 Future<void> _openExternal(BuildContext context, Attachment a) async {
-  final target = a.downloadUrl ?? a.url;
+  // Ouvrir l'URL SIGNÉE (`url`) en priorité : elle est accessible sans jeton
+  // (comme pour l'affichage des images). `downloadUrl` route par l'API et exige
+  // un Bearer que le navigateur externe n'a pas → il affichait « non
+  // authentifié ». On garde downloadUrl en repli si l'URL signée manque.
+  final target = a.url ?? a.downloadUrl;
   if (target == null || target.isEmpty) return;
   final ok = await launchUrl(
     Uri.parse(target),
