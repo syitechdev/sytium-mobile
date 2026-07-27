@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:sytium_mobile/core/error/failure.dart';
 import 'package:sytium_mobile/core/network/error_mapper.dart';
 import 'package:sytium_mobile/core/result/result.dart';
+import 'package:sytium_mobile/core/upload/uploaded_file.dart';
 import 'package:sytium_mobile/features/approvals/data/approvals_remote_data_source.dart';
 import 'package:sytium_mobile/features/approvals/data/dtos/approval_dtos.dart';
 import 'package:sytium_mobile/features/approvals/domain/approval_models.dart';
@@ -37,8 +38,14 @@ class ApprovalsRepositoryImpl implements ApprovalsRepository {
     String id, {
     String? commentaire,
     bool? isPaid,
+    UploadedFile? proof,
   }) => _guard(
-    () => _remote.approvePermission(id, commentaire: commentaire, isPaid: isPaid),
+    () => _remote.approvePermission(
+      id,
+      commentaire: commentaire,
+      isPaid: isPaid,
+      proof: proof,
+    ),
   );
 
   @override
@@ -105,13 +112,13 @@ class ApprovalsRepositoryImpl implements ApprovalsRepository {
             : 'Cette demande a déjà été traitée.';
         return Err(ApprovalFailure(code: code, message: message));
       }
-      // 422 — mission proof required at the direction palier (mobile v1 cannot
-      // upload proof). Surface the server message; tell the approver to use web.
+      // 422 — preuve d'approbation manquante ou refusée au palier Direction.
+      // Le mobile la joint désormais lui-même ; ce cas reste un filet (preuve
+      // non conforme, introuvable). On remonte le message serveur.
       if (status == 422) {
         final message = (data is Map && data['message'] is String)
             ? data['message'] as String
-            : 'Pièce justificative requise — utilisez le web pour valider '
-                  'cette mission.';
+            : 'Preuve d’approbation requise pour cette mission.';
         return Err(
           ApprovalFailure(code: 'MISSION_PROOF_REQUIRED', message: message),
         );

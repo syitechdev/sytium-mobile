@@ -6,7 +6,7 @@ part of 'call_controller.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$callControllerHash() => r'2de18d0e6028e331ec1614223e76de4213efb8b5';
+String _$callControllerHash() => r'87ca6323ade0997371b6327bb13e212457890d1c';
 
 /// Orchestrates a mesh WebRTC call (2..N participants): shared local media, one
 /// [RTCPeerConnection] per active peer, and targeted offer/answer/ICE signaling

@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sytium_mobile/core/error/failure.dart';
 import 'package:sytium_mobile/core/result/result.dart';
+import 'package:sytium_mobile/core/upload/uploaded_file.dart';
 import 'package:sytium_mobile/features/approvals/application/approvals_providers.dart';
 import 'package:sytium_mobile/features/approvals/domain/approval_models.dart';
 import 'package:sytium_mobile/features/approvals/domain/approvals_repository.dart';
@@ -45,13 +46,18 @@ class _FakeRepo implements ApprovalsRepository {
   /// tant qu'aucune approbation de permission n'a eu lieu.
   Object? lastIsPaid = #unset;
 
+  /// Dernière preuve transmise à approvePermission (null tant qu'aucune).
+  UploadedFile? lastProof;
+
   @override
   Future<Result<void>> approvePermission(
     String id, {
     String? commentaire,
     bool? isPaid,
+    UploadedFile? proof,
   }) {
     lastIsPaid = isPaid;
+    lastProof = proof;
     return _action();
   }
   @override
@@ -231,6 +237,27 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Rémunération de la permission'), findsNothing);
     expect(find.text('Refuser la demande'), findsOneWidget);
+  });
+
+  testWidgets('mission au palier Direction : approuver recueille la preuve', (
+    tester,
+  ) async {
+    final repo = _FakeRepo(
+      pendingValue: _pending([
+        _permission('m1', mission: true, palier: 'direction'),
+      ]),
+    );
+    await tester.pumpWidget(_screen(repo));
+    await tester.pump(const Duration(milliseconds: 100));
+
+    await tester.tap(find.text('Approuver'));
+    await tester.pumpAndSettle();
+
+    // La feuille de preuve s'ouvre ; tant qu'aucune preuve n'est jointe et
+    // téléversée, l'approbation n'est pas envoyée.
+    expect(find.text('Preuve d’approbation'), findsOneWidget);
+    expect(find.text('Approuver la mission'), findsOneWidget);
+    expect(repo.lastProof, isNull);
   });
 
   testWidgets('STALE removes the card + shows déjà traité toast', (tester) async {

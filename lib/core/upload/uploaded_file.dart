@@ -30,7 +30,11 @@ enum UploadBucket {
   paymentProofs('payment-proofs'),
 
   /// Preuves de validation d'une proforma : images, pdf et bureautique.
-  proformaValidations('proforma-validations');
+  proformaValidations('proforma-validations'),
+
+  /// Preuves d'approbation d'un ordre de mission par la Direction : images,
+  /// pdf et bureautique.
+  missionApprovalProofs('mission-approval-proofs');
 
   const UploadBucket(this.wire);
 

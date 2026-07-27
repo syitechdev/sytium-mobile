@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sytium_mobile/core/result/result.dart';
+import 'package:sytium_mobile/core/upload/uploaded_file.dart';
 import 'package:sytium_mobile/features/approvals/application/approvals_providers.dart';
 import 'package:sytium_mobile/features/approvals/domain/approval_models.dart';
 import 'package:sytium_mobile/features/approvals/domain/approvals_repository.dart';
@@ -20,7 +21,7 @@ class _EmptyRepo implements ApprovalsRepository {
   @override
   Future<Result<void>> rejectLeave(String id, {String? commentaire}) async => const Ok(null);
   @override
-  Future<Result<void>> approvePermission(String id, {String? commentaire, bool? isPaid}) async => const Ok(null);
+  Future<Result<void>> approvePermission(String id, {String? commentaire, bool? isPaid, UploadedFile? proof}) async => const Ok(null);
   @override
   Future<Result<void>> rejectPermission(String id, {String? commentaire}) async => const Ok(null);
   @override

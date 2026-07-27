@@ -3,8 +3,10 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sytium_mobile/core/error/failure.dart';
 import 'package:sytium_mobile/core/result/result.dart';
+import 'package:sytium_mobile/core/upload/uploaded_file.dart';
 import 'package:sytium_mobile/features/approvals/application/approvals_providers.dart';
 import 'package:sytium_mobile/features/approvals/domain/approval_models.dart';
+import 'package:sytium_mobile/features/approvals/presentation/mission_proof_sheet.dart';
 import 'package:sytium_mobile/features/approvals/presentation/permission_pay_sheet.dart';
 import 'package:sytium_mobile/features/approvals/presentation/reject_reason_sheet.dart';
 import 'package:sytium_mobile/features/approvals/presentation/widgets/approval_card.dart';
@@ -74,6 +76,15 @@ class _ApprovalsScreenState extends ConsumerState<ApprovalsScreen> {
       isPaid = await showPermissionPaySheet(context);
       if (isPaid == null || !mounted) return; // annulé
     }
+
+    // Un ordre de mission au palier Direction exige une preuve d'approbation :
+    // on la recueille et la téléverse avant d'approuver, sinon le serveur refuse.
+    UploadedFile? proof;
+    if (item.requiresMissionProof) {
+      proof = await showMissionProofSheet(context);
+      if (proof == null || !mounted) return; // annulé
+    }
+
     setState(() => _busy.add(item.id));
     final repo = ref.read(approvalsRepositoryProvider);
     final result = switch (item.type) {
@@ -81,6 +92,7 @@ class _ApprovalsScreenState extends ConsumerState<ApprovalsScreen> {
       ApprovalType.permission => await repo.approvePermission(
         item.id,
         isPaid: isPaid,
+        proof: proof,
       ),
       ApprovalType.objective => await repo.validateObjective(item.id),
       ApprovalType.unknown => const Err<void>(UnknownFailure()),
@@ -155,7 +167,10 @@ class _ApprovalsScreenState extends ConsumerState<ApprovalsScreen> {
         backgroundColor: error
             ? context.colors.danger
             : context.colors.success,
-        content: Text(message),
+        // Fond sémantique saturé (rouge/vert) dans les deux thèmes : sans couleur
+        // explicite, le texte héritait de `onInverseSurface` — sombre en thème
+        // sombre, donc noir sur rouge, illisible. Blanc = contraste correct.
+        content: Text(message, style: const TextStyle(color: Colors.white)),
       ),
     );
   }

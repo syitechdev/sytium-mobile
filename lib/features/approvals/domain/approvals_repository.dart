@@ -1,4 +1,5 @@
 import 'package:sytium_mobile/core/result/result.dart';
+import 'package:sytium_mobile/core/upload/uploaded_file.dart';
 import 'package:sytium_mobile/features/approvals/domain/approval_models.dart';
 
 abstract interface class ApprovalsRepository {
@@ -10,10 +11,15 @@ abstract interface class ApprovalsRepository {
   Future<Result<void>> rejectLeave(String id, {String? commentaire});
   /// [isPaid] : choix Payée / Non payée du N+1 (permission uniquement). Ne
   /// jamais le passer sur un refus ni hors du palier N+1.
+  ///
+  /// [proof] : preuve d'approbation, obligatoire pour un ordre de mission au
+  /// palier Direction. Elle doit déjà être téléversée (son chemin est ce que le
+  /// serveur vérifie).
   Future<Result<void>> approvePermission(
     String id, {
     String? commentaire,
     bool? isPaid,
+    UploadedFile? proof,
   });
   Future<Result<void>> rejectPermission(String id, {String? commentaire});
 

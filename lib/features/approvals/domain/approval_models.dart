@@ -123,6 +123,12 @@ class ApprovalItem {
   /// Même règle que le web et que HrPermissionDecisionService.
   bool get requiresPayDecision =>
       type == ApprovalType.permission && !isMissionOrder && palier == 'n1';
+
+  /// Approuver un ordre de mission au palier Direction exige une preuve
+  /// d'approbation (fichier joint), même règle que le web et que
+  /// HrPermissionDecisionService. Le visa doit d'abord la recueillir et la
+  /// téléverser, sinon le serveur refuse l'approbation.
+  bool get requiresMissionProof => isMissionOrder && palier == 'direction';
 }
 
 @immutable
