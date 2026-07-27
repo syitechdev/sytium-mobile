@@ -13,8 +13,20 @@
     <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
     <uses-permission android:name="android.permission.MANAGE_OWN_CALLS" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CAMERA" />
+    <!-- FOREGROUND_SERVICE_PHONE_CALL vient de flutter_callkit_incoming, dont
+         CallkitNotificationService est le SEUL service type de l'application
+         (avec celui de geolocator, en 'location').
+
+         FOREGROUND_SERVICE_MICROPHONE et FOREGROUND_SERVICE_CAMERA ont ete
+         retirees : aucun service ne declare ces types, donc Android n'aurait
+         jamais autorise leur demarrage de toute facon, et le formulaire Play
+         « Autorisations pour le service de premier plan » exigeait de justifier
+         une capture en arriere-plan que l'application n'implemente pas.
+
+         Elles ne donnaient AUCUN acces au micro ni a la camera : cet acces vient
+         de CAMERA et RECORD_AUDIO ci-dessus, et la capture WebRTC comme
+         l'enregistrement des messages vocaux se font dans le processus de l'app,
+         jamais dans un service. -->
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <application
         android:label="Sytium Mobile"
