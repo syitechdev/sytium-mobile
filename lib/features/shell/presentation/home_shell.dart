@@ -15,6 +15,7 @@ import 'package:sytium_mobile/features/workspace/application/workspace_providers
 import 'package:sytium_mobile/features/workspace/presentation/workspace_screen.dart';
 import 'package:sytium_mobile/shared/widgets/app_bottom_nav.dart';
 import 'package:sytium_mobile/shared/widgets/currency_switcher.dart';
+import 'package:sytium_mobile/shared/widgets/full_screen_intent_banner.dart';
 import 'package:sytium_mobile/shared/widgets/live_clock.dart';
 import 'package:sytium_mobile/shared/widgets/theme_toggle_button.dart';
 import 'package:sytium_mobile/theme/sytium_colors.dart';
@@ -127,16 +128,26 @@ class _HomeShellState extends ConsumerState<HomeShell> {
                 SizedBox(width: Tokens.space4),
               ],
             ),
-      // Lazy IndexedStack: build a tab on first visit, then keep it mounted so
-      // re-entering is instant and its providers stay alive (no reload).
-      body: IndexedStack(
-        index: index,
+      // Le bandeau vit dans le shell et non dans un onglet : la dégradation
+      // qu'il signale touche les appels entrants, qui arrivent quel que soit
+      // l'écran ouvert. Il s'efface tout seul une fois l'autorisation accordée.
+      body: Column(
         children: [
-          for (var i = 0; i < _items.length; i++)
-            if (_visited.contains(i))
-              _tabBody(i, user, caps)
-            else
-              const SizedBox.shrink(),
+          const FullScreenIntentBanner(),
+          // Lazy IndexedStack: build a tab on first visit, then keep it mounted
+          // so re-entering is instant and its providers stay alive (no reload).
+          Expanded(
+            child: IndexedStack(
+              index: index,
+              children: [
+                for (var i = 0; i < _items.length; i++)
+                  if (_visited.contains(i))
+                    _tabBody(i, user, caps)
+                  else
+                    const SizedBox.shrink(),
+              ],
+            ),
+          ),
         ],
       ),
       bottomNavigationBar: AppBottomNav(
