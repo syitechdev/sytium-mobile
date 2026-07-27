@@ -42,6 +42,52 @@ import flutter_callkit_incoming
 
   func didInitializeImplicitFlutterEngine(_ engineBridge: FlutterImplicitEngineBridge) {
     GeneratedPluginRegistrant.register(with: engineBridge.pluginRegistry)
+
+    // Expose l'environnement APNs REEL (cf. apsEnvironment) a Dart, qui le
+    // declare au backend pour choisir l'hote APNs des pushs VoIP.
+    let channel = FlutterMethodChannel(
+      name: "tech.sytium.mobile/provisioning",
+      binaryMessenger: engineBridge.applicationRegistrar.messenger()
+    )
+    channel.setMethodCallHandler { call, result in
+      switch call.method {
+      case "apsEnvironment":
+        result(Self.apsEnvironment())
+      default:
+        result(FlutterMethodNotImplemented)
+      }
+    }
+  }
+
+  // MARK: - Environnement APNs reel
+
+  /// Lit `aps-environment` dans le profil de provisioning embarque.
+  ///
+  /// C'est la seule source fiable : le mode de compilation ne dit rien du
+  /// provisioning. Un build `--release` exporte en developpement ou ad hoc porte
+  /// un entitlement `development` et un jeton VoIP SANDBOX ; le declarer
+  /// 'production' fait repondre BadDeviceToken a l'APNs, le serveur purge alors
+  /// le voip_token et l'iPhone ne sonne plus, appli fermee.
+  ///
+  /// Une app distribuee par l'App Store ne contient PAS de
+  /// `embedded.mobileprovision` : son absence signifie donc production.
+  private static func apsEnvironment() -> String {
+    guard let url = Bundle.main.url(forResource: "embedded", withExtension: "mobileprovision"),
+          let data = try? Data(contentsOf: url),
+          // Conteneur CMS signe : le plist XML est encapsule en clair dedans.
+          let text = String(data: data, encoding: .isoLatin1),
+          let start = text.range(of: "<plist"),
+          let end = text.range(of: "</plist>"),
+          let plistData = String(text[start.lowerBound..<end.upperBound])
+            .data(using: .isoLatin1),
+          let plist = try? PropertyListSerialization.propertyList(
+            from: plistData, format: nil) as? [String: Any],
+          let entitlements = plist["Entitlements"] as? [String: Any],
+          let environment = entitlements["aps-environment"] as? String
+    else {
+      return "production"
+    }
+    return environment
   }
 
   // MARK: - APNs (FCM)

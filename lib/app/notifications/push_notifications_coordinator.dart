@@ -9,7 +9,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:sytium_mobile/app/notifications/deferred_navigator.dart';
 import 'package:sytium_mobile/app/router/app_router.dart';
-import 'package:sytium_mobile/core/config/app_config.dart';
+import 'package:sytium_mobile/core/notifications/aps_environment.dart';
 import 'package:sytium_mobile/core/notifications/callkit_service.dart';
 import 'package:sytium_mobile/core/notifications/device_identity.dart';
 import 'package:sytium_mobile/core/notifications/device_token_registrar.dart';
@@ -150,11 +150,11 @@ class PushNotificationsCoordinator {
       deviceId: deviceId,
       fcmToken: fcmToken,
       voipToken: voipToken,
-      // Derive du provisioning reel (AppConfig.voipEnvironment via --dart-define),
-      // PAS du mode de compilation : un build --release sideloade a un token
-      // SANDBOX. Le declarer 'production' faisait purger le voip_token cote
-      // serveur (BadDeviceToken) -> plus aucune sonnerie appli fermee.
-      voipEnvironment: Platform.isIOS ? AppConfig.voipEnvironment : null,
+      // Lu dans le profil de provisioning REELLEMENT embarque, PAS deduit du
+      // mode de compilation : un build --release sideloade a un token SANDBOX.
+      // Le declarer 'production' faisait purger le voip_token cote serveur
+      // (BadDeviceToken) -> plus aucune sonnerie appli fermee.
+      voipEnvironment: await ApsEnvironment.resolve(),
       // Volontairement non renseigné : `AppConfig.deviceName` est l'identifiant
       // du client ('sytium-mobile'), pas un nom d'appareil — il s'affichait tel
       // quel dans « Appareils connectés ». Sans valeur, le backend retombe sur

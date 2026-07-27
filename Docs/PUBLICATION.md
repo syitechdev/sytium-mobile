@@ -54,33 +54,47 @@ binaire doit avoir :
 
 ## 3. Commandes de build
 
-Le temps réel ne s'active **que** par `--dart-define` : sans `REVERB_APP_KEY` et
-`REVERB_HOST`, la messagerie retombe sur son polling et **les appels WebRTC n'ont
-plus aucune signalisation** — rien dans l'interface ne le signale (cf. CLAUDE.md).
+**Aucun `--dart-define` n'est nécessaire pour un build de production.** Les
+valeurs par défaut suivent le mode de compilation (`build_environment.dart`) :
+`--release` vise la production, tout le reste vise la bêta. Un `Product > Archive`
+depuis Xcode est donc correct par construction.
+
+L'environnement APNs est lu à l'exécution depuis le provisioning embarqué
+(`ApsEnvironment.resolve()`), il n'y a plus de `VOIP_ENV` à passer.
 
 ### Android — App Bundle de production
 
 ```bash
-flutter build appbundle --release --dart-define=API_BASE_URL=https://api.sytium.tech/api/v1 --dart-define=REVERB_APP_KEY=sytium-key --dart-define=REVERB_HOST=api.sytium.tech --dart-define=REVERB_PORT=443 --dart-define=REVERB_SCHEME=https --obfuscate --split-debug-info=build/symbols
+flutter build appbundle --release --obfuscate --split-debug-info=build/symbols
 ```
 
 Sortie : `build/app/outputs/bundle/release/app-release.aab`.
 
 ### iOS — archive App Store
 
-`VOIP_ENV` doit suivre le **provisioning**, pas le mode de compilation. Une
-archive App Store utilise `Runner.entitlements` (`aps-environment = production`),
-donc `VOIP_ENV=production`. Un build sideloadé garde le défaut `development`.
-
 ```bash
-flutter build ipa --release --dart-define=API_BASE_URL=https://api.sytium.tech/api/v1 --dart-define=REVERB_APP_KEY=sytium-key --dart-define=REVERB_HOST=api.sytium.tech --dart-define=REVERB_PORT=443 --dart-define=REVERB_SCHEME=https --dart-define=VOIP_ENV=production --obfuscate --split-debug-info=build/symbols
+flutter build ipa --release --obfuscate --split-debug-info=build/symbols
 ```
+
+Depuis Xcode, `Product > Archive` sur la configuration Release donne le même
+résultat.
 
 ### Bêta
 
-Mêmes commandes avec `api-beta.sytium.tech` et `REVERB_APP_KEY=sytium-beta-key`.
-Pour une distribution bêta en provisioning de développement, **ne pas** passer
-`VOIP_ENV=production`.
+Les defines explicites restent prioritaires :
+
+```bash
+flutter build apk --release --dart-define=API_BASE_URL=https://api-beta.sytium.tech/api/v1 --dart-define=REVERB_APP_KEY=sytium-beta-key --dart-define=REVERB_HOST=api-beta.sytium.tech
+```
+
+### Vérifier ce qu'un binaire embarque réellement
+
+Les constantes non retenues sont éliminées à la compilation, donc le binaire ne
+contient que l'environnement visé :
+
+```bash
+strings build/ios/iphoneos/Runner.app/Frameworks/App.framework/App | grep -oE "https://api(-beta)?\.sytium\.tech/api/v1" | sort -u
+```
 
 ---
 

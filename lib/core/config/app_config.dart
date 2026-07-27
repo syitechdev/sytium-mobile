@@ -1,12 +1,17 @@
+import 'package:sytium_mobile/core/config/build_environment.dart';
+
 /// Static app configuration. Values are injected at build time via
 /// `--dart-define`; no secret or URL is hardcoded into a widget.
 abstract final class AppConfig {
   /// Base URL of the Sytium API, including the `/api/v1` prefix.
-  /// Override per environment:
+  ///
+  /// À défaut de `--dart-define`, suit le mode de compilation : production en
+  /// `--release`, bêta sinon (cf. [BuildEnvironment]). Un archive Xcode est donc
+  /// correct par construction, sans dépendre de l'état de Generated.xcconfig.
   ///   flutter run --dart-define=API_BASE_URL=http://127.0.0.1:8000/api/v1
   static const String apiBaseUrl = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: 'https://api-beta.sytium.tech/api/v1',
+    defaultValue: BuildEnvironment.apiBaseUrl,
   );
 
   /// Identifies this client when issuing a Sanctum personal access token.
@@ -21,14 +26,15 @@ abstract final class AppConfig {
   /// envoyer le push sur l'APNs production -> BadDeviceToken -> le serveur purge
   /// le voip_token -> l'iPhone ne sonne plus, appli fermee/verrouillee.
   ///
-  /// Defaut 'development' (sideload/TestFlight interne). Ne passer 'production'
-  /// que pour un build distribue via l'App Store / TestFlight en provisioning
-  /// production :
+  /// **Vide par defaut = detection automatique a l'execution.** Le provisioning
+  /// reellement embarque est lu depuis `embedded.mobileprovision`
+  /// (cf. `ApsEnvironment.resolve`), ce qui rend impossible la desynchronisation
+  /// entre l'entitlement signe et ce que l'app declare au backend.
+  ///
+  /// Ne renseigner ce define que pour forcer une valeur :
   ///   flutter build ipa --dart-define=VOIP_ENV=production
-  static const String voipEnvironment = String.fromEnvironment(
-    'VOIP_ENV',
-    defaultValue: 'development',
-  );
+  static const String voipEnvironmentOverride =
+      String.fromEnvironment('VOIP_ENV');
 
   /// Request timeout for the HTTP client.
   static const Duration httpTimeout = Duration(seconds: 20);

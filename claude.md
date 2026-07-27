@@ -199,45 +199,58 @@ flutter test                                                # + golden tests
 flutter run --dart-define=API_BASE_URL=...                  # lancer sur simulateur
 ```
 
-### Builds de distribution — le temps réel ne s'active QUE par `--dart-define`
+### Builds de distribution — les défauts suivent le mode de compilation
 
-`RealtimeConfig.isConfigured` exige `REVERB_APP_KEY` **et** `REVERB_HOST`
-(`lib/features/workspace/realtime/realtime_config.dart`). Un `flutter build` sans
-ces defines compile une application où la couche live est un no-op silencieux :
-la messagerie retombe sur son polling, mais **les appels WebRTC n'ont plus aucune
-signalisation** — l'offre SDP part et personne ne la reçoit, l'appel ne se
-connecte jamais. Rien dans l'interface ne le signale. Toujours builder ainsi :
+`lib/core/config/build_environment.dart` fait dépendre les valeurs par défaut de
+`dart.vm.product` : **`--release` vise la production, tout le reste vise la bêta.**
+Un `flutter build` ou un `Product > Archive` Xcode **sans aucun `--dart-define`**
+produit donc un binaire de production correct, vérifié en lisant les chaînes du
+binaire compilé. C'est ce qui rend l'archive Xcode fiable : elle ne dépend plus de
+l'état de `ios/Flutter/Generated.xcconfig`, alimenté par la dernière commande
+`flutter build` exécutée.
+
+Un `--dart-define` explicite reste prioritaire. Pour un build de bêta :
 
 ```bash
 flutter build apk --release \
   --dart-define=API_BASE_URL=https://api-beta.sytium.tech/api/v1 \
-  --dart-define=REVERB_APP_KEY=<REVERB_APP_KEY du .env backend> \
-  --dart-define=REVERB_HOST=api-beta.sytium.tech \
-  --dart-define=REVERB_PORT=443 \
-  --dart-define=REVERB_SCHEME=https
+  --dart-define=REVERB_APP_KEY=sytium-beta-key \
+  --dart-define=REVERB_HOST=api-beta.sytium.tech
 ```
 
-La clé doit être **identique** à celle du `.env` backend et à la variable GitHub
-`VITE_REVERB_APP_KEY_BETA` du front : c'est le même serveur Reverb pour les trois
-clients. Elle est publique (elle est livrée à chaque client) ; le
+La clé Reverb doit être **identique** à celle du `.env` backend et à la variable
+GitHub `VITE_REVERB_APP_KEY_BETA` du front : c'est le même serveur Reverb pour les
+trois clients. Elle est publique (elle est livrée à chaque client) ; le
 `REVERB_APP_SECRET` ne quitte jamais le serveur.
 
-### iOS : `VOIP_ENV` doit suivre le PROVISIONING, jamais le mode de compilation
+> Avant le 27/07/2026, les défauts étaient « bêta » pour l'API et **vide** pour
+> Reverb. Un build sans defines compilait une app où la couche live était un no-op
+> silencieux : la messagerie retombait sur son polling, mais **les appels WebRTC
+> n'avaient plus aucune signalisation** — l'offre SDP partait, personne ne la
+> recevait. Rien dans l'interface ne le signalait.
 
-`AppConfig.voipEnvironment` (`--dart-define=VOIP_ENV`, défaut `development`) est
-déclaré au backend pour choisir l'hôte APNs. Il DOIT correspondre à
-l'environnement de provisioning iOS réel, PAS à `--release` :
+### iOS : `VOIP_ENV` est détecté à l'exécution, plus déclaré
 
-- **Sideload / ad hoc / TestFlight interne** (entitlement `aps-environment=development`,
-  token VoIP **sandbox**) → laisser le défaut `development`. **Ne PAS** passer
-  `VOIP_ENV=production`, même en `--release`.
-- **App Store / TestFlight en provisioning production** → `--dart-define=VOIP_ENV=production`.
+L'environnement APNs déclaré au backend DOIT correspondre au provisioning
+réellement embarqué, PAS au mode de compilation : un build `--release` exporté en
+développement ou ad hoc porte un entitlement `development` et un jeton VoIP
+**sandbox**. Le déclarer `production` → `BadDeviceToken` → le serveur **purge le
+voip_token** → l'iPhone ne sonne plus, appli fermée (« le premier appel n'arrive
+jamais », piège rencontré le 23/07/2026).
 
-Piège corrigé le 23/07/2026 : la valeur était dérivée de `kReleaseMode`, donc un
-build `--release` sideloadé déclarait `production` → push VoIP envoyé sur l'APNs
-production avec un token sandbox → `BadDeviceToken` → le serveur **purge le
-voip_token** → l'iPhone ne sonne plus, appli fermée/verrouillée (« le premier
-appel n'arrive jamais »).
+Depuis le 27/07/2026 la valeur n'est plus devinée : `ApsEnvironment.resolve()`
+(`lib/core/notifications/aps_environment.dart`) lit `aps-environment` dans
+`embedded.mobileprovision` via un MethodChannel servi par `AppDelegate.swift`.
+Une app distribuée par l'App Store n'embarque pas ce fichier — son absence
+signifie production. Aucun define n'est donc à passer, dans aucun scénario.
+
+`--dart-define=VOIP_ENV=...` existe toujours et force la valeur, mais ne doit
+servir qu'au diagnostic : le renseigner rétablit exactement la classe de bug
+ci-dessus.
+
+Les entitlements sont par ailleurs séparés par configuration : `Runner.entitlements`
+(Release) déclare `production`, `RunnerDebug.entitlements` (Debug/Profile)
+déclare `development`.
 
 ## 11. Definition of Done (cocher avant de livrer une feature)
 
