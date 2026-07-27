@@ -209,9 +209,19 @@ class PushNotificationsCoordinator {
             : callerName,
       );
     await controller.acceptIncoming();
-    // Ne PAS marquer CallKit « connecte » ici : le media n'est pas encore
-    // etabli. Le CallController le fera quand la RTCPeerConnection passera a
-    // « connected », sinon le minuteur CallKit tourne sur un appel muet.
+    // ANDROID : la notification d'appel entrant (custom, ConnectionService) NE se
+    // transforme PAS toute seule en « appel en cours » à l'acceptation. Sans
+    // signal « connecté », son bandeau plein écran (Répondre/Refuser) RESTE
+    // affiché après « Répondre », comme si l'appel sonnait encore. On la bascule
+    // donc tout de suite. Le second appel à setConnected (à la connexion média,
+    // dans le CallController) est idempotent.
+    //
+    // iOS : on GARDE le report. L'UI CallKit native se referme d'elle-même à
+    // l'acceptation (pas de bandeau fantôme) ; marquer « connecté » trop tôt y
+    // ferait tourner le minuteur natif sur un appel encore muet.
+    if (Platform.isAndroid) {
+      await CallKitService.setConnected(callId);
+    }
   }
 
   Future<void> _decline(String callId) =>
