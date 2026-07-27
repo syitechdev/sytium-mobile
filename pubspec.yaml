@@ -4,7 +4,7 @@ publish_to: 'none'
 # Le numero de build (apres le +) doit STRICTEMENT augmenter a chaque
 # televersement Play Store / App Store Connect, y compris apres un rejet :
 # un numero deja recu est brule definitivement.
-version: 1.0.0+1
+version: 1.0.1+3
 
 environment:
   sdk: ^3.11.0

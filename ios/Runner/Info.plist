@@ -81,13 +81,19 @@
 	<string>Votre position est utilisée pour vérifier que le pointage a lieu sur site.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Vos photos sont utilisées pour joindre des images à vos messages.</string>
+	<!-- Uniquement les modes REELLEMENT utilises :
+	       voip                -> PKPushRegistry, reveille l'app sur appel entrant
+	       audio               -> WebRTC pendant l'appel + lecture des messages vocaux
+	       remote-notification -> messages FCM recus en arriere-plan
+	     'processing' et 'fetch' ont ete retires : l'app n'ordonnance aucune
+	     BGTaskScheduler et n'implemente pas performFetchWithCompletionHandler.
+	     'processing' sans BGTaskSchedulerPermittedIdentifiers fait echouer la
+	     validation App Store, et un mode declare sans usage expose au rejet 2.5.4. -->
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>voip</string>
 		<string>audio</string>
 		<string>remote-notification</string>
-		<string>fetch</string>
-		<string>processing</string>
 	</array>
 </dict>
 </plist>
