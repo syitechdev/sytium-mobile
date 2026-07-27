@@ -1,7 +1,10 @@
 name: sytium_mobile
 description: "Application mobile compagnon de l'ERP Sytium."
 publish_to: 'none'
-version: 0.1.0+1
+# Le numero de build (apres le +) doit STRICTEMENT augmenter a chaque
+# televersement Play Store / App Store Connect, y compris apres un rejet :
+# un numero deja recu est brule definitivement.
+version: 1.0.0+1
 
 environment:
   sdk: ^3.11.0

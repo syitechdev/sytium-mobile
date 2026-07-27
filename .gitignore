@@ -47,5 +47,14 @@ app.*.map.json
 # Cle Google Maps (voir ios/Flutter/Secrets.xcconfig.example)
 **/ios/Flutter/Secrets.xcconfig
 
+# Keystore de publication Android : ne DOIT jamais entrer dans le depot.
+# Sa perte rend impossible toute mise a jour de l'app sur le Play Store.
+/android/key.properties
+*.jks
+*.keystore
+
 # Golden test failure diffs (generated on mismatch)
 test/golden/failures/
+
+# Worktrees git des sessions paralleles
+/.claude/worktrees/

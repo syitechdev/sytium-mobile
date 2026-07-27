@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- Entitlements des builds Debug et Profile : provisioning de developpement,
+	     donc APNs SANDBOX. A garder aligne avec --dart-define=VOIP_ENV=development
+	     (le defaut), sinon le serveur pousse le VoIP sur l'APNs production avec un
+	     jeton sandbox -> BadDeviceToken -> purge du voip_token -> plus de sonnerie.
+	     Le build Release utilise Runner.entitlements ('production'). -->
+	<key>aps-environment</key>
+	<string>development</string>
+</dict>
+</plist>

@@ -87,7 +87,10 @@ class PushMessagingService {
     _initialized = true;
 
     // --- Notifications locales (affichage foreground + tap) ---
-    const androidInit = AndroidInitializationSettings('@mipmap/ic_launcher');
+    // Silhouette monochrome, pas l'icone de lanceur : Android 5+ reduit toute
+    // icone de barre d'etat a son masque alpha, donc ic_launcher y apparait en
+    // carre blanc plein.
+    const androidInit = AndroidInitializationSettings('@drawable/ic_stat_sytium');
     // La permission iOS est demandée via FirebaseMessaging.requestPermission ;
     // on évite de la redemander ici pour ne pas doubler le prompt.
     const darwinInit = DarwinInitializationSettings(
@@ -177,7 +180,7 @@ class PushMessagingService {
           channelDescription: _defaultChannel.description,
           importance: Importance.high,
           priority: Priority.high,
-          icon: '@mipmap/ic_launcher',
+          icon: '@drawable/ic_stat_sytium',
         ),
         iOS: const DarwinNotificationDetails(
           presentAlert: true,

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Fond de l'icone adaptative : la marque Sytium (cf. assets/images/icon.svg). -->
+    <color name="ic_launcher_background">#0D0D0E</color>
+    <!-- Teinte appliquee par le systeme a ic_stat_sytium dans la barre d'etat. -->
+    <color name="notification_accent">#13B98A</color>
+</resources>
