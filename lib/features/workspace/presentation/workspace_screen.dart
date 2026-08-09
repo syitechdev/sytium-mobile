@@ -11,6 +11,7 @@ import 'package:sytium_mobile/features/workspace/presentation/browse_channels_sh
 import 'package:sytium_mobile/features/workspace/presentation/chat_thread_screen.dart';
 import 'package:sytium_mobile/features/workspace/presentation/create_channel_sheet.dart';
 import 'package:sytium_mobile/features/workspace/presentation/new_dm_sheet.dart';
+import 'package:sytium_mobile/features/workspace/presentation/status_composer_screen.dart';
 import 'package:sytium_mobile/features/workspace/presentation/status_rail.dart';
 import 'package:sytium_mobile/features/workspace/presentation/workspace_message_list_screen.dart';
 import 'package:sytium_mobile/shared/widgets/app_avatar.dart';
@@ -127,14 +128,21 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
   }
 
   void _showCreateMenu() {
-    // TODO(statuts): ajouter ici une entrée « Nouveau statut » (création façon
-    // WhatsApp) quand la feature statuts sera portée — cf. plan dédié.
     showAppSheet<void>(
       context,
       builder: (_) => SafeArea(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            ListTile(
+              leading: const Icon(Icons.auto_stories_outlined),
+              title: const Text('Nouveau statut'),
+              subtitle: const Text('Texte, photo ou vidéo (24 h)'),
+              onTap: () {
+                Navigator.of(context).pop();
+                openNewStatus(context);
+              },
+            ),
             ListTile(
               leading: const Icon(Icons.tag),
               title: const Text('Nouveau canal'),

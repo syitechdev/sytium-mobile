@@ -5,6 +5,7 @@ import 'package:sytium_mobile/core/result/result.dart';
 import 'package:sytium_mobile/features/workspace/application/workspace_providers.dart';
 import 'package:sytium_mobile/features/workspace/domain/workspace_models.dart';
 import 'package:sytium_mobile/features/workspace/domain/workspace_repository.dart';
+import 'package:sytium_mobile/features/workspace/presentation/status_composer_screen.dart';
 import 'package:sytium_mobile/features/workspace/presentation/status_rail.dart';
 import 'package:sytium_mobile/features/workspace/presentation/status_viewer_screen.dart';
 import 'package:sytium_mobile/theme/theme.dart';
@@ -13,6 +14,7 @@ class _Repo implements WorkspaceRepository {
   _Repo(this._statuses);
   final List<WorkspaceStatus> _statuses;
   final List<String> viewed = [];
+  final List<Map<String, String?>> created = [];
 
   @override
   Future<Result<List<WorkspaceStatus>>> statuses() async => Ok(_statuses);
@@ -21,6 +23,23 @@ class _Repo implements WorkspaceRepository {
   Future<Result<void>> viewStatus(String statusId) async {
     viewed.add(statusId);
     return const Ok(null);
+  }
+
+  @override
+  Future<Result<WorkspaceStatus>> createStatus({
+    String? content,
+    String? bgColor,
+    String? font,
+    String? mediaPath,
+  }) async {
+    created.add({
+      'content': content,
+      'bgColor': bgColor,
+      'mediaPath': mediaPath,
+    });
+    return const Ok(
+      WorkspaceStatus(id: 'new', authorId: 'me', kind: StatusKind.text),
+    );
   }
 
   @override
@@ -109,6 +128,49 @@ void main() {
       expect(repo.viewed, contains('s1'));
 
       await tester.pumpWidget(const SizedBox()); // dispose (annule l'anim)
+    });
+  });
+
+  group('StatusTextComposer', () {
+    testWidgets('publie un statut texte avec contenu et couleur', (
+      tester,
+    ) async {
+      final repo = _Repo(const []);
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            workspaceRepositoryProvider.overrideWithValue(repo),
+            currentUserIdProvider.overrideWith((ref) => 'me'),
+          ],
+          child: MaterialApp(
+            theme: AppTheme.light(),
+            home: Builder(
+              builder: (ctx) => Scaffold(
+                body: Center(
+                  child: ElevatedButton(
+                    onPressed: () => Navigator.of(ctx).push(
+                      MaterialPageRoute<void>(
+                        builder: (_) => const StatusTextComposer(),
+                      ),
+                    ),
+                    child: const Text('go'),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.tap(find.text('go'));
+      await tester.pumpAndSettle();
+
+      await tester.enterText(find.byType(TextField), 'Bonjour équipe');
+      await tester.tap(find.text('Publier'));
+      await tester.pumpAndSettle();
+
+      expect(repo.created, hasLength(1));
+      expect(repo.created.first['content'], 'Bonjour équipe');
+      expect(repo.created.first['bgColor'], isNotNull);
     });
   });
 }

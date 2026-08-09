@@ -364,4 +364,14 @@ void main() {
     expect(find.text('Créer le canal'), findsOneWidget);
     await tester.pumpWidget(const SizedBox());
   });
+
+  testWidgets('FAB → le menu propose « Nouveau statut »', (tester) async {
+    await tester.pumpWidget(_host(_DataRepo()));
+    await tester.pump();
+    await tester.pump();
+    await tester.tap(find.byType(FloatingActionButton));
+    await tester.pumpAndSettle();
+    expect(find.text('Nouveau statut'), findsOneWidget);
+    await tester.pumpWidget(const SizedBox());
+  });
 }

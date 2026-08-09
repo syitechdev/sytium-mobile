@@ -4,7 +4,9 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sytium_mobile/features/workspace/application/workspace_providers.dart';
+import 'package:sytium_mobile/features/workspace/application/workspace_statuses.dart';
 import 'package:sytium_mobile/features/workspace/domain/workspace_models.dart';
+import 'package:sytium_mobile/features/workspace/presentation/status_viewers_sheet.dart';
 import 'package:sytium_mobile/shared/widgets/app_avatar.dart';
 import 'package:sytium_mobile/theme/branding.dart';
 import 'package:sytium_mobile/theme/tokens.dart';
@@ -154,6 +156,53 @@ class _StatusViewerScreenState extends ConsumerState<StatusViewerScreen>
     }
   }
 
+  Future<void> _showViewers() async {
+    _setPaused(true);
+    await showStatusViewers(context, _current.id);
+    if (mounted) _setPaused(false);
+  }
+
+  Future<void> _deleteCurrent() async {
+    _setPaused(true);
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (c) => AlertDialog(
+        title: const Text('Supprimer ce statut ?'),
+        content: const Text('Il ne sera plus visible par personne.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(c).pop(false),
+            child: const Text('Annuler'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(c).pop(true),
+            child: const Text('Supprimer'),
+          ),
+        ],
+      ),
+    );
+    if (ok != true) {
+      if (mounted) _setPaused(false);
+      return;
+    }
+    final result = await ref
+        .read(workspaceRepositoryProvider)
+        .deleteStatus(_current.id);
+    if (!mounted) return;
+    result.fold(
+      (_) {
+        ref.invalidate(statusGroupsProvider);
+        Navigator.of(context).maybePop();
+      },
+      (f) {
+        _setPaused(false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(f.message ?? 'Suppression impossible.')),
+        );
+      },
+    );
+  }
+
   double _valueFor(int j) {
     if (j < _statusIndex) return 1;
     if (j > _statusIndex) return 0;
@@ -227,6 +276,8 @@ class _StatusViewerScreenState extends ConsumerState<StatusViewerScreen>
                     group: _group,
                     createdAt: _current.createdAt,
                     onClose: () => Navigator.of(context).maybePop(),
+                    onViewers: _group.isMine ? _showViewers : null,
+                    onDelete: _group.isMine ? _deleteCurrent : null,
                   ),
                 ],
               ),
@@ -310,10 +361,14 @@ class _Header extends StatelessWidget {
     required this.group,
     required this.createdAt,
     required this.onClose,
+    this.onViewers,
+    this.onDelete,
   });
   final StatusAuthorGroup group;
   final DateTime? createdAt;
   final VoidCallback onClose;
+  final VoidCallback? onViewers;
+  final VoidCallback? onDelete;
 
   @override
   Widget build(BuildContext context) {
@@ -345,6 +400,36 @@ class _Header extends StatelessWidget {
             ],
           ),
         ),
+        if (group.isMine && (onViewers != null || onDelete != null))
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.more_vert, color: Colors.white),
+            onSelected: (v) {
+              if (v == 'viewers') onViewers?.call();
+              if (v == 'delete') onDelete?.call();
+            },
+            itemBuilder: (_) => [
+              if (onViewers != null)
+                const PopupMenuItem(
+                  value: 'viewers',
+                  child: ListTile(
+                    dense: true,
+                    contentPadding: EdgeInsets.zero,
+                    leading: Icon(Icons.visibility_outlined),
+                    title: Text('Vu par'),
+                  ),
+                ),
+              if (onDelete != null)
+                const PopupMenuItem(
+                  value: 'delete',
+                  child: ListTile(
+                    dense: true,
+                    contentPadding: EdgeInsets.zero,
+                    leading: Icon(Icons.delete_outline),
+                    title: Text('Supprimer'),
+                  ),
+                ),
+            ],
+          ),
         IconButton(
           icon: const Icon(Icons.close, color: Colors.white),
           onPressed: onClose,
