@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:sytium_mobile/app/lifecycle/app_foreground.dart';
 import 'package:sytium_mobile/features/workspace/application/workspace_providers.dart';
+import 'package:sytium_mobile/features/workspace/application/workspace_statuses.dart';
 import 'package:sytium_mobile/features/workspace/domain/workspace_models.dart';
 import 'package:sytium_mobile/features/workspace/presentation/archived_channels_screen.dart';
 import 'package:sytium_mobile/features/workspace/presentation/browse_channels_sheet.dart';
@@ -22,6 +23,10 @@ import 'package:sytium_mobile/theme/sytium_colors.dart';
 import 'package:sytium_mobile/theme/tokens.dart';
 
 const _kPollInterval = Duration(seconds: 7);
+
+/// Les statuts changent lentement (24 h) : on les rafraîchit à un rythme plus
+/// lent que la présence (parité web ≈ 45 s), et jamais en arrière-plan.
+const _kStatusPollInterval = Duration(seconds: 45);
 
 /// Filtre en tête de liste (Direction A). La liste reste triée par récence ;
 /// le segment ne fait que masquer ce qui n'entre pas dans la catégorie.
@@ -46,6 +51,7 @@ class WorkspaceScreen extends ConsumerStatefulWidget {
 
 class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
   Timer? _poll;
+  Timer? _statusPoll;
   final _search = TextEditingController();
   final _searchFocus = FocusNode();
   String _query = '';
@@ -67,12 +73,17 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
         ref.invalidate(onlineByUserProvider);
         unawaited(ref.read(workspaceRepositoryProvider).heartbeat());
       });
+      _statusPoll = Timer.periodic(_kStatusPollInterval, (_) {
+        if (!ref.read(appForegroundProvider)) return;
+        ref.invalidate(statusGroupsProvider);
+      });
     }
   }
 
   @override
   void dispose() {
     _poll?.cancel();
+    _statusPoll?.cancel();
     _search.dispose();
     _searchFocus.dispose();
     super.dispose();
