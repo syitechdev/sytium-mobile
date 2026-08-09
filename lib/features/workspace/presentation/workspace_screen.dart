@@ -11,6 +11,7 @@ import 'package:sytium_mobile/features/workspace/presentation/browse_channels_sh
 import 'package:sytium_mobile/features/workspace/presentation/chat_thread_screen.dart';
 import 'package:sytium_mobile/features/workspace/presentation/create_channel_sheet.dart';
 import 'package:sytium_mobile/features/workspace/presentation/new_dm_sheet.dart';
+import 'package:sytium_mobile/features/workspace/presentation/status_rail.dart';
 import 'package:sytium_mobile/features/workspace/presentation/workspace_message_list_screen.dart';
 import 'package:sytium_mobile/shared/widgets/app_avatar.dart';
 import 'package:sytium_mobile/shared/widgets/app_sheet.dart';
@@ -219,6 +220,9 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
             ),
             if (_searchOpen)
               _SearchField(controller: _search, focusNode: _searchFocus),
+            // Bande de statuts — ne s'affiche que s'il existe de nouveaux statuts
+            // (le widget se réduit à zéro sinon).
+            if (!_searchOpen) const StatusRail(),
             if (convos != null) ...[
               _SegmentBar(
                 selected: _segment,
