@@ -121,6 +121,19 @@ class AiChat extends _$AiChat {
     _cancel?.cancel();
   }
 
+  /// Supprime la conversation courante côté serveur puis repart à vide. Renvoie
+  /// true si la suppression a réussi (rien à faire s'il n'y a pas encore d'id).
+  Future<bool> deleteCurrent() async {
+    final id = state.conversationId;
+    if (id == null) return false;
+    final result = await ref.read(aiRepositoryProvider).deleteConversation(id);
+    return result.fold((_) {
+      ref.invalidate(aiConversationsProvider);
+      reset();
+      return true;
+    }, (_) => false);
+  }
+
   /// Envoie [text] et streame la réponse de l'assistant.
   Future<void> send(String text, {Map<String, dynamic>? context}) async {
     final trimmed = text.trim();

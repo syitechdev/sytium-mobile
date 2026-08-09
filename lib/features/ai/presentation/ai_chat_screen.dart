@@ -78,13 +78,41 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
           ],
         ),
         actions: [
-          IconButton(
-            tooltip: 'Nouvelle conversation',
-            icon: const Icon(Icons.add_comment_outlined),
-            onPressed: () {
-              ref.read(aiChatProvider.notifier).reset();
-              _composer.clear();
+          PopupMenuButton<String>(
+            onSelected: (v) async {
+              if (v == 'new') {
+                ref.read(aiChatProvider.notifier).reset();
+                _composer.clear();
+              } else if (v == 'delete') {
+                final ok = await ref
+                    .read(aiChatProvider.notifier)
+                    .deleteCurrent();
+                if (ok && context.mounted) {
+                  await Navigator.of(context).maybePop();
+                }
+              }
             },
+            itemBuilder: (_) => [
+              const PopupMenuItem(
+                value: 'new',
+                child: ListTile(
+                  dense: true,
+                  contentPadding: EdgeInsets.zero,
+                  leading: Icon(Icons.add_comment_outlined),
+                  title: Text('Nouvelle conversation'),
+                ),
+              ),
+              if (state.conversationId != null)
+                const PopupMenuItem(
+                  value: 'delete',
+                  child: ListTile(
+                    dense: true,
+                    contentPadding: EdgeInsets.zero,
+                    leading: Icon(Icons.delete_outline),
+                    title: Text('Supprimer la conversation'),
+                  ),
+                ),
+            ],
           ),
         ],
       ),
