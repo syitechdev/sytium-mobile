@@ -38,12 +38,20 @@ Widget _host() => ProviderScope(
 );
 
 void main() {
-  testWidgets('affiche l’accueil quand la conversation est vide', (
+  testWidgets('accueil vide : propose des suggestions cliquables', (
     tester,
   ) async {
     await tester.pumpWidget(_host());
     await tester.pump();
-    expect(find.text('Posez une question à Sytium IA'), findsOneWidget);
+    // Une suggestion prédéfinie (portée du web) est présente et cliquable.
+    expect(
+      find.text('Resume les points importants de ce module'),
+      findsOneWidget,
+    );
+    await tester.tap(find.text('Resume les points importants de ce module'));
+    await tester.pumpAndSettle();
+    // Le tap envoie la suggestion → réponse assistant streamée (Markdown).
+    expect(find.byType(GptMarkdown), findsOneWidget);
     await tester.pumpWidget(const SizedBox());
   });
 

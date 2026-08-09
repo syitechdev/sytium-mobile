@@ -740,7 +740,7 @@ class _Leading extends StatelessWidget {
         child: CircleAvatar(
           radius: 24,
           backgroundColor: colors.ai,
-          child: const Icon(Icons.smart_toy, color: Colors.white),
+          child: const Icon(Icons.auto_awesome, color: Colors.white),
         ),
       );
     }

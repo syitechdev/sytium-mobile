@@ -9,6 +9,14 @@ import 'package:sytium_mobile/theme/tokens.dart';
 /// Contexte passé à l'assistant (module courant, locale, devise).
 const _kAiContext = {'module': 'Messagerie', 'locale': 'fr', 'currency': 'XOF'};
 
+/// Suggestions de départ (portées verbatim du web `SytiumAIChat`).
+const _kQuickPrompts = <String>[
+  'Resume les points importants de ce module',
+  'Quelles incoherences dois-je verifier ?',
+  'Quels indicateurs suivre cette semaine ?',
+  'Explique-moi les prochaines actions utiles',
+];
+
 /// Écran de conversation avec l'assistant Sytium AI : historique, envoi et
 /// réponse en **streaming** (la bulle assistant se remplit en direct), accent
 /// indigo réservé à l'IA. Rendu Markdown des réponses.
@@ -71,7 +79,11 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
             CircleAvatar(
               radius: 16,
               backgroundColor: colors.ai,
-              child: const Icon(Icons.smart_toy, size: 18, color: Colors.white),
+              child: const Icon(
+                Icons.auto_awesome,
+                size: 18,
+                color: Colors.white,
+              ),
             ),
             const SizedBox(width: Tokens.space8),
             const Text('Sytium IA'),
@@ -122,7 +134,11 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
             child: state.loading
                 ? const Center(child: CircularProgressIndicator())
                 : state.messages.isEmpty
-                ? const _AiWelcome()
+                ? _AiWelcome(
+                    onSuggest: (t) => ref
+                        .read(aiChatProvider.notifier)
+                        .send(t, context: _kAiContext),
+                  )
                 : ListView.builder(
                     controller: _scroll,
                     padding: const EdgeInsets.symmetric(
@@ -158,33 +174,92 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
 }
 
 class _AiWelcome extends StatelessWidget {
-  const _AiWelcome();
+  const _AiWelcome({required this.onSuggest});
+  final void Function(String prompt) onSuggest;
 
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(Tokens.space24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.smart_toy_outlined, size: 48, color: colors.ai),
-            const SizedBox(height: Tokens.space12),
-            Text(
-              'Posez une question à Sytium IA',
-              style: Theme.of(context).textTheme.titleMedium,
-              textAlign: TextAlign.center,
+    final theme = Theme.of(context).textTheme;
+    return ListView(
+      padding: const EdgeInsets.all(Tokens.space24),
+      children: [
+        const SizedBox(height: Tokens.space24),
+        Center(
+          child: Container(
+            width: 56,
+            height: 56,
+            decoration: BoxDecoration(
+              color: colors.ai,
+              borderRadius: BorderRadius.circular(Tokens.radiusMd),
             ),
-            const SizedBox(height: Tokens.space4),
-            Text(
-              'Résumés, rédaction, questions sur vos données…',
-              style: Theme.of(
-                context,
-              ).textTheme.bodySmall?.copyWith(color: colors.textMuted),
-              textAlign: TextAlign.center,
+            child: const Icon(
+              Icons.auto_awesome,
+              size: 28,
+              color: Colors.white,
             ),
-          ],
+          ),
+        ),
+        const SizedBox(height: Tokens.space16),
+        Text(
+          'Sytium IA',
+          style: theme.titleMedium,
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: Tokens.space4),
+        Text(
+          'Posez une question ou demandez une analyse transversale de vos '
+          'données autorisées.',
+          style: theme.bodySmall?.copyWith(color: colors.textMuted),
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: Tokens.space24),
+        for (final prompt in _kQuickPrompts) ...[
+          _SuggestionCard(text: prompt, onTap: () => onSuggest(prompt)),
+          const SizedBox(height: Tokens.space8),
+        ],
+      ],
+    );
+  }
+}
+
+/// Bulle de suggestion cliquable (état vide), façon web / Meta AI.
+class _SuggestionCard extends StatelessWidget {
+  const _SuggestionCard({required this.text, required this.onTap});
+  final String text;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    return Material(
+      color: colors.card,
+      borderRadius: BorderRadius.circular(Tokens.radiusMd),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(Tokens.radiusMd),
+        onTap: onTap,
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(
+            horizontal: Tokens.space16,
+            vertical: Tokens.space12,
+          ),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(Tokens.radiusMd),
+            border: Border.all(color: colors.border),
+          ),
+          child: Row(
+            children: [
+              Icon(Icons.auto_awesome, size: 16, color: colors.ai),
+              const SizedBox(width: Tokens.space8),
+              Expanded(
+                child: Text(
+                  text,
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
