@@ -4303,3 +4303,677 @@ abstract class _MessagesPageDto implements MessagesPageDto {
   _$$MessagesPageDtoImplCopyWith<_$MessagesPageDtoImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }
+
+WorkspaceStatusDto _$WorkspaceStatusDtoFromJson(Map<String, dynamic> json) {
+  return _WorkspaceStatusDto.fromJson(json);
+}
+
+/// @nodoc
+mixin _$WorkspaceStatusDto {
+  String get id => throw _privateConstructorUsedError;
+  @JsonKey(name: 'user_id')
+  String get userId => throw _privateConstructorUsedError;
+  String get kind => throw _privateConstructorUsedError;
+  String? get content => throw _privateConstructorUsedError;
+  @JsonKey(name: 'media_url')
+  String? get mediaUrl => throw _privateConstructorUsedError;
+  @JsonKey(name: 'bg_color')
+  String? get bgColor => throw _privateConstructorUsedError;
+  String? get font => throw _privateConstructorUsedError;
+  @JsonKey(name: 'created_at', fromJson: _dateFrom)
+  DateTime? get createdAt => throw _privateConstructorUsedError;
+  @JsonKey(name: 'expires_at', fromJson: _dateFrom)
+  DateTime? get expiresAt => throw _privateConstructorUsedError;
+  @JsonKey(name: 'viewed_by_me', readValue: _readViewed, fromJson: _boolFrom)
+  bool get viewedByMe => throw _privateConstructorUsedError;
+  MemberProfileDto? get author => throw _privateConstructorUsedError;
+
+  /// Serializes this WorkspaceStatusDto to a JSON map.
+  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
+
+  /// Create a copy of WorkspaceStatusDto
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  $WorkspaceStatusDtoCopyWith<WorkspaceStatusDto> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+abstract class $WorkspaceStatusDtoCopyWith<$Res> {
+  factory $WorkspaceStatusDtoCopyWith(
+    WorkspaceStatusDto value,
+    $Res Function(WorkspaceStatusDto) then,
+  ) = _$WorkspaceStatusDtoCopyWithImpl<$Res, WorkspaceStatusDto>;
+  @useResult
+  $Res call({
+    String id,
+    @JsonKey(name: 'user_id') String userId,
+    String kind,
+    String? content,
+    @JsonKey(name: 'media_url') String? mediaUrl,
+    @JsonKey(name: 'bg_color') String? bgColor,
+    String? font,
+    @JsonKey(name: 'created_at', fromJson: _dateFrom) DateTime? createdAt,
+    @JsonKey(name: 'expires_at', fromJson: _dateFrom) DateTime? expiresAt,
+    @JsonKey(name: 'viewed_by_me', readValue: _readViewed, fromJson: _boolFrom)
+    bool viewedByMe,
+    MemberProfileDto? author,
+  });
+
+  $MemberProfileDtoCopyWith<$Res>? get author;
+}
+
+/// @nodoc
+class _$WorkspaceStatusDtoCopyWithImpl<$Res, $Val extends WorkspaceStatusDto>
+    implements $WorkspaceStatusDtoCopyWith<$Res> {
+  _$WorkspaceStatusDtoCopyWithImpl(this._value, this._then);
+
+  // ignore: unused_field
+  final $Val _value;
+  // ignore: unused_field
+  final $Res Function($Val) _then;
+
+  /// Create a copy of WorkspaceStatusDto
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? id = null,
+    Object? userId = null,
+    Object? kind = null,
+    Object? content = freezed,
+    Object? mediaUrl = freezed,
+    Object? bgColor = freezed,
+    Object? font = freezed,
+    Object? createdAt = freezed,
+    Object? expiresAt = freezed,
+    Object? viewedByMe = null,
+    Object? author = freezed,
+  }) {
+    return _then(
+      _value.copyWith(
+            id: null == id
+                ? _value.id
+                : id // ignore: cast_nullable_to_non_nullable
+                      as String,
+            userId: null == userId
+                ? _value.userId
+                : userId // ignore: cast_nullable_to_non_nullable
+                      as String,
+            kind: null == kind
+                ? _value.kind
+                : kind // ignore: cast_nullable_to_non_nullable
+                      as String,
+            content: freezed == content
+                ? _value.content
+                : content // ignore: cast_nullable_to_non_nullable
+                      as String?,
+            mediaUrl: freezed == mediaUrl
+                ? _value.mediaUrl
+                : mediaUrl // ignore: cast_nullable_to_non_nullable
+                      as String?,
+            bgColor: freezed == bgColor
+                ? _value.bgColor
+                : bgColor // ignore: cast_nullable_to_non_nullable
+                      as String?,
+            font: freezed == font
+                ? _value.font
+                : font // ignore: cast_nullable_to_non_nullable
+                      as String?,
+            createdAt: freezed == createdAt
+                ? _value.createdAt
+                : createdAt // ignore: cast_nullable_to_non_nullable
+                      as DateTime?,
+            expiresAt: freezed == expiresAt
+                ? _value.expiresAt
+                : expiresAt // ignore: cast_nullable_to_non_nullable
+                      as DateTime?,
+            viewedByMe: null == viewedByMe
+                ? _value.viewedByMe
+                : viewedByMe // ignore: cast_nullable_to_non_nullable
+                      as bool,
+            author: freezed == author
+                ? _value.author
+                : author // ignore: cast_nullable_to_non_nullable
+                      as MemberProfileDto?,
+          )
+          as $Val,
+    );
+  }
+
+  /// Create a copy of WorkspaceStatusDto
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @pragma('vm:prefer-inline')
+  $MemberProfileDtoCopyWith<$Res>? get author {
+    if (_value.author == null) {
+      return null;
+    }
+
+    return $MemberProfileDtoCopyWith<$Res>(_value.author!, (value) {
+      return _then(_value.copyWith(author: value) as $Val);
+    });
+  }
+}
+
+/// @nodoc
+abstract class _$$WorkspaceStatusDtoImplCopyWith<$Res>
+    implements $WorkspaceStatusDtoCopyWith<$Res> {
+  factory _$$WorkspaceStatusDtoImplCopyWith(
+    _$WorkspaceStatusDtoImpl value,
+    $Res Function(_$WorkspaceStatusDtoImpl) then,
+  ) = __$$WorkspaceStatusDtoImplCopyWithImpl<$Res>;
+  @override
+  @useResult
+  $Res call({
+    String id,
+    @JsonKey(name: 'user_id') String userId,
+    String kind,
+    String? content,
+    @JsonKey(name: 'media_url') String? mediaUrl,
+    @JsonKey(name: 'bg_color') String? bgColor,
+    String? font,
+    @JsonKey(name: 'created_at', fromJson: _dateFrom) DateTime? createdAt,
+    @JsonKey(name: 'expires_at', fromJson: _dateFrom) DateTime? expiresAt,
+    @JsonKey(name: 'viewed_by_me', readValue: _readViewed, fromJson: _boolFrom)
+    bool viewedByMe,
+    MemberProfileDto? author,
+  });
+
+  @override
+  $MemberProfileDtoCopyWith<$Res>? get author;
+}
+
+/// @nodoc
+class __$$WorkspaceStatusDtoImplCopyWithImpl<$Res>
+    extends _$WorkspaceStatusDtoCopyWithImpl<$Res, _$WorkspaceStatusDtoImpl>
+    implements _$$WorkspaceStatusDtoImplCopyWith<$Res> {
+  __$$WorkspaceStatusDtoImplCopyWithImpl(
+    _$WorkspaceStatusDtoImpl _value,
+    $Res Function(_$WorkspaceStatusDtoImpl) _then,
+  ) : super(_value, _then);
+
+  /// Create a copy of WorkspaceStatusDto
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? id = null,
+    Object? userId = null,
+    Object? kind = null,
+    Object? content = freezed,
+    Object? mediaUrl = freezed,
+    Object? bgColor = freezed,
+    Object? font = freezed,
+    Object? createdAt = freezed,
+    Object? expiresAt = freezed,
+    Object? viewedByMe = null,
+    Object? author = freezed,
+  }) {
+    return _then(
+      _$WorkspaceStatusDtoImpl(
+        id: null == id
+            ? _value.id
+            : id // ignore: cast_nullable_to_non_nullable
+                  as String,
+        userId: null == userId
+            ? _value.userId
+            : userId // ignore: cast_nullable_to_non_nullable
+                  as String,
+        kind: null == kind
+            ? _value.kind
+            : kind // ignore: cast_nullable_to_non_nullable
+                  as String,
+        content: freezed == content
+            ? _value.content
+            : content // ignore: cast_nullable_to_non_nullable
+                  as String?,
+        mediaUrl: freezed == mediaUrl
+            ? _value.mediaUrl
+            : mediaUrl // ignore: cast_nullable_to_non_nullable
+                  as String?,
+        bgColor: freezed == bgColor
+            ? _value.bgColor
+            : bgColor // ignore: cast_nullable_to_non_nullable
+                  as String?,
+        font: freezed == font
+            ? _value.font
+            : font // ignore: cast_nullable_to_non_nullable
+                  as String?,
+        createdAt: freezed == createdAt
+            ? _value.createdAt
+            : createdAt // ignore: cast_nullable_to_non_nullable
+                  as DateTime?,
+        expiresAt: freezed == expiresAt
+            ? _value.expiresAt
+            : expiresAt // ignore: cast_nullable_to_non_nullable
+                  as DateTime?,
+        viewedByMe: null == viewedByMe
+            ? _value.viewedByMe
+            : viewedByMe // ignore: cast_nullable_to_non_nullable
+                  as bool,
+        author: freezed == author
+            ? _value.author
+            : author // ignore: cast_nullable_to_non_nullable
+                  as MemberProfileDto?,
+      ),
+    );
+  }
+}
+
+/// @nodoc
+@JsonSerializable()
+class _$WorkspaceStatusDtoImpl implements _WorkspaceStatusDto {
+  const _$WorkspaceStatusDtoImpl({
+    this.id = '',
+    @JsonKey(name: 'user_id') this.userId = '',
+    this.kind = 'text',
+    this.content,
+    @JsonKey(name: 'media_url') this.mediaUrl,
+    @JsonKey(name: 'bg_color') this.bgColor,
+    this.font,
+    @JsonKey(name: 'created_at', fromJson: _dateFrom) this.createdAt,
+    @JsonKey(name: 'expires_at', fromJson: _dateFrom) this.expiresAt,
+    @JsonKey(name: 'viewed_by_me', readValue: _readViewed, fromJson: _boolFrom)
+    this.viewedByMe = false,
+    this.author,
+  });
+
+  factory _$WorkspaceStatusDtoImpl.fromJson(Map<String, dynamic> json) =>
+      _$$WorkspaceStatusDtoImplFromJson(json);
+
+  @override
+  @JsonKey()
+  final String id;
+  @override
+  @JsonKey(name: 'user_id')
+  final String userId;
+  @override
+  @JsonKey()
+  final String kind;
+  @override
+  final String? content;
+  @override
+  @JsonKey(name: 'media_url')
+  final String? mediaUrl;
+  @override
+  @JsonKey(name: 'bg_color')
+  final String? bgColor;
+  @override
+  final String? font;
+  @override
+  @JsonKey(name: 'created_at', fromJson: _dateFrom)
+  final DateTime? createdAt;
+  @override
+  @JsonKey(name: 'expires_at', fromJson: _dateFrom)
+  final DateTime? expiresAt;
+  @override
+  @JsonKey(name: 'viewed_by_me', readValue: _readViewed, fromJson: _boolFrom)
+  final bool viewedByMe;
+  @override
+  final MemberProfileDto? author;
+
+  @override
+  String toString() {
+    return 'WorkspaceStatusDto(id: $id, userId: $userId, kind: $kind, content: $content, mediaUrl: $mediaUrl, bgColor: $bgColor, font: $font, createdAt: $createdAt, expiresAt: $expiresAt, viewedByMe: $viewedByMe, author: $author)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$WorkspaceStatusDtoImpl &&
+            (identical(other.id, id) || other.id == id) &&
+            (identical(other.userId, userId) || other.userId == userId) &&
+            (identical(other.kind, kind) || other.kind == kind) &&
+            (identical(other.content, content) || other.content == content) &&
+            (identical(other.mediaUrl, mediaUrl) ||
+                other.mediaUrl == mediaUrl) &&
+            (identical(other.bgColor, bgColor) || other.bgColor == bgColor) &&
+            (identical(other.font, font) || other.font == font) &&
+            (identical(other.createdAt, createdAt) ||
+                other.createdAt == createdAt) &&
+            (identical(other.expiresAt, expiresAt) ||
+                other.expiresAt == expiresAt) &&
+            (identical(other.viewedByMe, viewedByMe) ||
+                other.viewedByMe == viewedByMe) &&
+            (identical(other.author, author) || other.author == author));
+  }
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  int get hashCode => Object.hash(
+    runtimeType,
+    id,
+    userId,
+    kind,
+    content,
+    mediaUrl,
+    bgColor,
+    font,
+    createdAt,
+    expiresAt,
+    viewedByMe,
+    author,
+  );
+
+  /// Create a copy of WorkspaceStatusDto
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$WorkspaceStatusDtoImplCopyWith<_$WorkspaceStatusDtoImpl> get copyWith =>
+      __$$WorkspaceStatusDtoImplCopyWithImpl<_$WorkspaceStatusDtoImpl>(
+        this,
+        _$identity,
+      );
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$$WorkspaceStatusDtoImplToJson(this);
+  }
+}
+
+abstract class _WorkspaceStatusDto implements WorkspaceStatusDto {
+  const factory _WorkspaceStatusDto({
+    final String id,
+    @JsonKey(name: 'user_id') final String userId,
+    final String kind,
+    final String? content,
+    @JsonKey(name: 'media_url') final String? mediaUrl,
+    @JsonKey(name: 'bg_color') final String? bgColor,
+    final String? font,
+    @JsonKey(name: 'created_at', fromJson: _dateFrom) final DateTime? createdAt,
+    @JsonKey(name: 'expires_at', fromJson: _dateFrom) final DateTime? expiresAt,
+    @JsonKey(name: 'viewed_by_me', readValue: _readViewed, fromJson: _boolFrom)
+    final bool viewedByMe,
+    final MemberProfileDto? author,
+  }) = _$WorkspaceStatusDtoImpl;
+
+  factory _WorkspaceStatusDto.fromJson(Map<String, dynamic> json) =
+      _$WorkspaceStatusDtoImpl.fromJson;
+
+  @override
+  String get id;
+  @override
+  @JsonKey(name: 'user_id')
+  String get userId;
+  @override
+  String get kind;
+  @override
+  String? get content;
+  @override
+  @JsonKey(name: 'media_url')
+  String? get mediaUrl;
+  @override
+  @JsonKey(name: 'bg_color')
+  String? get bgColor;
+  @override
+  String? get font;
+  @override
+  @JsonKey(name: 'created_at', fromJson: _dateFrom)
+  DateTime? get createdAt;
+  @override
+  @JsonKey(name: 'expires_at', fromJson: _dateFrom)
+  DateTime? get expiresAt;
+  @override
+  @JsonKey(name: 'viewed_by_me', readValue: _readViewed, fromJson: _boolFrom)
+  bool get viewedByMe;
+  @override
+  MemberProfileDto? get author;
+
+  /// Create a copy of WorkspaceStatusDto
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  _$$WorkspaceStatusDtoImplCopyWith<_$WorkspaceStatusDtoImpl> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+WorkspaceStatusViewerDto _$WorkspaceStatusViewerDtoFromJson(
+  Map<String, dynamic> json,
+) {
+  return _WorkspaceStatusViewerDto.fromJson(json);
+}
+
+/// @nodoc
+mixin _$WorkspaceStatusViewerDto {
+  @JsonKey(name: 'user_id')
+  String get userId => throw _privateConstructorUsedError;
+  @JsonKey(name: 'viewed_at', fromJson: _dateFrom)
+  DateTime? get viewedAt => throw _privateConstructorUsedError;
+  @JsonKey(name: 'full_name')
+  String get fullName => throw _privateConstructorUsedError;
+  String get email => throw _privateConstructorUsedError;
+
+  /// Serializes this WorkspaceStatusViewerDto to a JSON map.
+  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
+
+  /// Create a copy of WorkspaceStatusViewerDto
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  $WorkspaceStatusViewerDtoCopyWith<WorkspaceStatusViewerDto> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+abstract class $WorkspaceStatusViewerDtoCopyWith<$Res> {
+  factory $WorkspaceStatusViewerDtoCopyWith(
+    WorkspaceStatusViewerDto value,
+    $Res Function(WorkspaceStatusViewerDto) then,
+  ) = _$WorkspaceStatusViewerDtoCopyWithImpl<$Res, WorkspaceStatusViewerDto>;
+  @useResult
+  $Res call({
+    @JsonKey(name: 'user_id') String userId,
+    @JsonKey(name: 'viewed_at', fromJson: _dateFrom) DateTime? viewedAt,
+    @JsonKey(name: 'full_name') String fullName,
+    String email,
+  });
+}
+
+/// @nodoc
+class _$WorkspaceStatusViewerDtoCopyWithImpl<
+  $Res,
+  $Val extends WorkspaceStatusViewerDto
+>
+    implements $WorkspaceStatusViewerDtoCopyWith<$Res> {
+  _$WorkspaceStatusViewerDtoCopyWithImpl(this._value, this._then);
+
+  // ignore: unused_field
+  final $Val _value;
+  // ignore: unused_field
+  final $Res Function($Val) _then;
+
+  /// Create a copy of WorkspaceStatusViewerDto
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? userId = null,
+    Object? viewedAt = freezed,
+    Object? fullName = null,
+    Object? email = null,
+  }) {
+    return _then(
+      _value.copyWith(
+            userId: null == userId
+                ? _value.userId
+                : userId // ignore: cast_nullable_to_non_nullable
+                      as String,
+            viewedAt: freezed == viewedAt
+                ? _value.viewedAt
+                : viewedAt // ignore: cast_nullable_to_non_nullable
+                      as DateTime?,
+            fullName: null == fullName
+                ? _value.fullName
+                : fullName // ignore: cast_nullable_to_non_nullable
+                      as String,
+            email: null == email
+                ? _value.email
+                : email // ignore: cast_nullable_to_non_nullable
+                      as String,
+          )
+          as $Val,
+    );
+  }
+}
+
+/// @nodoc
+abstract class _$$WorkspaceStatusViewerDtoImplCopyWith<$Res>
+    implements $WorkspaceStatusViewerDtoCopyWith<$Res> {
+  factory _$$WorkspaceStatusViewerDtoImplCopyWith(
+    _$WorkspaceStatusViewerDtoImpl value,
+    $Res Function(_$WorkspaceStatusViewerDtoImpl) then,
+  ) = __$$WorkspaceStatusViewerDtoImplCopyWithImpl<$Res>;
+  @override
+  @useResult
+  $Res call({
+    @JsonKey(name: 'user_id') String userId,
+    @JsonKey(name: 'viewed_at', fromJson: _dateFrom) DateTime? viewedAt,
+    @JsonKey(name: 'full_name') String fullName,
+    String email,
+  });
+}
+
+/// @nodoc
+class __$$WorkspaceStatusViewerDtoImplCopyWithImpl<$Res>
+    extends
+        _$WorkspaceStatusViewerDtoCopyWithImpl<
+          $Res,
+          _$WorkspaceStatusViewerDtoImpl
+        >
+    implements _$$WorkspaceStatusViewerDtoImplCopyWith<$Res> {
+  __$$WorkspaceStatusViewerDtoImplCopyWithImpl(
+    _$WorkspaceStatusViewerDtoImpl _value,
+    $Res Function(_$WorkspaceStatusViewerDtoImpl) _then,
+  ) : super(_value, _then);
+
+  /// Create a copy of WorkspaceStatusViewerDto
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? userId = null,
+    Object? viewedAt = freezed,
+    Object? fullName = null,
+    Object? email = null,
+  }) {
+    return _then(
+      _$WorkspaceStatusViewerDtoImpl(
+        userId: null == userId
+            ? _value.userId
+            : userId // ignore: cast_nullable_to_non_nullable
+                  as String,
+        viewedAt: freezed == viewedAt
+            ? _value.viewedAt
+            : viewedAt // ignore: cast_nullable_to_non_nullable
+                  as DateTime?,
+        fullName: null == fullName
+            ? _value.fullName
+            : fullName // ignore: cast_nullable_to_non_nullable
+                  as String,
+        email: null == email
+            ? _value.email
+            : email // ignore: cast_nullable_to_non_nullable
+                  as String,
+      ),
+    );
+  }
+}
+
+/// @nodoc
+@JsonSerializable()
+class _$WorkspaceStatusViewerDtoImpl implements _WorkspaceStatusViewerDto {
+  const _$WorkspaceStatusViewerDtoImpl({
+    @JsonKey(name: 'user_id') this.userId = '',
+    @JsonKey(name: 'viewed_at', fromJson: _dateFrom) this.viewedAt,
+    @JsonKey(name: 'full_name') this.fullName = '',
+    this.email = '',
+  });
+
+  factory _$WorkspaceStatusViewerDtoImpl.fromJson(Map<String, dynamic> json) =>
+      _$$WorkspaceStatusViewerDtoImplFromJson(json);
+
+  @override
+  @JsonKey(name: 'user_id')
+  final String userId;
+  @override
+  @JsonKey(name: 'viewed_at', fromJson: _dateFrom)
+  final DateTime? viewedAt;
+  @override
+  @JsonKey(name: 'full_name')
+  final String fullName;
+  @override
+  @JsonKey()
+  final String email;
+
+  @override
+  String toString() {
+    return 'WorkspaceStatusViewerDto(userId: $userId, viewedAt: $viewedAt, fullName: $fullName, email: $email)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$WorkspaceStatusViewerDtoImpl &&
+            (identical(other.userId, userId) || other.userId == userId) &&
+            (identical(other.viewedAt, viewedAt) ||
+                other.viewedAt == viewedAt) &&
+            (identical(other.fullName, fullName) ||
+                other.fullName == fullName) &&
+            (identical(other.email, email) || other.email == email));
+  }
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  int get hashCode =>
+      Object.hash(runtimeType, userId, viewedAt, fullName, email);
+
+  /// Create a copy of WorkspaceStatusViewerDto
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$WorkspaceStatusViewerDtoImplCopyWith<_$WorkspaceStatusViewerDtoImpl>
+  get copyWith =>
+      __$$WorkspaceStatusViewerDtoImplCopyWithImpl<
+        _$WorkspaceStatusViewerDtoImpl
+      >(this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$$WorkspaceStatusViewerDtoImplToJson(this);
+  }
+}
+
+abstract class _WorkspaceStatusViewerDto implements WorkspaceStatusViewerDto {
+  const factory _WorkspaceStatusViewerDto({
+    @JsonKey(name: 'user_id') final String userId,
+    @JsonKey(name: 'viewed_at', fromJson: _dateFrom) final DateTime? viewedAt,
+    @JsonKey(name: 'full_name') final String fullName,
+    final String email,
+  }) = _$WorkspaceStatusViewerDtoImpl;
+
+  factory _WorkspaceStatusViewerDto.fromJson(Map<String, dynamic> json) =
+      _$WorkspaceStatusViewerDtoImpl.fromJson;
+
+  @override
+  @JsonKey(name: 'user_id')
+  String get userId;
+  @override
+  @JsonKey(name: 'viewed_at', fromJson: _dateFrom)
+  DateTime? get viewedAt;
+  @override
+  @JsonKey(name: 'full_name')
+  String get fullName;
+  @override
+  String get email;
+
+  /// Create a copy of WorkspaceStatusViewerDto
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  _$$WorkspaceStatusViewerDtoImplCopyWith<_$WorkspaceStatusViewerDtoImpl>
+  get copyWith => throw _privateConstructorUsedError;
+}

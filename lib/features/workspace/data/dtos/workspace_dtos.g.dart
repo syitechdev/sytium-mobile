@@ -349,3 +349,57 @@ _$MessagesPageDtoImpl _$$MessagesPageDtoImplFromJson(
 Map<String, dynamic> _$$MessagesPageDtoImplToJson(
   _$MessagesPageDtoImpl instance,
 ) => <String, dynamic>{'data': instance.data, 'meta': instance.meta};
+
+_$WorkspaceStatusDtoImpl _$$WorkspaceStatusDtoImplFromJson(
+  Map<String, dynamic> json,
+) => _$WorkspaceStatusDtoImpl(
+  id: json['id'] as String? ?? '',
+  userId: json['user_id'] as String? ?? '',
+  kind: json['kind'] as String? ?? 'text',
+  content: json['content'] as String?,
+  mediaUrl: json['media_url'] as String?,
+  bgColor: json['bg_color'] as String?,
+  font: json['font'] as String?,
+  createdAt: _dateFrom(json['created_at']),
+  expiresAt: _dateFrom(json['expires_at']),
+  viewedByMe: _readViewed(json, 'viewed_by_me') == null
+      ? false
+      : _boolFrom(_readViewed(json, 'viewed_by_me')),
+  author: json['author'] == null
+      ? null
+      : MemberProfileDto.fromJson(json['author'] as Map<String, dynamic>),
+);
+
+Map<String, dynamic> _$$WorkspaceStatusDtoImplToJson(
+  _$WorkspaceStatusDtoImpl instance,
+) => <String, dynamic>{
+  'id': instance.id,
+  'user_id': instance.userId,
+  'kind': instance.kind,
+  'content': instance.content,
+  'media_url': instance.mediaUrl,
+  'bg_color': instance.bgColor,
+  'font': instance.font,
+  'created_at': instance.createdAt?.toIso8601String(),
+  'expires_at': instance.expiresAt?.toIso8601String(),
+  'viewed_by_me': instance.viewedByMe,
+  'author': instance.author,
+};
+
+_$WorkspaceStatusViewerDtoImpl _$$WorkspaceStatusViewerDtoImplFromJson(
+  Map<String, dynamic> json,
+) => _$WorkspaceStatusViewerDtoImpl(
+  userId: json['user_id'] as String? ?? '',
+  viewedAt: _dateFrom(json['viewed_at']),
+  fullName: json['full_name'] as String? ?? '',
+  email: json['email'] as String? ?? '',
+);
+
+Map<String, dynamic> _$$WorkspaceStatusViewerDtoImplToJson(
+  _$WorkspaceStatusViewerDtoImpl instance,
+) => <String, dynamic>{
+  'user_id': instance.userId,
+  'viewed_at': instance.viewedAt?.toIso8601String(),
+  'full_name': instance.fullName,
+  'email': instance.email,
+};

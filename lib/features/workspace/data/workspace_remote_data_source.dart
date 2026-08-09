@@ -264,4 +264,84 @@ class WorkspaceRemoteDataSource {
         .map((e) => MessageDto.fromJson(e as Map<String, dynamic>))
         .toList();
   }
+
+  // ---- Statuts (stories 24 h) --------------------------------------------
+
+  /// Statuts actifs (non expirés), tous auteurs confondus.
+  Future<List<WorkspaceStatusDto>> statuses() async {
+    final res = await _dio.get<Map<String, dynamic>>('/workspace/statuses');
+    final list = res.data!['data'] as List<dynamic>? ?? const [];
+    return list
+        .map((e) => WorkspaceStatusDto.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
+  /// Crée un statut. Texte : `content` (+ `bgColor`/`font`). Média : `mediaPath`
+  /// (clé multipart `media`) + `content` en légende optionnelle.
+  Future<WorkspaceStatusDto> createStatus({
+    String? content,
+    String? bgColor,
+    String? font,
+    String? mediaPath,
+  }) async {
+    final Object payload;
+    if (mediaPath == null) {
+      payload = {
+        if (content != null && content.isNotEmpty) 'content': content,
+        if (bgColor != null && bgColor.isNotEmpty) 'bg_color': bgColor,
+        if (font != null && font.isNotEmpty) 'font': font,
+      };
+    } else {
+      final form = FormData();
+      if (content != null && content.isNotEmpty) {
+        form.fields.add(MapEntry('content', content));
+      }
+      if (bgColor != null && bgColor.isNotEmpty) {
+        form.fields.add(MapEntry('bg_color', bgColor));
+      }
+      if (font != null && font.isNotEmpty) {
+        form.fields.add(MapEntry('font', font));
+      }
+      form.files.add(
+        MapEntry(
+          'media',
+          await MultipartFile.fromFile(
+            mediaPath,
+            filename: mediaPath.split('/').last,
+          ),
+        ),
+      );
+      payload = form;
+    }
+    final res = await _dio.post<Map<String, dynamic>>(
+      '/workspace/statuses',
+      data: payload,
+    );
+    return WorkspaceStatusDto.fromJson(
+      res.data!['data'] as Map<String, dynamic>,
+    );
+  }
+
+  /// Marque un statut comme vu.
+  Future<void> viewStatus(String statusId) async {
+    await _dio.post<Map<String, dynamic>>('/workspace/statuses/$statusId/view');
+  }
+
+  /// Spectateurs d'un statut (mes statuts uniquement côté produit).
+  Future<List<WorkspaceStatusViewerDto>> statusViewers(String statusId) async {
+    final res = await _dio.get<Map<String, dynamic>>(
+      '/workspace/statuses/$statusId/viewers',
+    );
+    final list = res.data!['data'] as List<dynamic>? ?? const [];
+    return list
+        .map(
+          (e) => WorkspaceStatusViewerDto.fromJson(e as Map<String, dynamic>),
+        )
+        .toList();
+  }
+
+  /// Supprime un de mes statuts.
+  Future<void> deleteStatus(String statusId) async {
+    await _dio.delete<Map<String, dynamic>>('/workspace/statuses/$statusId');
+  }
 }

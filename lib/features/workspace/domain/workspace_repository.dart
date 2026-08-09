@@ -77,6 +77,28 @@ abstract interface class WorkspaceRepository {
   /// Messages épinglés d'un canal.
   Future<Result<List<Message>>> channelPins(String channelId);
 
+  // ---- Statuts (stories 24 h) --------------------------------------------
+
+  /// Statuts actifs, tous auteurs confondus.
+  Future<Result<List<WorkspaceStatus>>> statuses();
+
+  /// Crée un statut (texte coloré ou média).
+  Future<Result<WorkspaceStatus>> createStatus({
+    String? content,
+    String? bgColor,
+    String? font,
+    String? mediaPath,
+  });
+
+  /// Marque un statut comme vu.
+  Future<Result<void>> viewStatus(String statusId);
+
+  /// Spectateurs d'un statut (« Vu par »).
+  Future<Result<List<StatusViewer>>> statusViewers(String statusId);
+
+  /// Supprime un de mes statuts.
+  Future<Result<void>> deleteStatus(String statusId);
+
   /// One page of messages (oldest→newest). [cursor] paginates older messages.
   Future<Result<MessagesPage>> messages(
     String channelId, {

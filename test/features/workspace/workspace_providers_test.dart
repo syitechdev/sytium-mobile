@@ -16,11 +16,11 @@ import 'package:sytium_mobile/features/workspace/domain/workspace_repository.dar
 class _FakeAuth extends AuthController {
   @override
   Future<AuthState> build() async => const Authenticated(
-        AuthSession(
-          user: AuthUser(id: 'me', name: 'Moi', email: 'me@x.io'),
-          capabilities: MobileCapabilities.baseline(),
-        ),
-      );
+    AuthSession(
+      user: AuthUser(id: 'me', name: 'Moi', email: 'me@x.io'),
+      capabilities: MobileCapabilities.baseline(),
+    ),
+  );
 }
 
 /// Stub repo: a public channel + a DM; the DM's members include self + a peer.
@@ -30,29 +30,46 @@ class _Repo implements WorkspaceRepository {
   _Repo({this.conversationsOverride});
 
   @override
-  Future<Result<List<int>>> downloadAttachment(String url) async => const Ok(<int>[]);
+  Future<Result<List<int>>> downloadAttachment(String url) async =>
+      const Ok(<int>[]);
 
   @override
-  Future<Result<void>> setPinned(String messageId, {required bool pinned}) async => const Ok(null);
+  Future<Result<void>> setPinned(
+    String messageId, {
+    required bool pinned,
+  }) async => const Ok(null);
 
   @override
-  Future<Result<void>> setBookmarked(String messageId, {required bool bookmarked}) async => const Ok(null);
+  Future<Result<void>> setBookmarked(
+    String messageId, {
+    required bool bookmarked,
+  }) async => const Ok(null);
 
   @override
-  Future<Result<String?>> transcribeMessage(String messageId) async => const Ok(null);
+  Future<Result<String?>> transcribeMessage(String messageId) async =>
+      const Ok(null);
 
   @override
   Future<Result<void>> sendTyping(String channelId) async => const Ok(null);
 
   @override
-  Future<Result<void>> addMembers(String channelId, List<String> userIds, {String? role}) async => const Ok(null);
+  Future<Result<void>> addMembers(
+    String channelId,
+    List<String> userIds, {
+    String? role,
+  }) async => const Ok(null);
 
   @override
-  Future<Result<Conversation>> setChannelArchived(String channelId, {required bool isArchived}) async =>
-      const Ok(Conversation(id: 'c', type: ConversationType.public, title: 'C'));
+  Future<Result<Conversation>> setChannelArchived(
+    String channelId, {
+    required bool isArchived,
+  }) async => const Ok(
+    Conversation(id: 'c', type: ConversationType.public, title: 'C'),
+  );
 
   @override
-  Future<Result<List<Conversation>>> archivedChannels() async => const Ok(<Conversation>[]);
+  Future<Result<List<Conversation>>> archivedChannels() async =>
+      const Ok(<Conversation>[]);
 
   @override
   Future<Result<List<Message>>> mentions() async => const Ok(<Message>[]);
@@ -61,49 +78,56 @@ class _Repo implements WorkspaceRepository {
   Future<Result<List<Message>>> bookmarks() async => const Ok(<Message>[]);
 
   @override
-  Future<Result<List<Message>>> channelPins(String channelId) async => const Ok(<Message>[]);
+  Future<Result<List<Message>>> channelPins(String channelId) async =>
+      const Ok(<Message>[]);
 
   final List<Conversation>? conversationsOverride;
 
   @override
   Future<Result<List<Conversation>>> conversations() async => Ok(
-        conversationsOverride ??
-            const [
-              Conversation(
-                id: 'c1',
-                type: ConversationType.public,
-                title: 'Général',
-                unreadCount: 2,
-              ),
-              Conversation(
-                id: 'dm1',
-                type: ConversationType.dm,
-                title: '', // peer not resolved by the list endpoint
-                unreadCount: 1,
-              ),
-            ],
-      );
+    conversationsOverride ??
+        const [
+          Conversation(
+            id: 'c1',
+            type: ConversationType.public,
+            title: 'Général',
+            unreadCount: 2,
+          ),
+          Conversation(
+            id: 'dm1',
+            type: ConversationType.dm,
+            title: '', // peer not resolved by the list endpoint
+            unreadCount: 1,
+          ),
+        ],
+  );
 
   @override
   Future<Result<List<Member>>> channelMembers(String channelId) async =>
       const Ok([
         Member(userId: 'me', fullName: 'Moi'),
-        Member(userId: 'peer', fullName: 'Awa Diallo', avatarUrl: 'https://x/a.png'),
+        Member(
+          userId: 'peer',
+          fullName: 'Awa Diallo',
+          avatarUrl: 'https://x/a.png',
+        ),
       ]);
 
   @override
-  Future<Result<List<Member>>> orgMembers() async => const Ok([
-        Member(userId: 'peer', fullName: 'Awa Diallo', poste: 'RH'),
-      ]);
+  Future<Result<List<Member>>> orgMembers() async =>
+      const Ok([Member(userId: 'peer', fullName: 'Awa Diallo', poste: 'RH')]);
 
   @override
   Future<Result<Conversation>> openDm(String userId) async => const Ok(
-        Conversation(id: 'dm1', type: ConversationType.dm, title: 'Awa Diallo'),
-      );
+    Conversation(id: 'dm1', type: ConversationType.dm, title: 'Awa Diallo'),
+  );
 
   @override
-  Future<Result<MessagesPage>> messages(String channelId, {String? cursor, int limit = 50}) async =>
-      const Ok(MessagesPage(messages: []));
+  Future<Result<MessagesPage>> messages(
+    String channelId, {
+    String? cursor,
+    int limit = 50,
+  }) async => const Ok(MessagesPage(messages: []));
 
   @override
   Future<Result<Message>> sendMessage(
@@ -111,8 +135,9 @@ class _Repo implements WorkspaceRepository {
     String content = '',
     List<String> attachmentPaths = const <String>[],
     String? parentId,
-  }) async =>
-      const Ok(Message(id: 'm1', channelId: 'c1', authorId: 'me', content: 'x'));
+  }) async => const Ok(
+    Message(id: 'm1', channelId: 'c1', authorId: 'me', content: 'x'),
+  );
 
   @override
   Future<Result<bool>> toggleReaction(String messageId, String emoji) async =>
@@ -120,7 +145,9 @@ class _Repo implements WorkspaceRepository {
 
   @override
   Future<Result<Message>> editMessage(String messageId, String content) async =>
-      const Ok(Message(id: 'm1', channelId: 'c1', authorId: 'me', content: 'x'));
+      const Ok(
+        Message(id: 'm1', channelId: 'c1', authorId: 'me', content: 'x'),
+      );
 
   @override
   Future<Result<void>> deleteForMe(String messageId) async => const Ok(null);
@@ -144,14 +171,37 @@ class _Repo implements WorkspaceRepository {
       Ok(Conversation(id: 'new', type: ConversationType.public, title: name));
   @override
   Future<Result<void>> joinChannel(String channelId) async => const Ok(null);
+
+  @override
+  Future<Result<List<WorkspaceStatus>>> statuses() async =>
+      const Ok(<WorkspaceStatus>[]);
+
+  @override
+  Future<Result<WorkspaceStatus>> createStatus({
+    String? content,
+    String? bgColor,
+    String? font,
+    String? mediaPath,
+  }) async =>
+      const Ok(WorkspaceStatus(id: 's', authorId: 'me', kind: StatusKind.text));
+
+  @override
+  Future<Result<void>> viewStatus(String statusId) async => const Ok(null);
+
+  @override
+  Future<Result<List<StatusViewer>>> statusViewers(String statusId) async =>
+      const Ok(<StatusViewer>[]);
+
+  @override
+  Future<Result<void>> deleteStatus(String statusId) async => const Ok(null);
 }
 
 ProviderContainer _container({_Repo? repo}) => ProviderContainer(
-      overrides: [
-        authControllerProvider.overrideWith(_FakeAuth.new),
-        workspaceRepositoryProvider.overrideWithValue(repo ?? _Repo()),
-      ],
-    );
+  overrides: [
+    authControllerProvider.overrideWith(_FakeAuth.new),
+    workspaceRepositoryProvider.overrideWithValue(repo ?? _Repo()),
+  ],
+);
 
 void main() {
   test('currentUserId resolves to the authenticated user id', () async {
@@ -162,18 +212,21 @@ void main() {
     expect(c.read(currentUserIdProvider), 'me');
   });
 
-  test('conversations resolves the DM peer as title/avatar and keeps channels', () async {
-    final c = _container();
-    addTearDown(c.dispose);
-    await c.read(authControllerProvider.future);
+  test(
+    'conversations resolves the DM peer as title/avatar and keeps channels',
+    () async {
+      final c = _container();
+      addTearDown(c.dispose);
+      await c.read(authControllerProvider.future);
 
-    final list = await c.read(conversationsProvider.future);
-    final dm = list.firstWhere((x) => x.type == ConversationType.dm);
-    expect(dm.title, 'Awa Diallo');
-    expect(dm.avatarUrl, 'https://x/a.png');
-    final channel = list.firstWhere((x) => x.type == ConversationType.public);
-    expect(channel.title, 'Général');
-  });
+      final list = await c.read(conversationsProvider.future);
+      final dm = list.firstWhere((x) => x.type == ConversationType.dm);
+      expect(dm.title, 'Awa Diallo');
+      expect(dm.avatarUrl, 'https://x/a.png');
+      final channel = list.firstWhere((x) => x.type == ConversationType.public);
+      expect(channel.title, 'Général');
+    },
+  );
 
   test('conversations sorts by updatedAt descending, nulls last', () async {
     // Public channels so no DM-peer resolution runs — isolates the comparator.
@@ -198,11 +251,7 @@ void main() {
           title: 'C',
           updatedAt: DateTime.parse('2026-06-24T00:00:00Z'),
         ),
-        const Conversation(
-          id: 'D',
-          type: ConversationType.public,
-          title: 'D',
-        ),
+        const Conversation(id: 'D', type: ConversationType.public, title: 'D'),
       ],
     );
     final c = _container(repo: repo);
@@ -231,7 +280,12 @@ void main() {
 
   test('isMine is true for the current user, false otherwise', () {
     const mine = Message(id: 'm', channelId: 'c', authorId: 'me', content: 'x');
-    const other = Message(id: 'm', channelId: 'c', authorId: 'peer', content: 'x');
+    const other = Message(
+      id: 'm',
+      channelId: 'c',
+      authorId: 'peer',
+      content: 'x',
+    );
     expect(mine.isMine('me'), isTrue);
     expect(other.isMine('me'), isFalse);
     expect(mine.isMine(null), isFalse);
@@ -248,88 +302,107 @@ void main() {
       expect(convo.lastMessageIsSystem, isFalse);
     });
 
-    test('leaves last-message fields null when last_message is absent', () async {
-      final repo = WorkspaceRepositoryImpl(_StubRemoteNoMessage());
-      final result = await repo.conversations();
-      final convo = result.valueOrNull!.single;
-      expect(convo.lastMessagePreview, isNull);
-      expect(convo.lastMessageAt, isNull);
-      expect(convo.lastMessageAuthorId, isNull);
-      expect(convo.lastMessageIsSystem, isFalse);
-    });
-  });
-
-  test('DM peer avatar is enriched from the org roster photo (roster wins)', () async {
-    final c = _container(repo: _RosterPhotoRepo());
-    addTearDown(c.dispose);
-    await c.read(authControllerProvider.future);
-
-    final list = await c.read(conversationsProvider.future);
-    final dm = list.firstWhere((x) => x.type == ConversationType.dm);
-    expect(dm.title, 'Awa Diallo');
-    // Roster photo (employee photo_url) takes precedence over the channel
-    // member's profile.avatar_url.
-    expect(dm.avatarUrl, 'https://roster/awa.png');
-  });
-
-  test('DM peer falls back to the channel-member avatar when roster has no photo', () async {
-    // The default _Repo: roster peer has NO avatarUrl; channel member has one.
-    final c = _container();
-    addTearDown(c.dispose);
-    await c.read(authControllerProvider.future);
-
-    final list = await c.read(conversationsProvider.future);
-    final dm = list.firstWhere((x) => x.type == ConversationType.dm);
-    expect(dm.avatarUrl, 'https://x/a.png'); // channel-member fallback
-  });
-
-  test('conversations enrichment is graceful when the roster is empty', () async {
-    final c = _container(repo: _EmptyRosterRepo());
-    addTearDown(c.dispose);
-    await c.read(authControllerProvider.future);
-
-    final list = await c.read(conversationsProvider.future);
-    final dm = list.firstWhere((x) => x.type == ConversationType.dm);
-    // No roster photo, but the channel-member avatar still applies.
-    expect(dm.avatarUrl, 'https://x/a.png');
-    expect(dm.title, 'Awa Diallo');
-  });
-
-  test('conversations sort by lastMessageAt desc, then updatedAt, nulls last', () async {
-    // Public channels only → no DM resolution; isolates the comparator.
-    // A: lastMessageAt 06-28 (newest). B: no lastMessageAt but updatedAt 06-27.
-    // C: lastMessageAt 06-20. D: nothing → last.
-    final repo = _Repo(
-      conversationsOverride: [
-        Conversation(
-          id: 'C',
-          type: ConversationType.public,
-          title: 'C',
-          lastMessageAt: DateTime.parse('2026-06-20T00:00:00Z'),
-        ),
-        Conversation(
-          id: 'A',
-          type: ConversationType.public,
-          title: 'A',
-          lastMessageAt: DateTime.parse('2026-06-28T00:00:00Z'),
-        ),
-        Conversation(
-          id: 'B',
-          type: ConversationType.public,
-          title: 'B',
-          updatedAt: DateTime.parse('2026-06-27T00:00:00Z'),
-        ),
-        const Conversation(id: 'D', type: ConversationType.public, title: 'D'),
-      ],
+    test(
+      'leaves last-message fields null when last_message is absent',
+      () async {
+        final repo = WorkspaceRepositoryImpl(_StubRemoteNoMessage());
+        final result = await repo.conversations();
+        final convo = result.valueOrNull!.single;
+        expect(convo.lastMessagePreview, isNull);
+        expect(convo.lastMessageAt, isNull);
+        expect(convo.lastMessageAuthorId, isNull);
+        expect(convo.lastMessageIsSystem, isFalse);
+      },
     );
-    final c = _container(repo: repo);
-    addTearDown(c.dispose);
-    await c.read(authControllerProvider.future);
-
-    final list = await c.read(conversationsProvider.future);
-    // A(06-28) > B(06-27 via updatedAt) > C(06-20) > D(null).
-    expect(list.map((x) => x.id).toList(), ['A', 'B', 'C', 'D']);
   });
+
+  test(
+    'DM peer avatar is enriched from the org roster photo (roster wins)',
+    () async {
+      final c = _container(repo: _RosterPhotoRepo());
+      addTearDown(c.dispose);
+      await c.read(authControllerProvider.future);
+
+      final list = await c.read(conversationsProvider.future);
+      final dm = list.firstWhere((x) => x.type == ConversationType.dm);
+      expect(dm.title, 'Awa Diallo');
+      // Roster photo (employee photo_url) takes precedence over the channel
+      // member's profile.avatar_url.
+      expect(dm.avatarUrl, 'https://roster/awa.png');
+    },
+  );
+
+  test(
+    'DM peer falls back to the channel-member avatar when roster has no photo',
+    () async {
+      // The default _Repo: roster peer has NO avatarUrl; channel member has one.
+      final c = _container();
+      addTearDown(c.dispose);
+      await c.read(authControllerProvider.future);
+
+      final list = await c.read(conversationsProvider.future);
+      final dm = list.firstWhere((x) => x.type == ConversationType.dm);
+      expect(dm.avatarUrl, 'https://x/a.png'); // channel-member fallback
+    },
+  );
+
+  test(
+    'conversations enrichment is graceful when the roster is empty',
+    () async {
+      final c = _container(repo: _EmptyRosterRepo());
+      addTearDown(c.dispose);
+      await c.read(authControllerProvider.future);
+
+      final list = await c.read(conversationsProvider.future);
+      final dm = list.firstWhere((x) => x.type == ConversationType.dm);
+      // No roster photo, but the channel-member avatar still applies.
+      expect(dm.avatarUrl, 'https://x/a.png');
+      expect(dm.title, 'Awa Diallo');
+    },
+  );
+
+  test(
+    'conversations sort by lastMessageAt desc, then updatedAt, nulls last',
+    () async {
+      // Public channels only → no DM resolution; isolates the comparator.
+      // A: lastMessageAt 06-28 (newest). B: no lastMessageAt but updatedAt 06-27.
+      // C: lastMessageAt 06-20. D: nothing → last.
+      final repo = _Repo(
+        conversationsOverride: [
+          Conversation(
+            id: 'C',
+            type: ConversationType.public,
+            title: 'C',
+            lastMessageAt: DateTime.parse('2026-06-20T00:00:00Z'),
+          ),
+          Conversation(
+            id: 'A',
+            type: ConversationType.public,
+            title: 'A',
+            lastMessageAt: DateTime.parse('2026-06-28T00:00:00Z'),
+          ),
+          Conversation(
+            id: 'B',
+            type: ConversationType.public,
+            title: 'B',
+            updatedAt: DateTime.parse('2026-06-27T00:00:00Z'),
+          ),
+          const Conversation(
+            id: 'D',
+            type: ConversationType.public,
+            title: 'D',
+          ),
+        ],
+      );
+      final c = _container(repo: repo);
+      addTearDown(c.dispose);
+      await c.read(authControllerProvider.future);
+
+      final list = await c.read(conversationsProvider.future);
+      // A(06-28) > B(06-27 via updatedAt) > C(06-20) > D(null).
+      expect(list.map((x) => x.id).toList(), ['A', 'B', 'C', 'D']);
+    },
+  );
 
   test('DM lastMessage fields are preserved after peer enrichment', () async {
     // A DM that has lastMessage* set — the provider's resolved DM copy must
@@ -359,22 +432,25 @@ void main() {
     expect(dm.lastMessageIsSystem, isFalse);
   });
 
-  test('conversations load successfully when the roster throws (network failure)', () async {
-    // Exercises the catch (_) { roster = const <Member>[]; } path in
-    // conversationsProvider. The roster throws (orgMembersProvider rethrows),
-    // but conversationsProvider's try/catch catches it → still returns data,
-    // NOT an AsyncError; the DM falls back to the channel-member avatar.
-    final c = _container(repo: _ThrowingRosterRepo());
-    addTearDown(c.dispose);
-    await c.read(authControllerProvider.future);
+  test(
+    'conversations load successfully when the roster throws (network failure)',
+    () async {
+      // Exercises the catch (_) { roster = const <Member>[]; } path in
+      // conversationsProvider. The roster throws (orgMembersProvider rethrows),
+      // but conversationsProvider's try/catch catches it → still returns data,
+      // NOT an AsyncError; the DM falls back to the channel-member avatar.
+      final c = _container(repo: _ThrowingRosterRepo());
+      addTearDown(c.dispose);
+      await c.read(authControllerProvider.future);
 
-    final list = await c.read(conversationsProvider.future);
-    expect(list, isNotEmpty);
-    final dm = list.firstWhere((x) => x.type == ConversationType.dm);
-    // Roster threw → no roster photo; falls back to channel-member avatar_url.
-    expect(dm.avatarUrl, 'https://x/a.png');
-    expect(dm.title, 'Awa Diallo');
-  });
+      final list = await c.read(conversationsProvider.future);
+      expect(list, isNotEmpty);
+      final dm = list.firstWhere((x) => x.type == ConversationType.dm);
+      // Roster threw → no roster photo; falls back to channel-member avatar_url.
+      expect(dm.avatarUrl, 'https://x/a.png');
+      expect(dm.title, 'Awa Diallo');
+    },
+  );
 }
 
 /// Returns one channel with a present last_message — exercises the repo mapping.
@@ -383,19 +459,19 @@ class _StubRemote extends WorkspaceRemoteDataSource {
 
   @override
   Future<List<ChannelDto>> channels({bool archived = false}) async => [
-        ChannelDto.fromJson(const {
-          'id': 'c1',
-          'name': 'Général',
-          'type': 'public',
-          'last_message': {
-            'id': 'msg9',
-            'content': 'Dernier message',
-            'user_id': 'u2',
-            'created_at': '2026-06-29T09:30:00Z',
-            'is_system': false,
-          },
-        }),
-      ];
+    ChannelDto.fromJson(const {
+      'id': 'c1',
+      'name': 'Général',
+      'type': 'public',
+      'last_message': {
+        'id': 'msg9',
+        'content': 'Dernier message',
+        'user_id': 'u2',
+        'created_at': '2026-06-29T09:30:00Z',
+        'is_system': false,
+      },
+    }),
+  ];
 }
 
 /// Returns one channel with no last_message — exercises the null path.
@@ -404,8 +480,8 @@ class _StubRemoteNoMessage extends WorkspaceRemoteDataSource {
 
   @override
   Future<List<ChannelDto>> channels({bool archived = false}) async => [
-        ChannelDto.fromJson(const {'id': 'c2', 'name': 'Vide', 'type': 'public'}),
-      ];
+    ChannelDto.fromJson(const {'id': 'c2', 'name': 'Vide', 'type': 'public'}),
+  ];
 }
 
 /// Roster peer carries an employee photo that differs from the channel-member
@@ -413,13 +489,13 @@ class _StubRemoteNoMessage extends WorkspaceRemoteDataSource {
 class _RosterPhotoRepo extends _Repo {
   @override
   Future<Result<List<Member>>> orgMembers() async => const Ok([
-        Member(
-          userId: 'peer',
-          fullName: 'Awa Diallo',
-          avatarUrl: 'https://roster/awa.png',
-          poste: 'RH',
-        ),
-      ]);
+    Member(
+      userId: 'peer',
+      fullName: 'Awa Diallo',
+      avatarUrl: 'https://roster/awa.png',
+      poste: 'RH',
+    ),
+  ]);
 }
 
 /// Roster is empty (unavailable / no eligible members) — enrichment must

@@ -143,6 +143,29 @@ class _BaseRepo implements WorkspaceRepository {
       Ok(Conversation(id: 'new', type: ConversationType.public, title: name));
   @override
   Future<Result<void>> joinChannel(String channelId) async => const Ok(null);
+
+  @override
+  Future<Result<List<WorkspaceStatus>>> statuses() async =>
+      const Ok(<WorkspaceStatus>[]);
+
+  @override
+  Future<Result<WorkspaceStatus>> createStatus({
+    String? content,
+    String? bgColor,
+    String? font,
+    String? mediaPath,
+  }) async =>
+      const Ok(WorkspaceStatus(id: 's', authorId: 'me', kind: StatusKind.text));
+
+  @override
+  Future<Result<void>> viewStatus(String statusId) async => const Ok(null);
+
+  @override
+  Future<Result<List<StatusViewer>>> statusViewers(String statusId) async =>
+      const Ok(<StatusViewer>[]);
+
+  @override
+  Future<Result<void>> deleteStatus(String statusId) async => const Ok(null);
 }
 
 class _DataRepo extends _BaseRepo {

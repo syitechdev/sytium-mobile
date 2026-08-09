@@ -342,3 +342,90 @@ class Presence {
   final String? fullName;
   final String? avatarUrl;
 }
+
+/// Nature d'un statut (story). Le texte porte `content`+`bgColor`+`font` ; les
+/// médias portent `mediaUrl`.
+enum StatusKind { text, image, video }
+
+StatusKind statusKindFromApi(String raw) => switch (raw) {
+  'image' => StatusKind.image,
+  'video' => StatusKind.video,
+  _ => StatusKind.text,
+};
+
+/// Un statut éphémère (24 h) d'un collègue.
+@immutable
+class WorkspaceStatus {
+  const WorkspaceStatus({
+    required this.id,
+    required this.authorId,
+    required this.kind,
+    this.content,
+    this.mediaUrl,
+    this.bgColor,
+    this.font,
+    this.createdAt,
+    this.expiresAt,
+    this.viewedByMe = false,
+    this.authorName,
+    this.authorAvatarUrl,
+  });
+
+  final String id;
+  final String authorId;
+  final StatusKind kind;
+  final String? content;
+  final String? mediaUrl;
+  final String? bgColor;
+  final String? font;
+  final DateTime? createdAt;
+  final DateTime? expiresAt;
+  final bool viewedByMe;
+  final String? authorName;
+  final String? authorAvatarUrl;
+
+  /// Filtrage défensif : le serveur ne renvoie que les actifs, mais un statut
+  /// resté en cache peut avoir dépassé `expiresAt`.
+  bool get isExpired {
+    final e = expiresAt;
+    return e != null && e.isBefore(DateTime.now());
+  }
+}
+
+/// Un spectateur d'un statut (« Vu par »).
+@immutable
+class StatusViewer {
+  const StatusViewer({
+    required this.userId,
+    required this.fullName,
+    this.viewedAt,
+  });
+
+  final String userId;
+  final String fullName;
+  final DateTime? viewedAt;
+}
+
+/// Les statuts d'un même auteur, groupés pour le rail (une bulle par auteur).
+@immutable
+class StatusAuthorGroup {
+  const StatusAuthorGroup({
+    required this.authorId,
+    required this.authorName,
+    required this.statuses,
+    required this.isMine,
+    this.authorAvatarUrl,
+  });
+
+  final String authorId;
+  final String authorName;
+  final String? authorAvatarUrl;
+  final List<WorkspaceStatus> statuses;
+  final bool isMine;
+
+  /// Au moins un statut non vu → anneau coloré dans le rail.
+  bool get hasUnseen => statuses.any((s) => !s.viewedByMe);
+
+  /// Récence du groupe (dernier statut), pour le tri du rail.
+  DateTime? get lastAt => statuses.isEmpty ? null : statuses.last.createdAt;
+}

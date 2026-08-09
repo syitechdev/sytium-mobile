@@ -156,6 +156,51 @@ class WorkspaceRepositoryImpl implements WorkspaceRepository {
       });
 
   @override
+  Future<Result<List<WorkspaceStatus>>> statuses() => _guard(() async {
+    final dtos = await _remote.statuses();
+    return dtos.map(_statusToDomain).toList();
+  });
+
+  @override
+  Future<Result<WorkspaceStatus>> createStatus({
+    String? content,
+    String? bgColor,
+    String? font,
+    String? mediaPath,
+  }) => _guard(() async {
+    final dto = await _remote.createStatus(
+      content: content,
+      bgColor: bgColor,
+      font: font,
+      mediaPath: mediaPath,
+    );
+    return _statusToDomain(dto);
+  });
+
+  @override
+  Future<Result<void>> viewStatus(String statusId) =>
+      _guard(() async => _remote.viewStatus(statusId));
+
+  @override
+  Future<Result<List<StatusViewer>>> statusViewers(String statusId) =>
+      _guard(() async {
+        final dtos = await _remote.statusViewers(statusId);
+        return dtos
+            .map(
+              (d) => StatusViewer(
+                userId: d.userId,
+                fullName: d.fullName,
+                viewedAt: d.viewedAt,
+              ),
+            )
+            .toList();
+      });
+
+  @override
+  Future<Result<void>> deleteStatus(String statusId) =>
+      _guard(() async => _remote.deleteStatus(statusId));
+
+  @override
   Future<Result<MessagesPage>> messages(
     String channelId, {
     String? cursor,
@@ -312,6 +357,21 @@ class WorkspaceRepositoryImpl implements WorkspaceRepository {
             isDeleted: d.parent!.deletedAt != null,
           ),
     deliveryState: deliveryStateFromApi(d.deliverySummary?.state),
+  );
+
+  WorkspaceStatus _statusToDomain(WorkspaceStatusDto d) => WorkspaceStatus(
+    id: d.id,
+    authorId: d.userId,
+    kind: statusKindFromApi(d.kind),
+    content: d.content,
+    mediaUrl: d.mediaUrl,
+    bgColor: d.bgColor,
+    font: d.font,
+    createdAt: d.createdAt,
+    expiresAt: d.expiresAt,
+    viewedByMe: d.viewedByMe,
+    authorName: d.author?.fullName,
+    authorAvatarUrl: d.author?.avatarUrl,
   );
 
   Future<Result<T>> _guard<T>(Future<T> Function() run) async {

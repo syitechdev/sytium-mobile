@@ -23,6 +23,14 @@ DateTime? _dateFrom(Object? v) {
   return null;
 }
 
+/// Tolerant bool parser (a backend may send `1`/`"true"` instead of `true`).
+bool _boolFrom(Object? v) => v == true || v == 1 || v == '1' || v == 'true';
+
+/// The backend serialises the "seen by me" flag as `viewed_by_me` OR the
+/// camelCase `viewedByMe` depending on the path — read whichever is present.
+Object? _readViewed(Map<dynamic, dynamic> json, String key) =>
+    json['viewed_by_me'] ?? json['viewedByMe'];
+
 @freezed
 class ChannelDto with _$ChannelDto {
   const factory ChannelDto({
@@ -265,4 +273,43 @@ class MessagesPageDto with _$MessagesPageDto {
 
   factory MessagesPageDto.fromJson(Map<String, dynamic> json) =>
       _$MessagesPageDtoFromJson(json);
+}
+
+/// Un statut (story éphémère 24 h). `kind` = text/image/video. Le texte porte
+/// `content` + `bg_color` + `font` ; les médias portent `media_url`. `author`
+/// réutilise le profil (full_name + avatar_url).
+@freezed
+class WorkspaceStatusDto with _$WorkspaceStatusDto {
+  const factory WorkspaceStatusDto({
+    @Default('') String id,
+    @JsonKey(name: 'user_id') @Default('') String userId,
+    @Default('text') String kind,
+    String? content,
+    @JsonKey(name: 'media_url') String? mediaUrl,
+    @JsonKey(name: 'bg_color') String? bgColor,
+    String? font,
+    @JsonKey(name: 'created_at', fromJson: _dateFrom) DateTime? createdAt,
+    @JsonKey(name: 'expires_at', fromJson: _dateFrom) DateTime? expiresAt,
+    @JsonKey(name: 'viewed_by_me', readValue: _readViewed, fromJson: _boolFrom)
+    @Default(false)
+    bool viewedByMe,
+    MemberProfileDto? author,
+  }) = _WorkspaceStatusDto;
+
+  factory WorkspaceStatusDto.fromJson(Map<String, dynamic> json) =>
+      _$WorkspaceStatusDtoFromJson(json);
+}
+
+/// Un spectateur d'un statut (« Vu par »).
+@freezed
+class WorkspaceStatusViewerDto with _$WorkspaceStatusViewerDto {
+  const factory WorkspaceStatusViewerDto({
+    @JsonKey(name: 'user_id') @Default('') String userId,
+    @JsonKey(name: 'viewed_at', fromJson: _dateFrom) DateTime? viewedAt,
+    @JsonKey(name: 'full_name') @Default('') String fullName,
+    @Default('') String email,
+  }) = _WorkspaceStatusViewerDto;
+
+  factory WorkspaceStatusViewerDto.fromJson(Map<String, dynamic> json) =>
+      _$WorkspaceStatusViewerDtoFromJson(json);
 }

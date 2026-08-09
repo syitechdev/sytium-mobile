@@ -39,8 +39,7 @@ class _FakeAuth extends AuthController {
 
 class _FakePointageRepo implements PointageRepository {
   @override
-  Future<Result<PointageStatus>> status() async =>
-      const Err(NetworkFailure());
+  Future<Result<PointageStatus>> status() async => const Err(NetworkFailure());
   @override
   Future<Result<List<PointageZone>>> sites() async => const Ok([]);
   @override
@@ -63,7 +62,6 @@ class _CountingPointageRepo extends _FakePointageRepo {
 }
 
 class _FakeStatsRepo implements StatsRepository {
-
   @override
   Future<Result<WorkingCapital>> workingCapital() =>
       Completer<Result<WorkingCapital>>().future;
@@ -82,29 +80,46 @@ class _FakeStatsRepo implements StatsRepository {
 
 class _FakeWorkspaceRepo implements WorkspaceRepository {
   @override
-  Future<Result<List<int>>> downloadAttachment(String url) async => const Ok(<int>[]);
+  Future<Result<List<int>>> downloadAttachment(String url) async =>
+      const Ok(<int>[]);
 
   @override
-  Future<Result<void>> setPinned(String messageId, {required bool pinned}) async => const Ok(null);
+  Future<Result<void>> setPinned(
+    String messageId, {
+    required bool pinned,
+  }) async => const Ok(null);
 
   @override
-  Future<Result<void>> setBookmarked(String messageId, {required bool bookmarked}) async => const Ok(null);
+  Future<Result<void>> setBookmarked(
+    String messageId, {
+    required bool bookmarked,
+  }) async => const Ok(null);
 
   @override
-  Future<Result<String?>> transcribeMessage(String messageId) async => const Ok(null);
+  Future<Result<String?>> transcribeMessage(String messageId) async =>
+      const Ok(null);
 
   @override
   Future<Result<void>> sendTyping(String channelId) async => const Ok(null);
 
   @override
-  Future<Result<void>> addMembers(String channelId, List<String> userIds, {String? role}) async => const Ok(null);
+  Future<Result<void>> addMembers(
+    String channelId,
+    List<String> userIds, {
+    String? role,
+  }) async => const Ok(null);
 
   @override
-  Future<Result<Conversation>> setChannelArchived(String channelId, {required bool isArchived}) async =>
-      const Ok(Conversation(id: 'c', type: ConversationType.public, title: 'C'));
+  Future<Result<Conversation>> setChannelArchived(
+    String channelId, {
+    required bool isArchived,
+  }) async => const Ok(
+    Conversation(id: 'c', type: ConversationType.public, title: 'C'),
+  );
 
   @override
-  Future<Result<List<Conversation>>> archivedChannels() async => const Ok(<Conversation>[]);
+  Future<Result<List<Conversation>>> archivedChannels() async =>
+      const Ok(<Conversation>[]);
 
   @override
   Future<Result<List<Message>>> mentions() async => const Ok(<Message>[]);
@@ -113,20 +128,25 @@ class _FakeWorkspaceRepo implements WorkspaceRepository {
   Future<Result<List<Message>>> bookmarks() async => const Ok(<Message>[]);
 
   @override
-  Future<Result<List<Message>>> channelPins(String channelId) async => const Ok(<Message>[]);
+  Future<Result<List<Message>>> channelPins(String channelId) async =>
+      const Ok(<Message>[]);
 
   @override
   Future<Result<List<Conversation>>> conversations() async => const Ok([]);
   @override
-  Future<Result<List<Member>>> channelMembers(String channelId) async => const Ok([]);
+  Future<Result<List<Member>>> channelMembers(String channelId) async =>
+      const Ok([]);
   @override
   Future<Result<List<Member>>> orgMembers() async => const Ok([]);
   @override
   Future<Result<Conversation>> openDm(String userId) async =>
       const Ok(Conversation(id: 'dm1', type: ConversationType.dm, title: 'X'));
   @override
-  Future<Result<MessagesPage>> messages(String channelId, {String? cursor, int limit = 50}) async =>
-      const Ok(MessagesPage(messages: []));
+  Future<Result<MessagesPage>> messages(
+    String channelId, {
+    String? cursor,
+    int limit = 50,
+  }) async => const Ok(MessagesPage(messages: []));
   @override
   Future<Result<Message>> sendMessage(
     String channelId, {
@@ -161,13 +181,41 @@ class _FakeWorkspaceRepo implements WorkspaceRepository {
       Ok(Conversation(id: 'new', type: ConversationType.public, title: name));
   @override
   Future<Result<void>> joinChannel(String channelId) async => const Ok(null);
+
+  @override
+  Future<Result<List<WorkspaceStatus>>> statuses() async =>
+      const Ok(<WorkspaceStatus>[]);
+
+  @override
+  Future<Result<WorkspaceStatus>> createStatus({
+    String? content,
+    String? bgColor,
+    String? font,
+    String? mediaPath,
+  }) async =>
+      const Ok(WorkspaceStatus(id: 's', authorId: 'me', kind: StatusKind.text));
+
+  @override
+  Future<Result<void>> viewStatus(String statusId) async => const Ok(null);
+
+  @override
+  Future<Result<List<StatusViewer>>> statusViewers(String statusId) async =>
+      const Ok(<StatusViewer>[]);
+
+  @override
+  Future<Result<void>> deleteStatus(String statusId) async => const Ok(null);
 }
 
 class _UnreadWorkspaceRepo extends _FakeWorkspaceRepo {
   @override
   Future<Result<List<Conversation>>> conversations() async => const Ok([
-        Conversation(id: 'c1', type: ConversationType.public, title: 'Général', unreadCount: 5),
-      ]);
+    Conversation(
+      id: 'c1',
+      type: ConversationType.public,
+      title: 'Général',
+      unreadCount: 5,
+    ),
+  ]);
 }
 
 // ---------------------------------------------------------------------------
@@ -175,9 +223,9 @@ class _UnreadWorkspaceRepo extends _FakeWorkspaceRepo {
 // ---------------------------------------------------------------------------
 
 AuthSession _session() => const AuthSession(
-      user: AuthUser(id: 'u1', name: 'Alexis K', email: 'a@b.c'),
-      capabilities: MobileCapabilities.baseline(),
-    );
+  user: AuthUser(id: 'u1', name: 'Alexis K', email: 'a@b.c'),
+  capabilities: MobileCapabilities.baseline(),
+);
 
 Future<void> _pump(WidgetTester tester, {PointageRepository? pointage}) async {
   await tester.pumpWidget(
@@ -190,10 +238,7 @@ Future<void> _pump(WidgetTester tester, {PointageRepository? pointage}) async {
         statsRepositoryProvider.overrideWithValue(_FakeStatsRepo()),
         workspaceRepositoryProvider.overrideWithValue(_FakeWorkspaceRepo()),
       ],
-      child: MaterialApp(
-        theme: AppTheme.light(),
-        home: const HomeShell(),
-      ),
+      child: MaterialApp(theme: AppTheme.light(), home: const HomeShell()),
     ),
   );
   await tester.pump();
@@ -258,8 +303,7 @@ void main() {
     await tester.pumpWidget(const SizedBox());
   });
 
-  testWidgets('switches to ExplorerScreen on the Explorer tab',
-      (tester) async {
+  testWidgets('switches to ExplorerScreen on the Explorer tab', (tester) async {
     await _pump(tester);
     await tester.tap(find.text('Explorer'));
     await tester.pump();
@@ -276,18 +320,21 @@ void main() {
     await tester.pumpWidget(const SizedBox());
   });
 
-  test('Message tab badge reflects unread conversations via workspaceUnreadProvider', () async {
-    final container = ProviderContainer(
-      overrides: [
-        authControllerProvider.overrideWith(_FakeAuth.new),
-        pointageRepositoryProvider.overrideWithValue(_FakePointageRepo()),
-        statsRepositoryProvider.overrideWithValue(_FakeStatsRepo()),
-        workspaceRepositoryProvider.overrideWithValue(_UnreadWorkspaceRepo()),
-      ],
-    );
-    addTearDown(container.dispose);
-    await container.read(authControllerProvider.future);
-    await container.read(conversationsProvider.future);
-    expect(container.read(workspaceUnreadProvider), 5);
-  });
+  test(
+    'Message tab badge reflects unread conversations via workspaceUnreadProvider',
+    () async {
+      final container = ProviderContainer(
+        overrides: [
+          authControllerProvider.overrideWith(_FakeAuth.new),
+          pointageRepositoryProvider.overrideWithValue(_FakePointageRepo()),
+          statsRepositoryProvider.overrideWithValue(_FakeStatsRepo()),
+          workspaceRepositoryProvider.overrideWithValue(_UnreadWorkspaceRepo()),
+        ],
+      );
+      addTearDown(container.dispose);
+      await container.read(authControllerProvider.future);
+      await container.read(conversationsProvider.future);
+      expect(container.read(workspaceUnreadProvider), 5);
+    },
+  );
 }
