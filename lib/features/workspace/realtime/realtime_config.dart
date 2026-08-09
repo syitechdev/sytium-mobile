@@ -33,8 +33,10 @@ abstract final class RealtimeConfig {
   static const int port = int.fromEnvironment('REVERB_PORT', defaultValue: 443);
 
   /// `http`/`https` (`REVERB_SCHEME`). `https` → TLS (wss). Defaults to https.
-  static const String scheme =
-      String.fromEnvironment('REVERB_SCHEME', defaultValue: 'https');
+  static const String scheme = String.fromEnvironment(
+    'REVERB_SCHEME',
+    defaultValue: 'https',
+  );
 
   /// Whether to use TLS (wss). Derived from [scheme].
   static bool get useTls => scheme == 'https';

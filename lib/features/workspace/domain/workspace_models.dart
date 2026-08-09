@@ -1,8 +1,9 @@
 import 'package:flutter/foundation.dart';
 
 /// Conversation kind. `dm` resolves its title/avatar to the peer; channels
-/// keep their `name` and render a `#` icon.
-enum ConversationType { public, private, dm }
+/// keep their `name` and render a `#` icon. `ai` is the synthetic "Sytium IA"
+/// assistant entry merged into the list (indigo robot).
+enum ConversationType { public, private, dm, ai }
 
 /// Maps a backend channel `type` string to [ConversationType] (defaults to
 /// public so an unknown type never crashes the list).

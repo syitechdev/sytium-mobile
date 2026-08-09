@@ -5,6 +5,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:sytium_mobile/core/error/failure.dart';
 import 'package:sytium_mobile/core/result/result.dart';
+import 'package:sytium_mobile/features/ai/application/ai_providers.dart';
+import 'package:sytium_mobile/features/ai/domain/ai_models.dart';
 import 'package:sytium_mobile/features/auth/application/auth_controller.dart';
 import 'package:sytium_mobile/features/auth/domain/auth_session.dart';
 import 'package:sytium_mobile/features/auth/domain/auth_user.dart';
@@ -237,6 +239,9 @@ Future<void> _pump(WidgetTester tester, {PointageRepository? pointage}) async {
         ),
         statsRepositoryProvider.overrideWithValue(_FakeStatsRepo()),
         workspaceRepositoryProvider.overrideWithValue(_FakeWorkspaceRepo()),
+        aiConversationsProvider.overrideWith(
+          (ref) async => const <AiConversation>[],
+        ),
       ],
       child: MaterialApp(theme: AppTheme.light(), home: const HomeShell()),
     ),
@@ -329,6 +334,9 @@ void main() {
           pointageRepositoryProvider.overrideWithValue(_FakePointageRepo()),
           statsRepositoryProvider.overrideWithValue(_FakeStatsRepo()),
           workspaceRepositoryProvider.overrideWithValue(_UnreadWorkspaceRepo()),
+          aiConversationsProvider.overrideWith(
+            (ref) async => const <AiConversation>[],
+          ),
         ],
       );
       addTearDown(container.dispose);

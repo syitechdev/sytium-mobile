@@ -5,6 +5,10 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'package:sytium_mobile/app/lifecycle/app_foreground.dart';
 import 'package:sytium_mobile/core/error/failure.dart';
 import 'package:sytium_mobile/core/result/result.dart';
+import 'package:sytium_mobile/features/ai/application/ai_providers.dart';
+import 'package:sytium_mobile/features/ai/domain/ai_models.dart';
+import 'package:sytium_mobile/features/ai/domain/ai_repository.dart';
+import 'package:sytium_mobile/features/ai/presentation/ai_chat_screen.dart';
 import 'package:sytium_mobile/features/auth/application/auth_controller.dart';
 import 'package:sytium_mobile/features/auth/domain/auth_session.dart';
 import 'package:sytium_mobile/features/auth/domain/auth_user.dart';
@@ -209,6 +213,10 @@ Widget _host(WorkspaceRepository repo) => ProviderScope(
     workspaceRepositoryProvider.overrideWithValue(repo),
     // Prevent any test from instantiating the real Pusher SDK adapter.
     workspaceRealtimeProvider.overrideWithValue(FakeWorkspaceRealtime()),
+    // L'entrée « Sytium IA » dépend d'un appel réseau : neutralisée en test.
+    aiConversationsProvider.overrideWith(
+      (ref) async => const <AiConversation>[],
+    ),
   ],
   // Theme on the MaterialApp so pushed routes (ChatThreadScreen) inherit
   // SytiumColors. pollInterval: null disables the polling timer.
@@ -224,6 +232,16 @@ class _Background extends AppForeground {
   bool build() => false;
 }
 
+/// Repo IA minimal pour l'écran de chat ouvert depuis la liste (init historique).
+class _FakeAiRepo implements AiRepository {
+  @override
+  Future<Result<List<AiMessage>>> messages(String conversationId) async =>
+      const Ok(<AiMessage>[]);
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
 void main() {
   testWidgets('ne bat pas le cœur de présence en arrière-plan', (tester) async {
     final repo = _DataRepo();
@@ -233,6 +251,9 @@ void main() {
           authControllerProvider.overrideWith(_FakeAuth.new),
           workspaceRepositoryProvider.overrideWithValue(repo),
           workspaceRealtimeProvider.overrideWithValue(FakeWorkspaceRealtime()),
+          aiConversationsProvider.overrideWith(
+            (ref) async => const <AiConversation>[],
+          ),
           appForegroundProvider.overrideWith(_Background.new),
         ],
         child: MaterialApp(
@@ -362,6 +383,37 @@ void main() {
     await tester.tap(find.text('Nouveau canal'));
     await tester.pumpAndSettle();
     expect(find.text('Créer le canal'), findsOneWidget);
+    await tester.pumpWidget(const SizedBox());
+  });
+
+  testWidgets('affiche l’entrée « Sytium IA » et ouvre le chat IA', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          authControllerProvider.overrideWith(_FakeAuth.new),
+          workspaceRepositoryProvider.overrideWithValue(_DataRepo()),
+          workspaceRealtimeProvider.overrideWithValue(FakeWorkspaceRealtime()),
+          aiConversationsProvider.overrideWith(
+            (ref) async => const [AiConversation(id: 'a1', title: 'Résumé')],
+          ),
+          aiRepositoryProvider.overrideWithValue(_FakeAiRepo()),
+        ],
+        child: MaterialApp(
+          theme: AppTheme.light(),
+          home: const WorkspaceScreen(pollInterval: null),
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump();
+    await tester.pump();
+
+    expect(find.text('Sytium IA'), findsOneWidget);
+    await tester.tap(find.text('Sytium IA'));
+    await tester.pumpAndSettle();
+    expect(find.byType(AiChatScreen), findsOneWidget);
     await tester.pumpWidget(const SizedBox());
   });
 

@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:sytium_mobile/features/ai/application/ai_providers.dart';
 import 'package:sytium_mobile/features/auth/application/auth_controller.dart';
 import 'package:sytium_mobile/features/auth/application/auth_providers.dart';
 import 'package:sytium_mobile/features/workspace/data/workspace_remote_data_source.dart';
@@ -60,7 +61,7 @@ Future<List<Conversation>> conversations(Ref ref) async {
   // avatar, peerId set in the repo), so a DM with a resolved peer needs NO
   // per-DM request — only the employee-photo enrichment from the cached roster.
   // A DM WITHOUT `other_user` (legacy payloads) still falls back to `dmPeer`.
-  final resolved = await Future.wait(
+  final resolved = (await Future.wait(
     channels.map((c) async {
       if (c.type != ConversationType.dm) return c;
       if (c.peerId != null) {
@@ -90,7 +91,31 @@ Future<List<Conversation>> conversations(Ref ref) async {
         lastMessageIsSystem: c.lastMessageIsSystem,
       );
     }),
-  );
+  )).toList();
+
+  // Entrée assistant « Sytium IA » : la conversation IA la plus récente, fusionnée
+  // dans la liste comme une conversation normale (une seule entrée). Un échec IA
+  // ne doit jamais faire tomber la liste des conversations.
+  try {
+    final aiConvos = await ref.watch(aiConversationsProvider.future);
+    if (aiConvos.isNotEmpty) {
+      final latest = aiConvos.first; // trié récent d'abord
+      resolved.add(
+        Conversation(
+          id: latest.id,
+          type: ConversationType.ai,
+          title: 'Sytium IA',
+          lastMessagePreview: latest.title.isNotEmpty
+              ? latest.title
+              : 'Assistant IA',
+          lastMessageAt: latest.updatedAt ?? latest.createdAt,
+          updatedAt: latest.updatedAt,
+        ),
+      );
+    }
+  } catch (_) {
+    // pas d'entrée IA si indisponible
+  }
 
   resolved.sort((a, b) {
     final av = a.lastMessageAt ?? a.updatedAt;

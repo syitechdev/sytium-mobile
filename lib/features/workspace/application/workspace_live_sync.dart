@@ -20,7 +20,10 @@ part 'workspace_live_sync.g.dart';
 const kWorkspaceSyncInterval = Duration(seconds: 20);
 
 /// Broadcast events that mean "this conversation moved".
-const _kMessageEvents = ['workspace.message.created', 'workspace.message.updated'];
+const _kMessageEvents = [
+  'workspace.message.created',
+  'workspace.message.updated',
+];
 
 /// Événement « en train d'écrire » (broadcast serveur, pas un whisper client).
 const _kTypingEvent = 'workspace.typing';
@@ -156,8 +159,10 @@ class WorkspaceLiveSync {
       realtime.subscribe(name, _onEvent, events: _kSubscribedEvents);
     }
     if (gone.isNotEmpty || fresh.isNotEmpty) {
-      _log('${wanted.length} conversations suivies '
-          '(+${fresh.length}/-${gone.length})');
+      _log(
+        '${wanted.length} conversations suivies '
+        '(+${fresh.length}/-${gone.length})',
+      );
     }
     _subscribed = wanted;
   }
@@ -211,9 +216,14 @@ class WorkspaceLiveSync {
     }
     if (userId == _me) return;
     final name = (event.data['name'] as String?)?.trim();
-    _ref.read(typingUsersProvider.notifier).mark(
+    _ref
+        .read(typingUsersProvider.notifier)
+        .mark(
           channelId,
-          TypingUser(userId, (name == null || name.isEmpty) ? 'Quelqu’un' : name),
+          TypingUser(
+            userId,
+            (name == null || name.isEmpty) ? 'Quelqu’un' : name,
+          ),
         );
   }
 

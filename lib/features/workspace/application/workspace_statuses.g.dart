@@ -6,7 +6,7 @@ part of 'workspace_statuses.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$statusGroupsHash() => r'81bf570d66add6722b948639d5dbb892bec7fe81';
+String _$statusGroupsHash() => r'47148dc5dc46959540a1e06f606646946c25414c';
 
 /// Statuts actifs, **groupés par auteur** (une bulle par auteur dans le rail).
 /// Tri : mon statut d'abord, puis les auteurs avec des non-vus (récence desc),

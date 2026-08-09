@@ -24,13 +24,17 @@ class _NewDmSheetState extends ConsumerState<NewDmSheet> {
 
   Future<void> _openDm(BuildContext context, Member member) async {
     _dmOpening = member.userId;
-    final result = await ref.read(workspaceRepositoryProvider).openDm(member.userId);
+    final result = await ref
+        .read(workspaceRepositoryProvider)
+        .openDm(member.userId);
     if (!context.mounted || _dmOpening != member.userId) return;
     _dmOpening = null;
     final conversation = result.valueOrNull;
     if (conversation == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Impossible de démarrer la conversation.')),
+        const SnackBar(
+          content: Text('Impossible de démarrer la conversation.'),
+        ),
       );
       return;
     }
@@ -59,10 +63,9 @@ class _NewDmSheetState extends ConsumerState<NewDmSheet> {
                 children: [
                   Text(
                     'Nouveau message',
-                    style: Theme.of(context)
-                        .textTheme
-                        .titleMedium
-                        ?.copyWith(fontWeight: FontWeight.w700),
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                 ],
               ),
@@ -86,13 +89,19 @@ class _NewDmSheetState extends ConsumerState<NewDmSheet> {
                         itemBuilder: (context, i) {
                           final m = members[i];
                           return ListTile(
-                            leading: AppAvatar(name: m.fullName, imageUrl: m.avatarUrl, radius: 20),
+                            leading: AppAvatar(
+                              name: m.fullName,
+                              imageUrl: m.avatarUrl,
+                              radius: 20,
+                            ),
                             title: Text(m.fullName),
                             subtitle: m.poste == null
                                 ? null
                                 : Text(
                                     m.poste!,
-                                    style: TextStyle(color: context.colors.textMuted),
+                                    style: TextStyle(
+                                      color: context.colors.textMuted,
+                                    ),
                                   ),
                             onTap: () => _openDm(context, m),
                           );

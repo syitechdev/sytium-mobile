@@ -2,6 +2,8 @@ import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sytium_mobile/core/result/result.dart';
+import 'package:sytium_mobile/features/ai/application/ai_providers.dart';
+import 'package:sytium_mobile/features/ai/domain/ai_models.dart';
 import 'package:sytium_mobile/features/auth/application/auth_controller.dart';
 import 'package:sytium_mobile/features/auth/domain/auth_session.dart';
 import 'package:sytium_mobile/features/auth/domain/auth_user.dart';
@@ -200,6 +202,11 @@ ProviderContainer _container({_Repo? repo}) => ProviderContainer(
   overrides: [
     authControllerProvider.overrideWith(_FakeAuth.new),
     workspaceRepositoryProvider.overrideWithValue(repo ?? _Repo()),
+    // L'entrée « Sytium IA » de la liste dépend d'un appel réseau : neutralisé
+    // en test (liste vide → pas d'entrée IA).
+    aiConversationsProvider.overrideWith(
+      (ref) async => const <AiConversation>[],
+    ),
   ],
 );
 

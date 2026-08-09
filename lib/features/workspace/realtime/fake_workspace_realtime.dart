@@ -17,7 +17,8 @@ class FakeWorkspaceRealtime implements WorkspaceRealtime {
 
   bool connected = false;
 
-  final StreamController<void> _reconnected = StreamController<void>.broadcast();
+  final StreamController<void> _reconnected =
+      StreamController<void>.broadcast();
 
   @override
   Stream<void> get onReconnected => _reconnected.stream;

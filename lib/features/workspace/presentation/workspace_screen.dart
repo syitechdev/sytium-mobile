@@ -115,7 +115,9 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
   void _openConversation(Conversation c) {
     Navigator.of(context).push(
       MaterialPageRoute<void>(
-        builder: (_) => ChatThreadScreen(conversation: c),
+        builder: (_) => c.type == ConversationType.ai
+            ? AiChatScreen(conversationId: c.id)
+            : ChatThreadScreen(conversation: c),
       ),
     );
   }
@@ -217,7 +219,8 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
 
   bool _matchesSegment(Conversation c) => switch (_segment) {
     _Segment.all => true,
-    _Segment.channels => c.type != ConversationType.dm,
+    _Segment.channels =>
+      c.type == ConversationType.public || c.type == ConversationType.private,
     _Segment.dms => c.type == ConversationType.dm,
     _Segment.unread => c.unreadCount > 0,
   };
@@ -246,7 +249,11 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
               _SegmentBar(
                 selected: _segment,
                 channels: convos
-                    .where((c) => c.type != ConversationType.dm)
+                    .where(
+                      (c) =>
+                          c.type == ConversationType.public ||
+                          c.type == ConversationType.private,
+                    )
                     .length,
                 dms: convos.where((c) => c.type == ConversationType.dm).length,
                 unread: convos.where((c) => c.unreadCount > 0).length,
@@ -726,6 +733,17 @@ class _Leading extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = context.colors;
     final c = conversation;
+    if (c.type == ConversationType.ai) {
+      return SizedBox(
+        width: 48,
+        height: 48,
+        child: CircleAvatar(
+          radius: 24,
+          backgroundColor: colors.ai,
+          child: const Icon(Icons.smart_toy, color: Colors.white),
+        ),
+      );
+    }
     if (c.type == ConversationType.dm) {
       return SizedBox(
         width: 48,

@@ -3,6 +3,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:sytium_mobile/app/lifecycle/app_foreground.dart';
 import 'package:sytium_mobile/core/error/failure.dart';
 import 'package:sytium_mobile/core/result/result.dart';
+import 'package:sytium_mobile/features/ai/application/ai_providers.dart';
+import 'package:sytium_mobile/features/ai/domain/ai_models.dart';
 import 'package:sytium_mobile/features/auth/application/auth_controller.dart';
 import 'package:sytium_mobile/features/auth/domain/auth_session.dart';
 import 'package:sytium_mobile/features/auth/domain/auth_user.dart';
@@ -19,16 +21,16 @@ import 'package:sytium_mobile/features/workspace/realtime/workspace_realtime_pro
 class _OrgAuth extends AuthController {
   @override
   Future<AuthState> build() async => const Authenticated(
-        AuthSession(
-          user: AuthUser(
-            id: 'me',
-            name: 'Moi',
-            email: 'me@x.io',
-            organizationId: 'org-9',
-          ),
-          capabilities: MobileCapabilities.baseline(),
-        ),
-      );
+    AuthSession(
+      user: AuthUser(
+        id: 'me',
+        name: 'Moi',
+        email: 'me@x.io',
+        organizationId: 'org-9',
+      ),
+      capabilities: MobileCapabilities.baseline(),
+    ),
+  );
 }
 
 /// Authenticated but with no organization — the app must not build a bogus
@@ -36,32 +38,49 @@ class _OrgAuth extends AuthController {
 class _NoOrgAuth extends AuthController {
   @override
   Future<AuthState> build() async => const Authenticated(
-        AuthSession(
-          user: AuthUser(id: 'me', name: 'Moi', email: 'me@x.io'),
-          capabilities: MobileCapabilities.baseline(),
-        ),
-      );
+    AuthSession(
+      user: AuthUser(id: 'me', name: 'Moi', email: 'me@x.io'),
+      capabilities: MobileCapabilities.baseline(),
+    ),
+  );
 }
 
 class _Repo implements WorkspaceRepository {
   _Repo({List<Conversation>? channels})
-      : channels = channels ??
-            const [
-              Conversation(id: 'c1', type: ConversationType.public, title: 'general'),
-              Conversation(id: 'c2', type: ConversationType.private, title: 'direction'),
-            ];
+    : channels =
+          channels ??
+          const [
+            Conversation(
+              id: 'c1',
+              type: ConversationType.public,
+              title: 'general',
+            ),
+            Conversation(
+              id: 'c2',
+              type: ConversationType.private,
+              title: 'direction',
+            ),
+          ];
 
   @override
-  Future<Result<List<int>>> downloadAttachment(String url) async => const Ok(<int>[]);
+  Future<Result<List<int>>> downloadAttachment(String url) async =>
+      const Ok(<int>[]);
 
   @override
-  Future<Result<void>> setPinned(String messageId, {required bool pinned}) async => const Ok(null);
+  Future<Result<void>> setPinned(
+    String messageId, {
+    required bool pinned,
+  }) async => const Ok(null);
 
   @override
-  Future<Result<void>> setBookmarked(String messageId, {required bool bookmarked}) async => const Ok(null);
+  Future<Result<void>> setBookmarked(
+    String messageId, {
+    required bool bookmarked,
+  }) async => const Ok(null);
 
   @override
-  Future<Result<String?>> transcribeMessage(String messageId) async => const Ok(null);
+  Future<Result<String?>> transcribeMessage(String messageId) async =>
+      const Ok(null);
 
   @override
   Future<Result<void>> sendTyping(String channelId) async => const Ok(null);
@@ -79,13 +98,18 @@ class _Repo implements WorkspaceRepository {
   }
 
   @override
-  Future<Result<MessagesPage>> messages(String channelId, {String? cursor, int limit = 50}) async {
+  Future<Result<MessagesPage>> messages(
+    String channelId, {
+    String? cursor,
+    int limit = 50,
+  }) async {
     messageCalls.add(channelId);
     return const Ok(MessagesPage(messages: []));
   }
 
   @override
-  Future<Result<List<Member>>> channelMembers(String channelId) async => const Ok([]);
+  Future<Result<List<Member>>> channelMembers(String channelId) async =>
+      const Ok([]);
 
   @override
   Future<Result<List<Member>>> orgMembers() async => const Ok([]);
@@ -106,9 +130,14 @@ ProviderContainer _container(
       authControllerProvider.overrideWith(auth ?? _OrgAuth.new),
       workspaceRepositoryProvider.overrideWithValue(repo),
       workspaceRealtimeProvider.overrideWithValue(realtime),
+      aiConversationsProvider.overrideWith(
+        (ref) async => const <AiConversation>[],
+      ),
       // Le vrai provider écoute le cycle de vie de la plateforme ; ici on
       // décide explicitement si l'app est devant l'utilisateur.
-      appForegroundProvider.overrideWith(() => _Foreground(initial: foreground)),
+      appForegroundProvider.overrideWith(
+        () => _Foreground(initial: foreground),
+      ),
     ],
   );
   addTearDown(container.dispose);
@@ -203,31 +232,36 @@ void main() {
     expect(repo.messageCalls.length, before);
   });
 
-  test('ne recharge pas le fil ouvert quand l’événement vise un autre canal',
-      () async {
-    final realtime = FakeWorkspaceRealtime();
-    final repo = _Repo();
-    final container = _container(repo, realtime);
+  test(
+    'ne recharge pas le fil ouvert quand l’événement vise un autre canal',
+    () async {
+      final realtime = FakeWorkspaceRealtime();
+      final repo = _Repo();
+      final container = _container(repo, realtime);
 
-    container.read(workspaceLiveSyncProvider).start(pollInterval: null);
-    await _settle();
-    container.read(activeChatChannelProvider.notifier).enter('c1');
-    final thread = container.listen(channelMessagesProvider('c1'), (_, __) {});
-    addTearDown(thread.close);
-    await _settle();
-    final before = repo.messageCalls.length;
+      container.read(workspaceLiveSyncProvider).start(pollInterval: null);
+      await _settle();
+      container.read(activeChatChannelProvider.notifier).enter('c1');
+      final thread = container.listen(
+        channelMessagesProvider('c1'),
+        (_, __) {},
+      );
+      addTearDown(thread.close);
+      await _settle();
+      final before = repo.messageCalls.length;
 
-    realtime.emit(
-      c2,
-      const RealtimeEvent(
-        event: 'workspace.message.created',
-        data: {'channel_id': 'c2'},
-      ),
-    );
-    await _settle();
+      realtime.emit(
+        c2,
+        const RealtimeEvent(
+          event: 'workspace.message.created',
+          data: {'channel_id': 'c2'},
+        ),
+      );
+      await _settle();
 
-    expect(repo.messageCalls.length, before);
-  });
+      expect(repo.messageCalls.length, before);
+    },
+  );
 
   test('ignores events that are not about a message', () async {
     final realtime = FakeWorkspaceRealtime();
@@ -250,28 +284,31 @@ void main() {
     expect(repo.conversationCalls, before);
   });
 
-  test('follows the list: subscribes to what appears, drops what leaves',
-      () async {
-    final realtime = FakeWorkspaceRealtime();
-    final repo = _Repo();
-    final container = _container(repo, realtime);
-    final sync = container.read(workspaceLiveSyncProvider)..start(pollInterval: null);
-    await _settle();
+  test(
+    'follows the list: subscribes to what appears, drops what leaves',
+    () async {
+      final realtime = FakeWorkspaceRealtime();
+      final repo = _Repo();
+      final container = _container(repo, realtime);
+      final sync = container.read(workspaceLiveSyncProvider)
+        ..start(pollInterval: null);
+      await _settle();
 
-    // c2 left (channel quit), c3 appeared (new DM).
-    repo.channels = const [
-      Conversation(id: 'c1', type: ConversationType.public, title: 'general'),
-      Conversation(id: 'c3', type: ConversationType.dm, title: 'dm-x'),
-    ];
-    container.invalidate(conversationsProvider);
-    await _settle();
+      // c2 left (channel quit), c3 appeared (new DM).
+      repo.channels = const [
+        Conversation(id: 'c1', type: ConversationType.public, title: 'general'),
+        Conversation(id: 'c3', type: ConversationType.dm, title: 'dm-x'),
+      ];
+      container.invalidate(conversationsProvider);
+      await _settle();
 
-    expect(realtime.subscribed, contains('private-org.org-9.workspace.c3'));
-    expect(realtime.unsubscribed, contains(c2));
-    // c1 was never dropped and re-authed for nothing.
-    expect(realtime.subscribed.where((n) => n == c1), hasLength(1));
-    expect(sync.subscribedChannels, contains(c1));
-  });
+      expect(realtime.subscribed, contains('private-org.org-9.workspace.c3'));
+      expect(realtime.unsubscribed, contains(c2));
+      // c1 was never dropped and re-authed for nothing.
+      expect(realtime.subscribed.where((n) => n == c1), hasLength(1));
+      expect(sync.subscribedChannels, contains(c1));
+    },
+  );
 
   test('polls the list as a fallback when the socket is down', () async {
     final realtime = FakeWorkspaceRealtime(isConfigured: false);
@@ -312,7 +349,8 @@ void main() {
     final realtime = FakeWorkspaceRealtime();
     final repo = _Repo();
     final container = _container(repo, realtime);
-    final sync = container.read(workspaceLiveSyncProvider)..start(pollInterval: null);
+    final sync = container.read(workspaceLiveSyncProvider)
+      ..start(pollInterval: null);
     await _settle();
 
     sync.stop();
@@ -329,35 +367,40 @@ void main() {
     expect(repo.conversationCalls, before);
   });
 
-  test('en arrière-plan, ne recharge PAS le fil (sinon le serveur le marque lu)',
-      () async {
-    final realtime = FakeWorkspaceRealtime();
-    final repo = _Repo();
-    final container = _container(repo, realtime, foreground: false);
+  test(
+    'en arrière-plan, ne recharge PAS le fil (sinon le serveur le marque lu)',
+    () async {
+      final realtime = FakeWorkspaceRealtime();
+      final repo = _Repo();
+      final container = _container(repo, realtime, foreground: false);
 
-    container.read(workspaceLiveSyncProvider).start(pollInterval: null);
-    await _settle();
-    final thread = container.listen(channelMessagesProvider('c2'), (_, __) {});
-    addTearDown(thread.close);
-    await _settle();
-    final threadCallsBefore = repo.messageCalls.length;
-    final listCallsBefore = repo.conversationCalls;
+      container.read(workspaceLiveSyncProvider).start(pollInterval: null);
+      await _settle();
+      final thread = container.listen(
+        channelMessagesProvider('c2'),
+        (_, __) {},
+      );
+      addTearDown(thread.close);
+      await _settle();
+      final threadCallsBefore = repo.messageCalls.length;
+      final listCallsBefore = repo.conversationCalls;
 
-    realtime.emit(
-      c2,
-      const RealtimeEvent(
-        event: 'workspace.message.created',
-        data: {'channel_id': 'c2'},
-      ),
-    );
-    await _settle();
+      realtime.emit(
+        c2,
+        const RealtimeEvent(
+          event: 'workspace.message.created',
+          data: {'channel_id': 'c2'},
+        ),
+      );
+      await _settle();
 
-    // `GET /messages` marque le canal lu côté serveur : le faire écran éteint
-    // effaçait les non-lus du destinataire et affichait « Lu » à l'expéditeur.
-    expect(repo.messageCalls.length, threadCallsBefore);
-    // La liste, elle, n'a aucun effet de bord : la pastille reste honnête.
-    expect(repo.conversationCalls, greaterThan(listCallsBefore));
-  });
+      // `GET /messages` marque le canal lu côté serveur : le faire écran éteint
+      // effaçait les non-lus du destinataire et affichait « Lu » à l'expéditeur.
+      expect(repo.messageCalls.length, threadCallsBefore);
+      // La liste, elle, n'a aucun effet de bord : la pastille reste honnête.
+      expect(repo.conversationCalls, greaterThan(listCallsBefore));
+    },
+  );
 
   test('en arrière-plan, le repli périodique se tait', () async {
     final realtime = FakeWorkspaceRealtime();

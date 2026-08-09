@@ -36,7 +36,8 @@ String broadcastingAuthUrl(String baseUrl) {
 class _DioPrivateChannelAuthDelegate
     implements
         EndpointAuthorizableChannelAuthorizationDelegate<
-            PrivateChannelAuthorizationData> {
+          PrivateChannelAuthorizationData
+        > {
   _DioPrivateChannelAuthDelegate(this._authDio);
 
   final Dio _authDio;
@@ -131,7 +132,8 @@ class ReverbWorkspaceRealtime implements WorkspaceRealtime {
   /// Notifie les consommateurs à chaque (re)connexion établie. Broadcast, vit le
   /// temps du singleton (le provider est keepAlive) : réutilisé entre
   /// déconnexion et reconnexion, donc jamais refermé ici.
-  final StreamController<void> _reconnected = StreamController<void>.broadcast();
+  final StreamController<void> _reconnected =
+      StreamController<void>.broadcast();
 
   @override
   Stream<void> get onReconnected => _reconnected.stream;
@@ -163,8 +165,10 @@ class ReverbWorkspaceRealtime implements WorkspaceRealtime {
       // Re-subscribe every known channel whenever the (re)connection is
       // established — this also covers the very first connect.
       _connectionSub = client.onConnectionEstablished.listen((_) {
-        _log('connexion établie ($scheme://$host:$port) — '
-            'réabonnement de ${_channels.length} canaux');
+        _log(
+          'connexion établie ($scheme://$host:$port) — '
+          'réabonnement de ${_channels.length} canaux',
+        );
         for (final channel in _channels.values) {
           channel.subscribeIfNotUnsubscribed();
         }
@@ -258,13 +262,15 @@ class ReverbWorkspaceRealtime implements WorkspaceRealtime {
       // symptom of a broadcasting-auth rejection, and it is otherwise silent.
       final subs = <StreamSubscription<dynamic>>[
         for (final eventName in events)
-          channel.bind(eventName).listen((event) => _dispatch(channelName, event)),
+          channel
+              .bind(eventName)
+              .listen((event) => _dispatch(channelName, event)),
         channel.whenSubscriptionSucceeded().listen(
-              (_) => _log('abonné à $channelName'),
-            ),
+          (_) => _log('abonné à $channelName'),
+        ),
         channel.onSubscriptionError().listen(
-              (e) => _log('ECHEC abonnement $channelName : ${e.data}'),
-            ),
+          (e) => _log('ECHEC abonnement $channelName : ${e.data}'),
+        ),
       ];
       _eventSubs[channelName] = subs;
 
