@@ -18,6 +18,20 @@ Future<List<StatusAuthorGroup>> statusGroups(Ref ref) async {
     (f) => throw Exception(f.message ?? 'Erreur'),
   );
 
+  // Roster de l'org (un seul appel, mis en cache) : la photo employé prime sur
+  // l'avatar du payload de statut (souvent absent → sinon on tombe sur les
+  // initiales alors que l'utilisateur a une photo).
+  var rosterAvatars = const <String, String>{};
+  try {
+    final roster = await ref.watch(orgMembersProvider.future);
+    rosterAvatars = {
+      for (final m in roster)
+        if (m.avatarUrl?.isNotEmpty ?? false) m.userId: m.avatarUrl!,
+    };
+  } catch (_) {
+    rosterAvatars = const {};
+  }
+
   final active = all.where((s) => !s.isExpired).toList();
   final byAuthor = <String, List<WorkspaceStatus>>{};
   for (final s in active) {
@@ -34,7 +48,7 @@ Future<List<StatusAuthorGroup>> statusGroups(Ref ref) async {
       StatusAuthorGroup(
         authorId: authorId,
         authorName: list.first.authorName ?? '',
-        authorAvatarUrl: list.first.authorAvatarUrl,
+        authorAvatarUrl: rosterAvatars[authorId] ?? list.first.authorAvatarUrl,
         statuses: list,
         isMine: me != null && authorId == me,
       ),

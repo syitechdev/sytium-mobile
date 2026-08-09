@@ -7,20 +7,20 @@ import 'package:sytium_mobile/shared/widgets/app_avatar.dart';
 import 'package:sytium_mobile/theme/sytium_colors.dart';
 import 'package:sytium_mobile/theme/tokens.dart';
 
-/// Bande de statuts (stories) en tête de l'accueil. Consigne produit : elle ne
-/// s'affiche **que s'il existe de nouveaux statuts** (d'un autre collègue non
-/// vu). Une bulle par auteur ; anneau emerald si non vu, gris sinon. Tap →
+/// Bande de statuts (stories) en tête de l'accueil. Affichée dès qu'il existe au
+/// moins un statut **actif** (non expiré) — un statut reste dans le rail jusqu'à
+/// son expiration (24 h), même après avoir été vu (l'anneau passe alors au gris).
+/// Une bulle par auteur ; anneau emerald si non vu, gris sinon. Tap →
 /// visionneuse plein écran (navigation inter-auteurs).
 class StatusRail extends ConsumerWidget {
   const StatusRail({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Ne rien afficher tant qu'il n'y a pas de nouveau statut.
-    if (!ref.watch(hasNewStatusesProvider)) return const SizedBox.shrink();
     final groups =
         ref.watch(statusGroupsProvider).valueOrNull ??
         const <StatusAuthorGroup>[];
+    // Rien à montrer tant qu'aucun statut actif n'existe.
     if (groups.isEmpty) return const SizedBox.shrink();
 
     final colors = context.colors;

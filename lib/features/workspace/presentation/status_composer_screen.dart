@@ -175,16 +175,31 @@ class _StatusTextComposerState extends ConsumerState<StatusTextComposer> {
                   textAlign: TextAlign.center,
                   maxLines: null,
                   cursorColor: onBg,
+                  keyboardType: TextInputType.multiline,
                   style: TextStyle(
                     color: onBg,
-                    fontSize: 26,
-                    fontWeight: FontWeight.w600,
+                    fontSize: 28,
+                    fontWeight: FontWeight.w700,
                     height: 1.3,
                   ),
+                  // Décoration entièrement neutralisée : sans ça, le thème global
+                  // (champ rempli blanc + bordure emerald au focus) dessinait un
+                  // cadre blanc et rendait le texte blanc invisible.
                   decoration: InputDecoration(
+                    isCollapsed: true,
+                    filled: false,
+                    fillColor: Colors.transparent,
                     border: InputBorder.none,
-                    hintText: 'Tapez un statut…',
-                    hintStyle: TextStyle(color: onBg.withValues(alpha: 0.6)),
+                    enabledBorder: InputBorder.none,
+                    focusedBorder: InputBorder.none,
+                    disabledBorder: InputBorder.none,
+                    contentPadding: EdgeInsets.zero,
+                    hintText: 'Écrivez un statut',
+                    hintStyle: TextStyle(
+                      color: onBg.withValues(alpha: 0.55),
+                      fontSize: 28,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                 ),
               ),

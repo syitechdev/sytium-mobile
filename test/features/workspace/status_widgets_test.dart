@@ -96,12 +96,17 @@ void main() {
       await tester.pumpWidget(const SizedBox());
     });
 
-    testWidgets('caché si seul MON statut est non vu', (tester) async {
-      final repo = _Repo([_st('mine', 'me')]);
+    testWidgets('affiché même si un statut a déjà été vu (persiste 24 h)', (
+      tester,
+    ) async {
+      // Un statut vu ne doit PAS disparaître du rail : il reste jusqu'à
+      // expiration (l'anneau passe simplement au gris).
+      final repo = _Repo([_st('a', 'peer', viewed: true)]);
       await tester.pumpWidget(_host(repo, const StatusRail()));
       await tester.pump();
       await tester.pump();
-      expect(find.text('Statuts'), findsNothing);
+      expect(find.text('Statuts'), findsOneWidget);
+      expect(find.text('Awa'), findsOneWidget);
       await tester.pumpWidget(const SizedBox());
     });
   });
