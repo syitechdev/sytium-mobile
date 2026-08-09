@@ -21,9 +21,18 @@ import 'package:sytium_mobile/theme/tokens.dart';
 
 const _kPollInterval = Duration(seconds: 7);
 
-/// « SYTIUM WORKSPACE » — the messaging home: team presence, official channels
-/// and direct messages, with search and create/join/DM actions. Polls the
-/// conversation list and heartbeats presence while mounted.
+/// Filtre en tête de liste (Direction A). La liste reste triée par récence ;
+/// le segment ne fait que masquer ce qui n'entre pas dans la catégorie.
+enum _Segment { all, channels, dms, unread }
+
+/// « Messages » — accueil de la messagerie, refonte Direction A : une **liste
+/// unifiée** (canaux + DM mélangés, triée par récence) façon WhatsApp/Telegram,
+/// coiffée de chips de segments (Tout / Canaux / DM / Non lus) et d'une
+/// recherche escamotable. Poll de présence tant que l'écran est visible.
+///
+/// Point d'intégration statuts : au-dessus des chips viendra la bande de statuts
+/// (stories 24 h), visible uniquement quand il existe de nouveaux statuts —
+/// feature portée séparément (cf. plan dédié).
 class WorkspaceScreen extends ConsumerStatefulWidget {
   const WorkspaceScreen({this.pollInterval = _kPollInterval, super.key});
 
@@ -36,23 +45,21 @@ class WorkspaceScreen extends ConsumerStatefulWidget {
 class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
   Timer? _poll;
   final _search = TextEditingController();
+  final _searchFocus = FocusNode();
   String _query = '';
+  bool _searchOpen = false;
+  _Segment _segment = _Segment.all;
 
   @override
   void initState() {
     super.initState();
     _search.addListener(() => setState(() => _query = _search.text.trim()));
-    // Announce presence now and on each poll tick.
     unawaited(ref.read(workspaceRepositoryProvider).heartbeat());
     final interval = widget.pollInterval;
     if (interval != null) {
       // Présence uniquement : la liste des conversations est tenue à jour
-      // app-wide par `WorkspaceLiveSync` (temps réel + repli périodique).
-      // La rafraîchir aussi ici doublait chaque appel.
-      //
-      // Et jamais en arrière-plan : le heartbeat déclare l'utilisateur en
-      // ligne, donc le laisser battre téléphone verrouillé affichait un point
-      // vert à des collègues qui dorment.
+      // app-wide par `WorkspaceLiveSync`. Jamais en arrière-plan (le heartbeat
+      // déclare l'utilisateur en ligne).
       _poll = Timer.periodic(interval, (_) {
         if (!ref.read(appForegroundProvider)) return;
         ref.invalidate(onlineByUserProvider);
@@ -65,6 +72,7 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
   void dispose() {
     _poll?.cancel();
     _search.dispose();
+    _searchFocus.dispose();
     super.dispose();
   }
 
@@ -73,6 +81,20 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
       ..invalidate(conversationsProvider)
       ..invalidate(onlineByUserProvider)
       ..invalidate(orgMembersProvider);
+  }
+
+  void _toggleSearch() {
+    setState(() {
+      _searchOpen = !_searchOpen;
+      if (!_searchOpen) {
+        _search.clear();
+      }
+    });
+    if (_searchOpen) {
+      WidgetsBinding.instance.addPostFrameCallback(
+        (_) => _searchFocus.requestFocus(),
+      );
+    }
   }
 
   void _openConversation(Conversation c) {
@@ -104,6 +126,8 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
   }
 
   void _showCreateMenu() {
+    // TODO(statuts): ajouter ici une entrée « Nouveau statut » (création façon
+    // WhatsApp) quand la feature statuts sera portée — cf. plan dédié.
     showAppSheet<void>(
       context,
       builder: (_) => SafeArea(
@@ -143,6 +167,39 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
     );
   }
 
+  void _openCrossView(String value) {
+    Widget screen;
+    switch (value) {
+      case 'mentions':
+        screen = WorkspaceMessageListScreen(
+          title: 'Mentions',
+          emptyText: 'Personne ne vous a mentionné pour l’instant.',
+          provider: workspaceMentionsProvider,
+        );
+      case 'bookmarks':
+        screen = WorkspaceMessageListScreen(
+          title: 'Enregistrés',
+          emptyText: 'Aucun message enregistré.',
+          provider: workspaceBookmarksProvider,
+        );
+      case 'archived':
+        screen = const ArchivedChannelsScreen();
+      default:
+        return;
+    }
+    Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => screen));
+  }
+
+  bool _matchesQuery(Conversation c) =>
+      _query.isEmpty || c.title.toLowerCase().contains(_query.toLowerCase());
+
+  bool _matchesSegment(Conversation c) => switch (_segment) {
+    _Segment.all => true,
+    _Segment.channels => c.type != ConversationType.dm,
+    _Segment.dms => c.type == ConversationType.dm,
+    _Segment.unread => c.unreadCount > 0,
+  };
+
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
@@ -150,14 +207,30 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
     final convos = async.valueOrNull;
 
     return Scaffold(
+      backgroundColor: colors.card,
       body: SafeArea(
         child: Column(
           children: [
-            _Header(onCreate: _showCreateMenu),
-            _SearchField(controller: _search),
-            // Un rafraîchissement raté n'efface pas ce qu'on sait déjà : la
-            // liste reste lisible, coiffée d'un bandeau. L'écran d'erreur plein
-            // est réservé au cas où l'on n'a strictement rien à montrer.
+            _SubHeader(
+              onCreate: _showCreateMenu,
+              onCrossView: _openCrossView,
+              onToggleSearch: _toggleSearch,
+              searchOpen: _searchOpen,
+            ),
+            if (_searchOpen)
+              _SearchField(controller: _search, focusNode: _searchFocus),
+            if (convos != null) ...[
+              _SegmentBar(
+                selected: _segment,
+                channels: convos
+                    .where((c) => c.type != ConversationType.dm)
+                    .length,
+                dms: convos.where((c) => c.type == ConversationType.dm).length,
+                unread: convos.where((c) => c.unreadCount > 0).length,
+                onSelect: (s) => setState(() => _segment = s),
+              ),
+              const Divider(height: 1),
+            ],
             if (convos != null && async.hasError)
               StaleDataBanner(
                 onRetry: () => ref.invalidate(conversationsProvider),
@@ -166,11 +239,15 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
               child: RefreshIndicator(
                 onRefresh: _refresh,
                 child: switch ((convos, async.hasError)) {
-                  (final List<Conversation> list, _) => _Body(
-                    conversations: list,
-                    query: _query,
+                  (final List<Conversation> list, _) => _ConversationList(
+                    conversations: list
+                        .where(_matchesSegment)
+                        .where(_matchesQuery)
+                        .toList(),
+                    totalCount: list.length,
+                    segment: _segment,
+                    searching: _query.isNotEmpty,
                     onOpen: _openConversation,
-                    onCreateChannel: _createChannel,
                     onStartDm: _startDm,
                   ),
                   (null, true) => ListView(
@@ -199,9 +276,20 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
   }
 }
 
-class _Header extends StatelessWidget {
-  const _Header({required this.onCreate});
+/// Sous-en-tête : « SYTIUM WORKSPACE » + menu ⋯ (Mentions/Enregistrés/Archivés)
+/// + bouton recherche (escamote le champ) + création (+, emerald).
+class _SubHeader extends StatelessWidget {
+  const _SubHeader({
+    required this.onCreate,
+    required this.onCrossView,
+    required this.onToggleSearch,
+    required this.searchOpen,
+  });
+
   final VoidCallback onCreate;
+  final ValueChanged<String> onCrossView;
+  final VoidCallback onToggleSearch;
+  final bool searchOpen;
 
   @override
   Widget build(BuildContext context) {
@@ -211,42 +299,24 @@ class _Header extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(
         Tokens.space16,
         Tokens.space12,
-        Tokens.space12,
+        Tokens.space8,
         Tokens.space8,
       ),
       child: Row(
         children: [
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'SYTIUM WORKSPACE',
-                  style: theme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: 0.5,
-                  ),
-                ),
-                Row(
-                  children: [
-                    Icon(Icons.lock_outline, size: 11, color: colors.textMuted),
-                    const SizedBox(width: 4),
-                    Text(
-                      'Réseau crypté',
-                      style: theme.bodySmall?.copyWith(
-                        color: colors.textMuted,
-                        fontSize: 11,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
+            child: Text(
+              'SYTIUM WORKSPACE',
+              style: theme.titleSmall?.copyWith(
+                fontWeight: FontWeight.w800,
+                letterSpacing: 1,
+              ),
             ),
           ),
           PopupMenuButton<String>(
             icon: const Icon(Icons.more_horiz),
             tooltip: 'Plus',
-            onSelected: (v) => _onMenu(context, v),
+            onSelected: onCrossView,
             itemBuilder: (_) => const [
               PopupMenuItem(
                 value: 'mentions',
@@ -277,43 +347,35 @@ class _Header extends StatelessWidget {
               ),
             ],
           ),
-          IconButton.filledTonal(
-            onPressed: onCreate,
-            icon: const Icon(Icons.add),
-            tooltip: 'Créer',
+          IconButton(
+            onPressed: onToggleSearch,
+            tooltip: 'Rechercher',
+            icon: Icon(searchOpen ? Icons.close : Icons.search),
+          ),
+          const SizedBox(width: Tokens.space4),
+          Material(
+            color: colors.brand,
+            shape: const CircleBorder(),
+            child: InkWell(
+              customBorder: const CircleBorder(),
+              onTap: onCreate,
+              child: SizedBox(
+                width: 40,
+                height: 40,
+                child: Icon(Icons.add, color: colors.onBrand, size: 22),
+              ),
+            ),
           ),
         ],
       ),
     );
   }
-
-  void _onMenu(BuildContext context, String value) {
-    Widget screen;
-    switch (value) {
-      case 'mentions':
-        screen = WorkspaceMessageListScreen(
-          title: 'Mentions',
-          emptyText: 'Personne ne vous a mentionné pour l’instant.',
-          provider: workspaceMentionsProvider,
-        );
-      case 'bookmarks':
-        screen = WorkspaceMessageListScreen(
-          title: 'Enregistrés',
-          emptyText: 'Aucun message enregistré.',
-          provider: workspaceBookmarksProvider,
-        );
-      case 'archived':
-        screen = const ArchivedChannelsScreen();
-      default:
-        return;
-    }
-    Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => screen));
-  }
 }
 
 class _SearchField extends StatelessWidget {
-  const _SearchField({required this.controller});
+  const _SearchField({required this.controller, required this.focusNode});
   final TextEditingController controller;
+  final FocusNode focusNode;
 
   @override
   Widget build(BuildContext context) {
@@ -326,6 +388,7 @@ class _SearchField extends StatelessWidget {
       ),
       child: TextField(
         controller: controller,
+        focusNode: focusNode,
         decoration: const InputDecoration(
           isDense: true,
           hintText: 'Rechercher un canal, un collègue…',
@@ -336,214 +399,256 @@ class _SearchField extends StatelessWidget {
   }
 }
 
-class _Body extends ConsumerWidget {
-  const _Body({
-    required this.conversations,
-    required this.query,
-    required this.onOpen,
-    required this.onCreateChannel,
-    required this.onStartDm,
+/// Chips de segments (Tout / Canaux / DM / Non lus). Le compteur n'apparaît que
+/// s'il est non nul (moins de bruit visuel).
+class _SegmentBar extends StatelessWidget {
+  const _SegmentBar({
+    required this.selected,
+    required this.channels,
+    required this.dms,
+    required this.unread,
+    required this.onSelect,
   });
 
-  final List<Conversation> conversations;
-  final String query;
-  final ValueChanged<Conversation> onOpen;
-  final VoidCallback onCreateChannel;
-  final VoidCallback onStartDm;
-
-  bool _matches(Conversation c) =>
-      query.isEmpty || c.title.toLowerCase().contains(query.toLowerCase());
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final channels = conversations
-        .where((c) => c.type != ConversationType.dm && _matches(c))
-        .toList();
-    final dms = conversations
-        .where((c) => c.type == ConversationType.dm && _matches(c))
-        .toList();
-
-    return ListView(
-      padding: const EdgeInsets.only(bottom: Tokens.space48),
-      children: [
-        if (query.isEmpty) const _TeamStatusStrip(),
-        _SectionHeader(label: 'Canaux officiels', onAdd: onCreateChannel),
-        if (channels.isEmpty)
-          const _EmptyLine(text: 'Aucun canal.')
-        else
-          for (final c in channels)
-            _ChannelRow(conversation: c, onTap: () => onOpen(c)),
-        const SizedBox(height: Tokens.space8),
-        _SectionHeader(label: 'Collaborateurs', onAdd: onStartDm),
-        if (dms.isEmpty)
-          const _EmptyLine(text: 'Aucune discussion. Démarrez-en une.')
-        else
-          for (final c in dms) _DmRow(conversation: c, onTap: () => onOpen(c)),
-      ],
-    );
-  }
-}
-
-/// Horizontal « statuts d'équipe » — org roster avatars with an online ring;
-/// tapping one starts/opens a DM with that colleague.
-class _TeamStatusStrip extends ConsumerStatefulWidget {
-  const _TeamStatusStrip();
-
-  @override
-  ConsumerState<_TeamStatusStrip> createState() => _TeamStatusStripState();
-}
-
-class _TeamStatusStripState extends ConsumerState<_TeamStatusStrip> {
-  /// Garde anti-race : id du dernier DM demandé (seule la dernière résolution
-  /// s'applique si l'utilisateur tape plusieurs collègues vite).
-  String? _dmOpening;
+  final _Segment selected;
+  final int channels;
+  final int dms;
+  final int unread;
+  final ValueChanged<_Segment> onSelect;
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context).textTheme;
-    final colors = context.colors;
-    final membersAsync = ref.watch(orgMembersProvider);
-    final presences =
-        ref.watch(presenceByUserProvider).valueOrNull ??
-        const <String, Presence>{};
-    final me = ref.watch(currentUserIdProvider);
-
-    final members = membersAsync.valueOrNull ?? const <Member>[];
-    if (members.isEmpty) return const SizedBox.shrink();
-    // Trier PUIS tronquer : l'inverse masquait un collègue connecté au seul
-    // motif qu'il arrivait au-delà du 14e rang du roster.
-    final roster = sortedByPresence(
-      members.where((m) => m.userId != me).toList(),
-      presences,
-    ).take(14).toList();
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(
-            Tokens.space16,
-            Tokens.space8,
-            Tokens.space16,
-            Tokens.space8,
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      padding: const EdgeInsets.fromLTRB(
+        Tokens.space16,
+        0,
+        Tokens.space16,
+        Tokens.space8,
+      ),
+      child: Row(
+        children: [
+          _SegmentChip(
+            label: 'Tout',
+            active: selected == _Segment.all,
+            onTap: () => onSelect(_Segment.all),
           ),
-          child: Text(
-            "Statuts d'équipe",
-            style: theme.labelSmall?.copyWith(
-              color: colors.textMuted,
-              letterSpacing: 1,
-              fontWeight: FontWeight.w700,
-            ),
+          const SizedBox(width: Tokens.space8),
+          _SegmentChip(
+            label: 'Canaux',
+            count: channels,
+            active: selected == _Segment.channels,
+            onTap: () => onSelect(_Segment.channels),
           ),
-        ),
-        SizedBox(
-          height: 84,
-          child: ListView.separated(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: Tokens.space16),
-            itemCount: roster.length,
-            separatorBuilder: (_, __) => const SizedBox(width: Tokens.space12),
-            itemBuilder: (context, i) {
-              final m = roster[i];
-              return _TeamAvatar(
-                member: m,
-                online: presences[m.userId]?.online ?? false,
-                onTap: () => _openDm(context, m.userId),
-              );
-            },
+          const SizedBox(width: Tokens.space8),
+          _SegmentChip(
+            label: 'DM',
+            count: dms,
+            active: selected == _Segment.dms,
+            onTap: () => onSelect(_Segment.dms),
           ),
-        ),
-      ],
+          const SizedBox(width: Tokens.space8),
+          _SegmentChip(
+            label: 'Non lus',
+            count: unread,
+            active: selected == _Segment.unread,
+            onTap: () => onSelect(_Segment.unread),
+          ),
+        ],
+      ),
     );
   }
+}
 
-  Future<void> _openDm(BuildContext context, String userId) async {
-    _dmOpening = userId;
-    final result = await ref.read(workspaceRepositoryProvider).openDm(userId);
-    // Une demande plus récente a pris le relais → on ignore ce résultat périmé.
-    if (!context.mounted || _dmOpening != userId) return;
-    _dmOpening = null;
-    result.fold(
-      (convo) {
-        ref.invalidate(conversationsProvider);
-        Navigator.of(context).push(
-          MaterialPageRoute<void>(
-            builder: (_) => ChatThreadScreen(conversation: convo),
+class _SegmentChip extends StatelessWidget {
+  const _SegmentChip({
+    required this.label,
+    required this.active,
+    required this.onTap,
+    this.count = 0,
+  });
+
+  final String label;
+  final bool active;
+  final VoidCallback onTap;
+  final int count;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    final bg = active ? colors.brand : colors.background;
+    final fg = active ? colors.onBrand : colors.textPrimary;
+    return Material(
+      color: bg,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(Tokens.radiusPill),
+        side: active ? BorderSide.none : BorderSide(color: colors.border),
+      ),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(Tokens.radiusPill),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(
+            horizontal: Tokens.space12,
+            vertical: 7,
           ),
-        );
-      },
-      (f) => ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(f.message ?? 'Impossible d’ouvrir la discussion.'),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                label,
+                style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                  color: fg,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              if (count > 0) ...[
+                const SizedBox(width: Tokens.space4),
+                Text(
+                  '$count',
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                    color: fg.withValues(alpha: 0.85),
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ],
+          ),
         ),
       ),
     );
   }
 }
 
-class _TeamAvatar extends StatelessWidget {
-  const _TeamAvatar({
-    required this.member,
+/// Liste unifiée des conversations. Watch la présence pour la pastille « en
+/// ligne » des DM, et l'utilisateur courant pour le préfixe « Vous : ».
+class _ConversationList extends ConsumerWidget {
+  const _ConversationList({
+    required this.conversations,
+    required this.totalCount,
+    required this.segment,
+    required this.searching,
+    required this.onOpen,
+    required this.onStartDm,
+  });
+
+  final List<Conversation> conversations;
+  final int totalCount;
+  final _Segment segment;
+  final bool searching;
+  final ValueChanged<Conversation> onOpen;
+  final VoidCallback onStartDm;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    if (conversations.isEmpty) {
+      return _EmptyState(
+        totalEmpty: totalCount == 0,
+        segment: segment,
+        searching: searching,
+        onStartDm: onStartDm,
+      );
+    }
+    final online = ref.watch(onlineByUserProvider).valueOrNull ?? const {};
+    final me = ref.watch(currentUserIdProvider);
+    return ListView.builder(
+      padding: const EdgeInsets.only(bottom: Tokens.space48),
+      itemCount: conversations.length,
+      itemBuilder: (context, i) {
+        final c = conversations[i];
+        final isOnline = c.peerId != null && (online[c.peerId] ?? false);
+        return _ConversationTile(
+          conversation: c,
+          online: isOnline,
+          isMine: me != null && c.lastMessageAuthorId == me,
+          onTap: () => onOpen(c),
+        );
+      },
+    );
+  }
+}
+
+/// Ligne de conversation façon WhatsApp : avatar (DM + pastille présence, ou
+/// carré `#`/cadenas pour un canal), titre + horodatage, aperçu + pastille de
+/// non-lus.
+class _ConversationTile extends StatelessWidget {
+  const _ConversationTile({
+    required this.conversation,
     required this.online,
+    required this.isMine,
     required this.onTap,
   });
 
-  final Member member;
+  final Conversation conversation;
   final bool online;
+  final bool isMine;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
     final theme = Theme.of(context).textTheme;
-    final first = member.fullName.split(' ').first;
-    return SizedBox(
-      width: 64,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(Tokens.radiusMd),
-        child: Column(
+    final c = conversation;
+    final hasUnread = c.unreadCount > 0;
+    final time = activityLabel(c.lastMessageAt);
+
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+          horizontal: Tokens.space16,
+          vertical: Tokens.space12,
+        ),
+        child: Row(
           children: [
-            Stack(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(2),
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: online ? colors.brand : colors.border,
-                      width: 2,
-                    ),
-                  ),
-                  child: AppAvatar(
-                    name: member.fullName,
-                    imageUrl: member.avatarUrl,
-                    radius: 22,
-                  ),
-                ),
-                if (online)
-                  Positioned(
-                    right: 2,
-                    bottom: 2,
-                    child: Container(
-                      width: 12,
-                      height: 12,
-                      decoration: BoxDecoration(
-                        color: colors.brand,
-                        shape: BoxShape.circle,
-                        border: Border.all(color: colors.background, width: 2),
+            _Leading(conversation: c, online: online),
+            const SizedBox(width: Tokens.space12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          c.title,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: theme.titleSmall?.copyWith(
+                            fontWeight: hasUnread
+                                ? FontWeight.w700
+                                : FontWeight.w600,
+                          ),
+                        ),
                       ),
-                    ),
+                      if (time.isNotEmpty) ...[
+                        const SizedBox(width: Tokens.space8),
+                        Text(
+                          time,
+                          style: theme.labelSmall?.copyWith(
+                            color: hasUnread ? colors.brand : colors.textMuted,
+                            fontWeight: hasUnread
+                                ? FontWeight.w700
+                                : FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
-              ],
-            ),
-            const SizedBox(height: 4),
-            Text(
-              first,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              textAlign: TextAlign.center,
-              style: theme.bodySmall?.copyWith(fontSize: 11),
+                  const SizedBox(height: 3),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _Preview(conversation: c, isMine: isMine),
+                      ),
+                      if (hasUnread) ...[
+                        const SizedBox(width: Tokens.space8),
+                        _UnreadPill(count: c.unreadCount),
+                      ],
+                    ],
+                  ),
+                ],
+              ),
             ),
           ],
         ),
@@ -552,38 +657,80 @@ class _TeamAvatar extends StatelessWidget {
   }
 }
 
-class _SectionHeader extends StatelessWidget {
-  const _SectionHeader({required this.label, this.onAdd});
-  final String label;
-  final VoidCallback? onAdd;
+/// Avatar de tête : DM = cercle (initiales/photo) + pastille présence ; canal =
+/// carré arrondi `#` avec un cadenas superposé si privé.
+class _Leading extends StatelessWidget {
+  const _Leading({required this.conversation, required this.online});
+  final Conversation conversation;
+  final bool online;
 
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(
-        Tokens.space16,
-        Tokens.space8,
-        Tokens.space8,
-        Tokens.space4,
-      ),
-      child: Row(
+    final c = conversation;
+    if (c.type == ConversationType.dm) {
+      return SizedBox(
+        width: 48,
+        height: 48,
+        child: Stack(
+          children: [
+            AppAvatar(name: c.title, imageUrl: c.avatarUrl),
+            if (online)
+              Positioned(
+                right: 0,
+                bottom: 0,
+                child: Container(
+                  width: 13,
+                  height: 13,
+                  decoration: BoxDecoration(
+                    color: colors.brand,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: colors.card, width: 2.5),
+                  ),
+                ),
+              ),
+          ],
+        ),
+      );
+    }
+    final private = c.type == ConversationType.private;
+    return SizedBox(
+      width: 48,
+      height: 48,
+      child: Stack(
+        clipBehavior: Clip.none,
         children: [
-          Expanded(
+          Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              color: colors.textMuted.withValues(alpha: 0.10),
+              borderRadius: BorderRadius.circular(Tokens.radiusMd),
+            ),
+            alignment: Alignment.center,
             child: Text(
-              label.toUpperCase(),
-              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+              '#',
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
                 color: colors.textMuted,
-                letterSpacing: 1,
-                fontWeight: FontWeight.w700,
+                fontWeight: FontWeight.w600,
               ),
             ),
           ),
-          if (onAdd != null)
-            IconButton(
-              visualDensity: VisualDensity.compact,
-              onPressed: onAdd,
-              icon: Icon(Icons.add, size: 18, color: colors.textMuted),
+          if (private)
+            Positioned(
+              right: -2,
+              bottom: -2,
+              child: Container(
+                width: 19,
+                height: 19,
+                decoration: BoxDecoration(
+                  color: colors.card,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: colors.border),
+                ),
+                alignment: Alignment.center,
+                child: Icon(Icons.lock, size: 10, color: colors.textMuted),
+              ),
             ),
         ],
       ),
@@ -591,82 +738,52 @@ class _SectionHeader extends StatelessWidget {
   }
 }
 
-class _ChannelRow extends StatelessWidget {
-  const _ChannelRow({required this.conversation, required this.onTap});
+/// Aperçu du dernier message : préfixe « Vous : » quand c'est moi, italique
+/// discret pour un message système, sinon texte secondaire. Vide → placeholder.
+class _Preview extends StatelessWidget {
+  const _Preview({required this.conversation, required this.isMine});
   final Conversation conversation;
-  final VoidCallback onTap;
+  final bool isMine;
 
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
     final theme = Theme.of(context).textTheme;
     final c = conversation;
-    final locked = c.type == ConversationType.private;
-    return ListTile(
-      dense: true,
-      leading: Icon(
-        locked ? Icons.lock_outline : Icons.tag,
-        color: colors.textMuted,
-      ),
-      title: Text(
-        c.title,
+    final preview = c.lastMessagePreview;
+    if (preview == null || preview.isEmpty) {
+      return Text(
+        'Aucun message',
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
-        style: theme.titleSmall?.copyWith(
-          fontWeight: c.unreadCount > 0 ? FontWeight.w700 : FontWeight.w500,
+        style: theme.bodySmall?.copyWith(
+          color: colors.textMuted,
+          fontStyle: FontStyle.italic,
         ),
-      ),
-      subtitle: c.lastMessagePreview == null
-          ? null
-          : Text(
-              c.lastMessagePreview!,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: theme.bodySmall?.copyWith(color: colors.textMuted),
-            ),
-      trailing: c.unreadCount > 0 ? _UnreadPill(count: c.unreadCount) : null,
-      onTap: onTap,
+      );
+    }
+    if (c.lastMessageIsSystem) {
+      return Text(
+        preview,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: theme.bodySmall?.copyWith(
+          color: colors.textMuted,
+          fontStyle: FontStyle.italic,
+        ),
+      );
+    }
+    final text = isMine ? 'Vous : $preview' : preview;
+    return Text(
+      text,
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      style: theme.bodySmall?.copyWith(color: colors.textMuted),
     );
   }
 }
 
-class _DmRow extends StatelessWidget {
-  const _DmRow({required this.conversation, required this.onTap});
-  final Conversation conversation;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.colors;
-    final theme = Theme.of(context).textTheme;
-    final c = conversation;
-    return ListTile(
-      dense: true,
-      leading: AppAvatar(name: c.title, imageUrl: c.avatarUrl, radius: 18),
-      title: Text(
-        c.title,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-        style: theme.titleSmall?.copyWith(
-          fontWeight: c.unreadCount > 0 ? FontWeight.w700 : FontWeight.w500,
-        ),
-      ),
-      subtitle: c.lastMessagePreview == null
-          ? null
-          : Text(
-              c.lastMessagePreview!,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: theme.bodySmall?.copyWith(color: colors.textMuted),
-            ),
-      trailing: c.unreadCount > 0 ? _UnreadPill(count: c.unreadCount) : null,
-      onTap: onTap,
-    );
-  }
-}
-
-/// Pastille de non-lus : rouge, comme la cloche de notifications. Cohérente
-/// entre canaux, DM et la pastille de l'onglet Messages.
+/// Pastille de non-lus : rouge, cohérente avec la cloche et l'onglet Messages.
 class _UnreadPill extends StatelessWidget {
   const _UnreadPill({required this.count});
   final int count;
@@ -674,14 +791,11 @@ class _UnreadPill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
-    // Pas d'alignment ni de minWidth ici : dans un trailing de ListTile (largeur
-    // non bornée), un Container avec alignment s'étire sur toute la largeur et
-    // casse la mise en page. La pastille reste ajustée à son contenu.
     return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: Tokens.space8,
-        vertical: 2,
-      ),
+      constraints: const BoxConstraints(minWidth: 20),
+      height: 20,
+      padding: const EdgeInsets.symmetric(horizontal: Tokens.space8),
+      alignment: Alignment.center,
       decoration: BoxDecoration(
         color: colors.danger,
         borderRadius: BorderRadius.circular(Tokens.radiusPill),
@@ -689,7 +803,7 @@ class _UnreadPill extends StatelessWidget {
       child: Text(
         count > 99 ? '99+' : '$count',
         style: Theme.of(context).textTheme.labelSmall?.copyWith(
-          color: colors.onBrand,
+          color: Colors.white,
           fontWeight: FontWeight.w700,
         ),
       ),
@@ -697,23 +811,66 @@ class _UnreadPill extends StatelessWidget {
   }
 }
 
-class _EmptyLine extends StatelessWidget {
-  const _EmptyLine({required this.text});
-  final String text;
+/// États vides : soit aucune conversation du tout (invite à démarrer), soit le
+/// segment/la recherche ne renvoie rien.
+class _EmptyState extends StatelessWidget {
+  const _EmptyState({
+    required this.totalEmpty,
+    required this.segment,
+    required this.searching,
+    required this.onStartDm,
+  });
+
+  final bool totalEmpty;
+  final _Segment segment;
+  final bool searching;
+  final VoidCallback onStartDm;
 
   @override
-  Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.symmetric(
-      horizontal: Tokens.space16,
-      vertical: Tokens.space12,
-    ),
-    child: Text(
-      text,
-      style: Theme.of(
-        context,
-      ).textTheme.bodySmall?.copyWith(color: context.colors.textMuted),
-    ),
-  );
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    final theme = Theme.of(context).textTheme;
+    final String message;
+    if (searching) {
+      message = 'Aucun résultat.';
+    } else if (totalEmpty) {
+      message = 'Aucune conversation. Démarrez-en une.';
+    } else {
+      message = switch (segment) {
+        _Segment.unread => 'Aucune conversation non lue.',
+        _Segment.channels => 'Aucun canal.',
+        _Segment.dms => 'Aucune discussion.',
+        _Segment.all => 'Aucune conversation.',
+      };
+    }
+    return ListView(
+      children: [
+        const SizedBox(height: Tokens.space48),
+        Icon(
+          Icons.forum_outlined,
+          size: 48,
+          color: colors.textMuted.withValues(alpha: 0.5),
+        ),
+        const SizedBox(height: Tokens.space12),
+        Center(
+          child: Text(
+            message,
+            style: theme.bodyMedium?.copyWith(color: colors.textMuted),
+          ),
+        ),
+        if (totalEmpty && !searching) ...[
+          const SizedBox(height: Tokens.space16),
+          Center(
+            child: FilledButton.icon(
+              onPressed: onStartDm,
+              icon: const Icon(Icons.chat_bubble_outline, size: 18),
+              label: const Text('Nouvelle discussion'),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
 }
 
 class _ListSkeleton extends StatelessWidget {
@@ -730,15 +887,37 @@ class _ListSkeleton extends StatelessWidget {
             padding: const EdgeInsets.symmetric(vertical: Tokens.space8),
             child: Row(
               children: [
-                CircleAvatar(radius: 18, backgroundColor: fill),
+                Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: fill,
+                    borderRadius: BorderRadius.circular(Tokens.radiusMd),
+                  ),
+                ),
                 const SizedBox(width: Tokens.space12),
                 Expanded(
-                  child: Container(
-                    height: 14,
-                    decoration: BoxDecoration(
-                      color: fill,
-                      borderRadius: BorderRadius.circular(Tokens.radiusSm),
-                    ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        height: 13,
+                        width: 160,
+                        decoration: BoxDecoration(
+                          color: fill,
+                          borderRadius: BorderRadius.circular(Tokens.radiusSm),
+                        ),
+                      ),
+                      const SizedBox(height: Tokens.space8),
+                      Container(
+                        height: 11,
+                        width: 220,
+                        decoration: BoxDecoration(
+                          color: fill,
+                          borderRadius: BorderRadius.circular(Tokens.radiusSm),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
@@ -749,13 +928,16 @@ class _ListSkeleton extends StatelessWidget {
   }
 }
 
-/// Formats a conversation's activity time (kept for parity; unused rows omit it).
+/// Horodatage d'activité : `HH:mm` aujourd'hui, sinon `dd/MM`.
 String activityLabel(DateTime? at) {
   if (at == null) return '';
   final now = DateTime.now();
+  final local = at.toLocal();
   final isToday =
-      at.year == now.year && at.month == now.month && at.day == now.day;
+      local.year == now.year &&
+      local.month == now.month &&
+      local.day == now.day;
   return isToday
-      ? DateFormat('HH:mm', 'fr_FR').format(at)
-      : DateFormat('dd/MM', 'fr_FR').format(at);
+      ? DateFormat('HH:mm', 'fr_FR').format(local)
+      : DateFormat('dd/MM', 'fr_FR').format(local);
 }

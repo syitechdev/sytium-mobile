@@ -24,38 +24,55 @@ import 'package:sytium_mobile/theme/theme.dart';
 class _FakeAuth extends AuthController {
   @override
   Future<AuthState> build() async => const Authenticated(
-        AuthSession(
-          user: AuthUser(id: 'me', name: 'Moi', email: 'me@x.io'),
-          capabilities: MobileCapabilities.baseline(),
-        ),
-      );
+    AuthSession(
+      user: AuthUser(id: 'me', name: 'Moi', email: 'me@x.io'),
+      capabilities: MobileCapabilities.baseline(),
+    ),
+  );
 }
 
 class _BaseRepo implements WorkspaceRepository {
   @override
-  Future<Result<List<int>>> downloadAttachment(String url) async => const Ok(<int>[]);
+  Future<Result<List<int>>> downloadAttachment(String url) async =>
+      const Ok(<int>[]);
 
   @override
-  Future<Result<void>> setPinned(String messageId, {required bool pinned}) async => const Ok(null);
+  Future<Result<void>> setPinned(
+    String messageId, {
+    required bool pinned,
+  }) async => const Ok(null);
 
   @override
-  Future<Result<void>> setBookmarked(String messageId, {required bool bookmarked}) async => const Ok(null);
+  Future<Result<void>> setBookmarked(
+    String messageId, {
+    required bool bookmarked,
+  }) async => const Ok(null);
 
   @override
-  Future<Result<String?>> transcribeMessage(String messageId) async => const Ok(null);
+  Future<Result<String?>> transcribeMessage(String messageId) async =>
+      const Ok(null);
 
   @override
   Future<Result<void>> sendTyping(String channelId) async => const Ok(null);
 
   @override
-  Future<Result<void>> addMembers(String channelId, List<String> userIds, {String? role}) async => const Ok(null);
+  Future<Result<void>> addMembers(
+    String channelId,
+    List<String> userIds, {
+    String? role,
+  }) async => const Ok(null);
 
   @override
-  Future<Result<Conversation>> setChannelArchived(String channelId, {required bool isArchived}) async =>
-      const Ok(Conversation(id: 'c', type: ConversationType.public, title: 'C'));
+  Future<Result<Conversation>> setChannelArchived(
+    String channelId, {
+    required bool isArchived,
+  }) async => const Ok(
+    Conversation(id: 'c', type: ConversationType.public, title: 'C'),
+  );
 
   @override
-  Future<Result<List<Conversation>>> archivedChannels() async => const Ok(<Conversation>[]);
+  Future<Result<List<Conversation>>> archivedChannels() async =>
+      const Ok(<Conversation>[]);
 
   @override
   Future<Result<List<Message>>> mentions() async => const Ok(<Message>[]);
@@ -64,23 +81,27 @@ class _BaseRepo implements WorkspaceRepository {
   Future<Result<List<Message>>> bookmarks() async => const Ok(<Message>[]);
 
   @override
-  Future<Result<List<Message>>> channelPins(String channelId) async => const Ok(<Message>[]);
+  Future<Result<List<Message>>> channelPins(String channelId) async =>
+      const Ok(<Message>[]);
 
   @override
   Future<Result<List<Conversation>>> conversations() async => const Ok([]);
   @override
-  Future<Result<List<Member>>> channelMembers(String channelId) async => const Ok([]);
+  Future<Result<List<Member>>> channelMembers(String channelId) async =>
+      const Ok([]);
   @override
-  Future<Result<List<Member>>> orgMembers() async => const Ok([
-        Member(userId: 'peer', fullName: 'Awa Diallo', poste: 'RH'),
-      ]);
+  Future<Result<List<Member>>> orgMembers() async =>
+      const Ok([Member(userId: 'peer', fullName: 'Awa Diallo', poste: 'RH')]);
   @override
   Future<Result<Conversation>> openDm(String userId) async => const Ok(
-        Conversation(id: 'dm1', type: ConversationType.dm, title: 'Awa Diallo'),
-      );
+    Conversation(id: 'dm1', type: ConversationType.dm, title: 'Awa Diallo'),
+  );
   @override
-  Future<Result<MessagesPage>> messages(String channelId, {String? cursor, int limit = 50}) async =>
-      const Ok(MessagesPage(messages: []));
+  Future<Result<MessagesPage>> messages(
+    String channelId, {
+    String? cursor,
+    int limit = 50,
+  }) async => const Ok(MessagesPage(messages: []));
   @override
   Future<Result<Message>> sendMessage(
     String channelId, {
@@ -112,6 +133,7 @@ class _BaseRepo implements WorkspaceRepository {
     heartbeats++;
     return const Ok(null);
   }
+
   @override
   Future<Result<Conversation>> createChannel({
     required String name,
@@ -126,30 +148,30 @@ class _BaseRepo implements WorkspaceRepository {
 class _DataRepo extends _BaseRepo {
   @override
   Future<Result<List<Conversation>>> conversations() async => Ok([
-        Conversation(
-          id: 'c1',
-          type: ConversationType.public,
-          title: 'Général',
-          unreadCount: 4,
-          // A clearly-past date so _activityLabel renders dd/MM ('25/12'),
-          // never today's HH:mm — deterministic across test-run days.
-          updatedAt: DateTime(2025, 12, 25),
-          lastMessageAt: DateTime(2025, 12, 25),
-          // Own last message → the row prefixes the preview with 'Vous : '.
-          lastMessagePreview: 'Réunion à 9h',
-          lastMessageAuthorId: 'me',
-        ),
-        // No avatarUrl → AppAvatar renders its initials fallback (no real
-        // NetworkImage load in the test environment). Peer's last message.
-        Conversation(
-          id: 'dm1',
-          type: ConversationType.dm,
-          title: 'Koffi N',
-          lastMessagePreview: 'Bonjour',
-          lastMessageAuthorId: 'peer',
-          lastMessageAt: DateTime(2025, 12, 24),
-        ),
-      ]);
+    Conversation(
+      id: 'c1',
+      type: ConversationType.public,
+      title: 'Général',
+      unreadCount: 4,
+      // A clearly-past date so _activityLabel renders dd/MM ('25/12'),
+      // never today's HH:mm — deterministic across test-run days.
+      updatedAt: DateTime(2025, 12, 25),
+      lastMessageAt: DateTime(2025, 12, 25),
+      // Own last message → the row prefixes the preview with 'Vous : '.
+      lastMessagePreview: 'Réunion à 9h',
+      lastMessageAuthorId: 'me',
+    ),
+    // No avatarUrl → AppAvatar renders its initials fallback (no real
+    // NetworkImage load in the test environment). Peer's last message.
+    Conversation(
+      id: 'dm1',
+      type: ConversationType.dm,
+      title: 'Koffi N',
+      lastMessagePreview: 'Bonjour',
+      lastMessageAuthorId: 'peer',
+      lastMessageAt: DateTime(2025, 12, 24),
+    ),
+  ]);
 }
 
 class _ErrRepo extends _BaseRepo {
@@ -159,19 +181,19 @@ class _ErrRepo extends _BaseRepo {
 }
 
 Widget _host(WorkspaceRepository repo) => ProviderScope(
-      overrides: [
-        authControllerProvider.overrideWith(_FakeAuth.new),
-        workspaceRepositoryProvider.overrideWithValue(repo),
-        // Prevent any test from instantiating the real Pusher SDK adapter.
-        workspaceRealtimeProvider.overrideWithValue(FakeWorkspaceRealtime()),
-      ],
-      // Theme on the MaterialApp so pushed routes (ChatThreadScreen) inherit
-      // SytiumColors. pollInterval: null disables the polling timer.
-      child: MaterialApp(
-        theme: AppTheme.light(),
-        home: const WorkspaceScreen(pollInterval: null),
-      ),
-    );
+  overrides: [
+    authControllerProvider.overrideWith(_FakeAuth.new),
+    workspaceRepositoryProvider.overrideWithValue(repo),
+    // Prevent any test from instantiating the real Pusher SDK adapter.
+    workspaceRealtimeProvider.overrideWithValue(FakeWorkspaceRealtime()),
+  ],
+  // Theme on the MaterialApp so pushed routes (ChatThreadScreen) inherit
+  // SytiumColors. pollInterval: null disables the polling timer.
+  child: MaterialApp(
+    theme: AppTheme.light(),
+    home: const WorkspaceScreen(pollInterval: null),
+  ),
+);
 
 /// App en arrière-plan pour la durée du test.
 class _Background extends AppForeground {
@@ -211,7 +233,9 @@ void main() {
 
   setUpAll(() async => initializeDateFormatting('fr_FR'));
 
-  testWidgets('renders channels + DMs with avatar, title and unread badge', (tester) async {
+  testWidgets('renders channels + DMs with avatar, title and unread badge', (
+    tester,
+  ) async {
     await tester.pumpWidget(_host(_DataRepo()));
     await tester.pump(); // resolve auth
     await tester.pump(); // resolve conversations
@@ -219,8 +243,8 @@ void main() {
 
     expect(find.text('Général'), findsOneWidget);
     expect(find.text('Koffi N'), findsOneWidget);
-    expect(find.byIcon(Icons.tag), findsWidgets); // channel tag icon
-    expect(find.byType(AppAvatar), findsWidgets); // DM peer + team avatars
+    expect(find.text('#'), findsWidgets); // channel square marker
+    expect(find.byType(AppAvatar), findsWidgets); // DM peer avatar
     expect(find.text('4'), findsOneWidget); // unread badge
     expect(find.text('SYTIUM WORKSPACE'), findsOneWidget);
     await tester.pumpWidget(const SizedBox());
@@ -232,7 +256,7 @@ void main() {
     await tester.pump();
     await tester.pump();
 
-    expect(find.text('Réunion à 9h'), findsOneWidget);
+    expect(find.text('Vous : Réunion à 9h'), findsOneWidget);
     expect(find.text('Bonjour'), findsOneWidget);
     await tester.pumpWidget(const SizedBox());
   });
@@ -246,22 +270,27 @@ void main() {
     await tester.pumpWidget(const SizedBox());
   });
 
-  testWidgets('does not render its own "Messages" title (shell provides the AppBar)', (tester) async {
-    await tester.pumpWidget(_host(_DataRepo()));
-    await tester.pump();
-    await tester.pump();
+  testWidgets(
+    'does not render its own "Messages" title (shell provides the AppBar)',
+    (tester) async {
+      await tester.pumpWidget(_host(_DataRepo()));
+      await tester.pump();
+      await tester.pump();
 
-    // The screen renders WITHOUT its own AppBar/title. The shell's 'Message'
-    // AppBar is a separate widget and is NOT built in this host.
-    expect(find.text('Messages'), findsNothing);
-    await tester.pumpWidget(const SizedBox());
-  });
+      // The screen renders WITHOUT its own AppBar/title. The shell's 'Message'
+      // AppBar is a separate widget and is NOT built in this host.
+      expect(find.text('Messages'), findsNothing);
+      await tester.pumpWidget(const SizedBox());
+    },
+  );
 
-  testWidgets('shows the empty state when there are no conversations', (tester) async {
+  testWidgets('shows the empty state when there are no conversations', (
+    tester,
+  ) async {
     await tester.pumpWidget(_host(_BaseRepo()));
     await tester.pump();
     await tester.pump();
-    expect(find.text('Aucun canal.'), findsOneWidget);
+    expect(find.text('Aucune conversation. Démarrez-en une.'), findsOneWidget);
     await tester.pumpWidget(const SizedBox());
   });
 
@@ -285,7 +314,9 @@ void main() {
     await tester.pumpWidget(const SizedBox());
   });
 
-  testWidgets('FAB → « Nouvelle discussion » opens the NewDmSheet', (tester) async {
+  testWidgets('FAB → « Nouvelle discussion » opens the NewDmSheet', (
+    tester,
+  ) async {
     await tester.pumpWidget(_host(_DataRepo()));
     await tester.pump();
     await tester.pump();
@@ -297,7 +328,9 @@ void main() {
     await tester.pumpWidget(const SizedBox());
   });
 
-  testWidgets('FAB → « Nouveau canal » opens the create-channel sheet', (tester) async {
+  testWidgets('FAB → « Nouveau canal » opens the create-channel sheet', (
+    tester,
+  ) async {
     await tester.pumpWidget(_host(_DataRepo()));
     await tester.pump();
     await tester.pump();
