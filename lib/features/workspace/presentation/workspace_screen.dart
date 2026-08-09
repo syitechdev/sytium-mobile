@@ -239,10 +239,8 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
             ),
             if (_searchOpen)
               _SearchField(controller: _search, focusNode: _searchFocus),
-            // Bande de statuts — ne s'affiche que s'il existe de nouveaux statuts
-            // (le widget se réduit à zéro sinon).
-            if (!_searchOpen) const StatusRail(),
-            if (convos != null) ...[
+            // Onglets, calés à gauche, sans filet au-dessus ni en dessous.
+            if (convos != null)
               _SegmentBar(
                 selected: _segment,
                 channels: convos
@@ -252,8 +250,9 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
                 unread: convos.where((c) => c.unreadCount > 0).length,
                 onSelect: (s) => setState(() => _segment = s),
               ),
-              const Divider(height: 1),
-            ],
+            // Bande de statuts SOUS les onglets — ne s'affiche que s'il existe un
+            // statut actif (le widget se réduit à zéro sinon).
+            if (!_searchOpen) const StatusRail(),
             if (convos != null && async.hasError)
               StaleDataBanner(
                 onRetry: () => ref.invalidate(conversationsProvider),
