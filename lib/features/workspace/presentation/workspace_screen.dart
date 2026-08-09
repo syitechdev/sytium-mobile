@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:sytium_mobile/app/lifecycle/app_foreground.dart';
+import 'package:sytium_mobile/features/ai/application/ai_providers.dart';
+import 'package:sytium_mobile/features/ai/presentation/ai_chat_screen.dart';
 import 'package:sytium_mobile/features/workspace/application/workspace_providers.dart';
 import 'package:sytium_mobile/features/workspace/application/workspace_statuses.dart';
 import 'package:sytium_mobile/features/workspace/domain/workspace_models.dart';
@@ -288,11 +290,45 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
           ],
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _showCreateMenu,
-        backgroundColor: colors.brand,
-        foregroundColor: colors.onBrand,
-        child: const Icon(Icons.edit_outlined),
+      floatingActionButton: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Bouton réduit « Sytium IA », au-dessus du crayon (indigo réservé IA).
+          FloatingActionButton.small(
+            heroTag: 'ai-fab',
+            onPressed: _openAi,
+            backgroundColor: colors.ai,
+            foregroundColor: Colors.white,
+            tooltip: 'Sytium IA',
+            child: const Icon(Icons.auto_awesome),
+          ),
+          const SizedBox(height: Tokens.space12),
+          FloatingActionButton(
+            heroTag: 'compose-fab',
+            onPressed: _showCreateMenu,
+            backgroundColor: colors.brand,
+            foregroundColor: colors.onBrand,
+            child: const Icon(Icons.edit_outlined),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Ouvre l'assistant IA sur la conversation la plus récente (fil persistant),
+  /// ou une nouvelle si aucune n'existe encore.
+  Future<void> _openAi() async {
+    String? conversationId;
+    try {
+      final convos = await ref.read(aiConversationsProvider.future);
+      if (convos.isNotEmpty) conversationId = convos.first.id;
+    } catch (_) {
+      conversationId = null;
+    }
+    if (!mounted) return;
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => AiChatScreen(conversationId: conversationId),
       ),
     );
   }

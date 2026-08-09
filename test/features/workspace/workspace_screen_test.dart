@@ -343,7 +343,7 @@ void main() {
     await tester.pumpWidget(_host(_DataRepo()));
     await tester.pump();
     await tester.pump();
-    await tester.tap(find.byType(FloatingActionButton));
+    await tester.tap(find.byIcon(Icons.edit_outlined));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Nouvelle discussion'));
     await tester.pumpAndSettle();
@@ -357,7 +357,7 @@ void main() {
     await tester.pumpWidget(_host(_DataRepo()));
     await tester.pump();
     await tester.pump();
-    await tester.tap(find.byType(FloatingActionButton));
+    await tester.tap(find.byIcon(Icons.edit_outlined));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Nouveau canal'));
     await tester.pumpAndSettle();
@@ -369,7 +369,7 @@ void main() {
     await tester.pumpWidget(_host(_DataRepo()));
     await tester.pump();
     await tester.pump();
-    await tester.tap(find.byType(FloatingActionButton));
+    await tester.tap(find.byIcon(Icons.edit_outlined));
     await tester.pumpAndSettle();
     expect(find.text('Nouveau statut'), findsOneWidget);
     await tester.pumpWidget(const SizedBox());

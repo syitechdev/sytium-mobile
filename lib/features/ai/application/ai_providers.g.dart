@@ -23,9 +23,9 @@ final aiRepositoryProvider = AutoDisposeProvider<AiRepository>.internal(
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef AiRepositoryRef = AutoDisposeProviderRef<AiRepository>;
-String _$aiConversationsHash() => r'72509fcff5e37019e6dcb94fea18d89a228af948';
+String _$aiConversationsHash() => r'2db982a4aa6c2cf9c72d92a54d516bd1feae1953';
 
-/// Conversations IA de l'utilisateur (les plus récentes d'abord).
+/// Conversations IA de l'utilisateur, les plus récentes d'abord.
 ///
 /// Copied from [aiConversations].
 @ProviderFor(aiConversations)
@@ -196,5 +196,25 @@ class _AiMessagesProviderElement
   String get conversationId => (origin as AiMessagesProvider).conversationId;
 }
 
+String _$aiChatHash() => r'ad528975b74cbc1b0850631794260139577d76d3';
+
+/// Orchestre une session de chat IA : chargement de l'historique, envoi d'un
+/// message et **streaming** de la réponse, annulation. Toute la logique vit ici,
+/// la présentation ne fait qu'observer l'état.
+///
+/// Copied from [AiChat].
+@ProviderFor(AiChat)
+final aiChatProvider =
+    AutoDisposeNotifierProvider<AiChat, AiChatState>.internal(
+      AiChat.new,
+      name: r'aiChatProvider',
+      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+          ? null
+          : _$aiChatHash,
+      dependencies: null,
+      allTransitiveDependencies: null,
+    );
+
+typedef _$AiChat = AutoDisposeNotifier<AiChatState>;
 // ignore_for_file: type=lint
 // ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package
