@@ -483,43 +483,50 @@ class _SegmentBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      padding: const EdgeInsets.fromLTRB(
-        Tokens.space16,
-        0,
-        Tokens.space16,
-        Tokens.space8,
-      ),
-      child: Row(
-        children: [
-          _SegmentChip(
-            label: 'Tout',
-            active: selected == _Segment.all,
-            onTap: () => onSelect(_Segment.all),
-          ),
-          const SizedBox(width: Tokens.space8),
-          _SegmentChip(
-            label: 'Canaux',
-            count: channels,
-            active: selected == _Segment.channels,
-            onTap: () => onSelect(_Segment.channels),
-          ),
-          const SizedBox(width: Tokens.space8),
-          _SegmentChip(
-            label: 'DM',
-            count: dms,
-            active: selected == _Segment.dms,
-            onTap: () => onSelect(_Segment.dms),
-          ),
-          const SizedBox(width: Tokens.space8),
-          _SegmentChip(
-            label: 'Non lus',
-            count: unread,
-            active: selected == _Segment.unread,
-            onTap: () => onSelect(_Segment.unread),
-          ),
-        ],
+    // `width: infinity` force le scroll view à remplir la largeur : sinon, sous
+    // les contraintes lâches d'une Column centrée, il se rétrécit à son contenu
+    // et le bloc d'onglets apparaît centré au lieu d'être calé à gauche.
+    return SizedBox(
+      width: double.infinity,
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.fromLTRB(
+          Tokens.space16,
+          0,
+          Tokens.space16,
+          Tokens.space8,
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _SegmentChip(
+              label: 'Tout',
+              active: selected == _Segment.all,
+              onTap: () => onSelect(_Segment.all),
+            ),
+            const SizedBox(width: Tokens.space8),
+            _SegmentChip(
+              label: 'Canaux',
+              count: channels,
+              active: selected == _Segment.channels,
+              onTap: () => onSelect(_Segment.channels),
+            ),
+            const SizedBox(width: Tokens.space8),
+            _SegmentChip(
+              label: 'DM',
+              count: dms,
+              active: selected == _Segment.dms,
+              onTap: () => onSelect(_Segment.dms),
+            ),
+            const SizedBox(width: Tokens.space8),
+            _SegmentChip(
+              label: 'Non lus',
+              count: unread,
+              active: selected == _Segment.unread,
+              onTap: () => onSelect(_Segment.unread),
+            ),
+          ],
+        ),
       ),
     );
   }
