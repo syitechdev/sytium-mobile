@@ -14,9 +14,11 @@ class ApprovalsAlertCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final total = ref
-        .watch(pendingApprovalsProvider)
-        .maybeWhen(data: (p) => p.counts.total, orElse: () => 0);
+    // `valueOrNull` plutôt que `maybeWhen(data:)` : après une décision, la liste
+    // partagée est invalidée puis rechargée ; on garde le dernier total connu
+    // pendant le rechargement au lieu de faire disparaître la carte une fraction
+    // de seconde avant qu'elle ne réapparaisse avec le nouveau compte.
+    final total = ref.watch(pendingApprovalsProvider).valueOrNull?.counts.total ?? 0;
     if (total == 0) return const SizedBox.shrink();
 
     final colors = context.colors;

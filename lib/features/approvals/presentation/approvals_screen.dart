@@ -131,6 +131,11 @@ class _ApprovalsScreenState extends ConsumerState<ApprovalsScreen> {
         HapticFeedback.lightImpact();
         _remove(item);
         ref.read(unreadCountProvider.notifier).decrement();
+        // La liste partagée est `keepAlive` : sans ce rafraîchissement, le badge
+        // d'accueil et une réouverture de l'écran reliraient le cache d'avant la
+        // décision (« 6 à valider » alors qu'on vient d'en traiter). L'écran, lui,
+        // garde sa liste optimiste pendant le rechargement (skipLoadingOnReload).
+        ref.invalidate(pendingApprovalsProvider);
         _toast(successMsg, error: false);
       },
       (f) {
@@ -183,6 +188,9 @@ class _ApprovalsScreenState extends ConsumerState<ApprovalsScreen> {
       body: RefreshIndicator(
         onRefresh: _refresh,
         child: async.when(
+          // Une décision invalide la liste : pendant son rechargement, on garde
+          // la liste optimiste affichée au lieu de repasser par le squelette.
+          skipLoadingOnReload: true,
           loading: () => const _ApprovalsSkeleton(),
           error: (e, _) => ListView(
             children: [

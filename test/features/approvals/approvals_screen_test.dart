@@ -27,8 +27,12 @@ class _FakeRepo implements ApprovalsRepository {
   final bool loadForever;
   final Failure? actionFailure;
 
+  /// Nombre d'appels à `pending()` — un rechargement en incrémente le compteur.
+  int pendingCalls = 0;
+
   @override
   Future<Result<PendingApprovals>> pending() {
+    pendingCalls++;
     if (loadForever) return Completer<Result<PendingApprovals>>().future;
     if (fail) throw Exception('réseau');
     return Future.value(Ok(pendingValue!));
@@ -38,9 +42,11 @@ class _FakeRepo implements ApprovalsRepository {
       actionFailure == null ? const Ok(null) : Err(actionFailure!);
 
   @override
-  Future<Result<void>> approveLeave(String id, {String? commentaire}) => _action();
+  Future<Result<void>> approveLeave(String id, {String? commentaire}) =>
+      _action();
   @override
-  Future<Result<void>> rejectLeave(String id, {String? commentaire}) => _action();
+  Future<Result<void>> rejectLeave(String id, {String? commentaire}) =>
+      _action();
 
   /// Dernière valeur de `is_paid` transmise à approvePermission ; `#unset`
   /// tant qu'aucune approbation de permission n'a eu lieu.
@@ -60,16 +66,27 @@ class _FakeRepo implements ApprovalsRepository {
     lastProof = proof;
     return _action();
   }
+
   @override
-  Future<Result<void>> rejectPermission(String id, {String? commentaire}) => _action();
+  Future<Result<void>> rejectPermission(String id, {String? commentaire}) =>
+      _action();
   @override
-  Future<Result<void>> validateObjective(String id, {String? commentaire, String? rejetMotif}) => _action();
+  Future<Result<void>> validateObjective(
+    String id, {
+    String? commentaire,
+    String? rejetMotif,
+  }) => _action();
 }
 
 ApprovalItem _leave(String id) => ApprovalItem(
   id: id,
   type: ApprovalType.leave,
-  requester: const ApprovalRequester(id: 'e1', nom: 'A', prenoms: 'B', poste: 'Dev'),
+  requester: const ApprovalRequester(
+    id: 'e1',
+    nom: 'A',
+    prenoms: 'B',
+    poste: 'Dev',
+  ),
   title: 'Congé payé',
   summary: '5 jours',
   action: const ApprovalAction(),
@@ -137,7 +154,9 @@ void main() {
 
   testWidgets('data → cards + filter chips with counts', (tester) async {
     await tester.pumpWidget(
-      _screen(_FakeRepo(pendingValue: _pending([_leave('l1'), _objective('o1')]))),
+      _screen(
+        _FakeRepo(pendingValue: _pending([_leave('l1'), _objective('o1')])),
+      ),
     );
     await tester.pump(const Duration(milliseconds: 100));
     expect(find.byType(ApprovalCard), findsNWidgets(2));
@@ -239,6 +258,22 @@ void main() {
     expect(find.text('Refuser la demande'), findsOneWidget);
   });
 
+  testWidgets('approuver rafraîchit la liste partagée (badge + réouverture)', (
+    tester,
+  ) async {
+    final repo = _FakeRepo(pendingValue: _pending([_leave('l1'), _leave('l2')]));
+    await tester.pumpWidget(_screen(repo));
+    await tester.pump(const Duration(milliseconds: 100));
+    final before = repo.pendingCalls;
+
+    await tester.tap(find.text('Approuver').first);
+    await tester.pumpAndSettle();
+
+    // La décision invalide `pendingApprovalsProvider` : il est rechargé, si bien
+    // que le badge d'accueil et une réouverture ne relisent pas un cache périmé.
+    expect(repo.pendingCalls, greaterThan(before));
+  });
+
   testWidgets('mission au palier Direction : approuver recueille la preuve', (
     tester,
   ) async {
@@ -260,7 +295,9 @@ void main() {
     expect(repo.lastProof, isNull);
   });
 
-  testWidgets('STALE removes the card + shows déjà traité toast', (tester) async {
+  testWidgets('STALE removes the card + shows déjà traité toast', (
+    tester,
+  ) async {
     await tester.pumpWidget(
       _screen(
         _FakeRepo(
