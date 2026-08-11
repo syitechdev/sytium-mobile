@@ -11,9 +11,10 @@ import 'package:sytium_mobile/theme/tokens.dart';
 /// lancer une seconde requête.
 const _kPeriod = DashboardPeriod.annee;
 
-/// Carte « Aujourd'hui » : ce qui a été facturé, encaissé et dépensé sur la
-/// seule journée, avec le solde net. Réservée aux profils qui voient les
-/// chiffres (gated par l'appelant sur `capabilities.dashboard`).
+/// Carte « Aujourd'hui » : ce qui a été facturé, encaissé et décaissé sur la
+/// seule journée, plus le solde tous comptes (trésorerie instantanée). Aligné
+/// sur le tableau de bord web. Réservée aux profils qui voient les chiffres
+/// (gated par l'appelant sur `capabilities.dashboard`).
 class TodaySummaryCard extends ConsumerWidget {
   const TodaySummaryCard({super.key});
 
@@ -101,7 +102,7 @@ class _TodayCard extends StatelessWidget {
                 ),
                 Expanded(
                   child: _Figure(
-                    label: 'Solde',
+                    label: 'Solde tous comptes',
                     value: today.solde,
                     color: colors.info,
                   ),

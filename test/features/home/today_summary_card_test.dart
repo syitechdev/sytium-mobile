@@ -15,7 +15,6 @@ import 'package:sytium_mobile/features/stats/domain/working_capital_models.dart'
 import 'package:sytium_mobile/theme/theme.dart';
 
 mixin _Stub implements StatsRepository {
-
   @override
   Future<Result<WorkingCapital>> workingCapital() =>
       Completer<Result<WorkingCapital>>().future;
@@ -28,7 +27,6 @@ mixin _Stub implements StatsRepository {
 }
 
 class _OkRepo with _Stub implements StatsRepository {
-
   const _OkRepo(this.kpis);
 
   @override
@@ -70,7 +68,7 @@ void main() {
     expect(find.text('CA'), findsOneWidget);
     expect(find.text('Recettes'), findsOneWidget);
     expect(find.text('Dépenses'), findsOneWidget);
-    expect(find.text('Solde'), findsOneWidget);
+    expect(find.text('Solde tous comptes'), findsOneWidget);
     // Forme compacte, comme partout ailleurs dans l'app.
     expect(find.text(Money.compactFcfa(4850000)), findsOneWidget);
     expect(find.text(Money.compactFcfa(2680000)), findsOneWidget);
