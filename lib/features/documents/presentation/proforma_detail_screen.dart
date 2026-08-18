@@ -144,6 +144,21 @@ class _Body extends ConsumerWidget {
                 ),
               ),
             const Divider(),
+            // La remise n'apparaît que si elle existe, comme sur le PDF : sans
+            // ces deux lignes, les montants listés au-dessus sommaient au brut
+            // sous un « Total HT » déjà net, sans rien pour l'expliquer.
+            if (detail.remiseMontant > 0) ...[
+              DetailRow(
+                label: 'Total brut',
+                value: Money.fcfa(detail.totalBrut),
+              ),
+              DetailRow(
+                label: detail.remiseType == 'pourcentage'
+                    ? 'Remise (${Money.percent(detail.remiseValeur)} %)'
+                    : 'Remise',
+                value: '- ${Money.fcfa(detail.remiseMontant)}',
+              ),
+            ],
             DetailRow(label: 'Total HT', value: Money.fcfa(detail.totalHt)),
             DetailRow(
               label: 'TVA (${detail.tauxTva.toStringAsFixed(0)} %)',

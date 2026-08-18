@@ -7,6 +7,7 @@ import 'package:sytium_mobile/core/result/result.dart';
 import 'package:sytium_mobile/core/upload/upload_providers.dart';
 import 'package:sytium_mobile/core/upload/upload_repository.dart';
 import 'package:sytium_mobile/core/upload/uploaded_file.dart';
+import 'package:sytium_mobile/core/utils/money.dart';
 import 'package:sytium_mobile/features/auth/application/auth_controller.dart';
 import 'package:sytium_mobile/features/auth/domain/auth_session.dart';
 import 'package:sytium_mobile/features/auth/domain/auth_user.dart';
@@ -23,7 +24,12 @@ import 'package:sytium_mobile/features/invoicing/domain/invoicing_repository.dar
 import 'package:sytium_mobile/shared/widgets/app_primary_button.dart';
 import 'package:sytium_mobile/theme/theme.dart';
 
-ProformaDetail _detail({bool converti = false}) => ProformaDetail(
+ProformaDetail _detail({
+  bool converti = false,
+  String? remiseType,
+  num remiseValeur = 0,
+  num remiseMontant = 0,
+}) => ProformaDetail(
   id: 'p1',
   numero: 'PRO-2026-018',
   clientNom: 'ABEL OUYABE',
@@ -35,16 +41,21 @@ ProformaDetail _detail({bool converti = false}) => ProformaDetail(
   dateEmission: DateTime(2026, 6, 25),
   dateEcheance: DateTime(2026, 7, 25),
   tauxTva: 18,
+  // Le fixture reste coherent : la ligne somme au BRUT, et totalHt est le net.
+  // Sans remise, remiseMontant vaut 0 et les deux coincident.
   totalHt: 2500,
   totalTva: 450,
   totalTtc: 2950,
+  remiseType: remiseType,
+  remiseValeur: remiseValeur,
+  remiseMontant: remiseMontant,
   converti: converti,
-  items: const [
+  items: [
     ProformaDetailLine(
       description: 'Ordinateur portable',
       quantite: 2,
-      prixUnitaire: 1250,
-      total: 2500,
+      prixUnitaire: (2500 + remiseMontant) / 2,
+      total: 2500 + remiseMontant,
       productId: 'prod-1',
       reference: 'ORD-001',
     ),
@@ -196,6 +207,54 @@ void main() {
     expect(find.textContaining('25/06/2026'), findsOneWidget);
   });
 
+  testWidgets('la remise est détaillée quand il y en a une', (tester) async {
+    // Sans ces deux lignes, la fiche listait 2 x 1 250 = 2 500 juste au-dessus
+    // d'un « Total HT » de 2 500 alors que le brut valait 2 800 : l'écart de
+    // 300 n'était expliqué nulle part.
+    await _pump(
+      tester,
+      detail: _detail(
+        remiseType: 'pourcentage',
+        remiseValeur: 10,
+        remiseMontant: 300,
+      ),
+    );
+
+    expect(find.text('Total brut'), findsOneWidget);
+    expect(find.text('Remise (10 %)'), findsOneWidget);
+    // Les montants, pas seulement les libelles : le test resterait vert si
+    // totalBrut etait ecrit totalHt - remiseMontant.
+    //
+    // 2 800 apparait exactement deux fois, et c'est l'invariant recherche : le
+    // total de la ligne ET le « Total brut ». C'est leur egalite qui manquait
+    // auparavant, la fiche affichant des lignes sommant au brut sous un total
+    // deja net.
+    expect(find.text(Money.fcfa(2800)), findsNWidgets(2));
+    expect(find.text('- ${Money.fcfa(300)}'), findsOneWidget);
+    expect(find.text(Money.fcfa(2500)), findsOneWidget);
+  });
+
+  testWidgets('un pourcentage decimal n’est pas arrondi', (tester) async {
+    // 12,5 % affiche « 13 % » contredisait son propre montant et le PDF.
+    await _pump(
+      tester,
+      detail: _detail(
+        remiseType: 'pourcentage',
+        remiseValeur: 12.5,
+        remiseMontant: 300,
+      ),
+    );
+
+    expect(find.text('Remise (12,5 %)'), findsOneWidget);
+  });
+
+  testWidgets('sans remise, aucune ligne parasite', (tester) async {
+    await _pump(tester, detail: _detail());
+
+    expect(find.text('Total brut'), findsNothing);
+    expect(find.textContaining('Remise'), findsNothing);
+  });
+
   testWidgets('une proforma facturée n’offre pas de modification', (
     tester,
   ) async {
@@ -270,7 +329,10 @@ void main() {
     await tester.pumpAndSettle();
 
     await tester.enterText(
-      find.widgetWithText(TextField, 'Ex : accord par téléphone du 21/07, M. Koffi'),
+      find.widgetWithText(
+        TextField,
+        'Ex : accord par téléphone du 21/07, M. Koffi',
+      ),
       'Accord par téléphone, M. Koffi',
     );
     // Deux boutons portent ce libellé : celui de la fiche et celui de la

@@ -82,6 +82,9 @@ class ProformaDetail {
     this.totalHt = 0,
     this.totalTva = 0,
     this.totalTtc = 0,
+    this.remiseType,
+    this.remiseValeur = 0,
+    this.remiseMontant = 0,
     this.converti = false,
   });
 
@@ -99,6 +102,15 @@ class ProformaDetail {
   final num totalHt;
   final num totalTva;
   final num totalTtc;
+
+  /// Remise négociée. `totalHt` est déjà net : sans ces champs, les lignes
+  /// affichées sommaient au brut sous un total inférieur, sans explication.
+  final String? remiseType;
+  final num remiseValeur;
+  final num remiseMontant;
+
+  /// Le montant avant remise, tel qu'il ressort de la somme des lignes.
+  num get totalBrut => totalHt + remiseMontant;
 
   /// Une facture est née de cette proforma : la plateforme la verrouille.
   final bool converti;

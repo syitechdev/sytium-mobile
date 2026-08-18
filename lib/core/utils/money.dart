@@ -65,6 +65,16 @@ abstract final class Money {
   static String _withSymbol(AppCurrency c, String formatted) =>
       c.symbolBefore ? '${c.symbol}$formatted' : '$formatted ${c.symbol}';
 
+  /// Formate un pourcentage sans arrondi destructeur : `10` -> `10`,
+  /// `12.5` -> `12,5`. Un `toStringAsFixed(0)` affichait « 13 % » à côté d'une
+  /// remise de 12,5 % — le libellé contredisait son propre montant et le PDF
+  /// déjà remis au client.
+  static String percent(num value) {
+    final d = value.toDouble();
+    if (d == d.roundToDouble()) return d.toStringAsFixed(0);
+    return _norm(NumberFormat('0.##', 'fr_FR').format(d));
+  }
+
   /// Trims a scaled value to at most one decimal, fr_FR comma, no trailing `,0`.
   static String _trim(double v) {
     final r = (v * 10).round() / 10;

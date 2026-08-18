@@ -60,6 +60,9 @@ class DocumentsRepositoryImpl implements DocumentsRepository {
     totalHt: _num(j['total_ht']),
     totalTva: _num(j['total_tva']),
     totalTtc: _num(j['total_ttc']),
+    remiseType: j['remise_type'] as String?,
+    remiseValeur: _num(j['remise_valeur']),
+    remiseMontant: _num(j['remise_montant']),
     converti: (j['converti'] as bool?) ?? false,
     items: _list(j['items'])
         .map(

@@ -149,6 +149,14 @@ class _SalesDocFormSheetState extends ConsumerState<_SalesDocFormSheet> {
       adresse: p.clientAdresse,
     );
     _tauxChoisi = p.tauxTva;
+    // La remise n'est pas modifiable depuis le mobile, mais elle doit être
+    // déduite du total affiché : sinon l'écran annonce un « Total net à payer »
+    // supérieur à celui que la fiche de détail vient de montrer, et supérieur
+    // à celui du PDF déjà envoyé au client. Le serveur, lui, la conserve : une
+    // mise à jour partielle qui ne la renvoie pas ne l'efface pas.
+    _remiseType = p.remiseType;
+    _remiseValeur = p.remiseValeur;
+    _remiseMontant = p.remiseMontant;
     _statut = ProformaStatus.values.firstWhere(
       (s) => s.wire == p.statut,
       orElse: () => ProformaStatus.brouillon,
@@ -293,7 +301,27 @@ class _SalesDocFormSheetState extends ConsumerState<_SalesDocFormSheet> {
     setState(() {});
   }
 
-  num get _ht => _lines.fold<num>(0, (s, l) => s + l.total);
+  String? _remiseType;
+  num _remiseValeur = 0;
+  num _remiseMontant = 0;
+
+  /// Somme des lignes, avant remise.
+  num get _brut => _lines.fold<num>(0, (s, l) => s + l.total);
+
+  /// Remise recalculée sur le brut courant : si l'utilisateur modifie une
+  /// ligne, une remise en pourcentage doit suivre. Un montant fixe, lui, reste
+  /// tel quel, mais ne peut jamais dépasser le brut.
+  num get _remise {
+    if (_remiseType == 'pourcentage') {
+      final r = _brut * _remiseValeur / 100;
+      return r > _brut ? _brut : r;
+    }
+    final r = _remiseMontant;
+    if (r < 0) return 0;
+    return r > _brut ? _brut : r;
+  }
+
+  num get _ht => _brut - _remise;
   num get _tva => (_ht * _taux / 100).round();
   num get _ttc => _ht + _tva;
 
@@ -554,6 +582,10 @@ class _SalesDocFormSheetState extends ConsumerState<_SalesDocFormSheet> {
             ),
             const SizedBox(height: Tokens.space24),
             _TotalsCard(
+              brut: _brut,
+              remise: _remise,
+              remiseType: _remiseType,
+              remiseValeur: _remiseValeur,
               ht: _ht,
               tvaPct: _taux,
               tva: _tva,
@@ -920,12 +952,20 @@ class _TotalsCard extends StatelessWidget {
     required this.tvaPct,
     required this.tva,
     required this.ttc,
+    this.brut = 0,
+    this.remise = 0,
+    this.remiseType,
+    this.remiseValeur = 0,
   });
 
   final num ht;
   final num tvaPct;
   final num tva;
   final num ttc;
+  final num brut;
+  final num remise;
+  final String? remiseType;
+  final num remiseValeur;
 
   @override
   Widget build(BuildContext context) {
@@ -939,6 +979,18 @@ class _TotalsCard extends StatelessWidget {
       ),
       child: Column(
         children: [
+          if (remise > 0) ...[
+            _row(context, 'Total brut', Money.fcfa(brut)),
+            const SizedBox(height: Tokens.space8),
+            _row(
+              context,
+              remiseType == 'pourcentage'
+                  ? 'Remise (${Money.percent(remiseValeur)} %)'
+                  : 'Remise',
+              '- ${Money.fcfa(remise)}',
+            ),
+            const SizedBox(height: Tokens.space8),
+          ],
           _row(context, 'Montant HT', Money.fcfa(ht)),
           const SizedBox(height: Tokens.space8),
           _row(context, 'TVA (${tvaPct.toInt()} %)', Money.fcfa(tva)),
