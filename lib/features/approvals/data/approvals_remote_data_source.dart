@@ -43,6 +43,22 @@ class ApprovalsRemoteDataSource {
     commentaire: commentaire,
   );
 
+  /// Site de pointage propose par le RH. Le refus exige un motif — le serveur
+  /// le valide, on l'envoie sous la cle `motif_refus`.
+  Future<void> approvePointageSite(String id) async {
+    await _dio.post<Map<String, dynamic>>(
+      '/mobile/approvals/pointage-sites/$id/approve',
+      data: const <String, dynamic>{},
+    );
+  }
+
+  Future<void> rejectPointageSite(String id, {required String motif}) async {
+    await _dio.post<Map<String, dynamic>>(
+      '/mobile/approvals/pointage-sites/$id/reject',
+      data: {'motif_refus': motif},
+    );
+  }
+
   Future<void> validateObjective(
     String id, {
     String? commentaire,

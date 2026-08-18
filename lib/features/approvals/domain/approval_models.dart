@@ -1,11 +1,13 @@
 import 'package:flutter/foundation.dart';
 
-/// The three approvable workflows. `unknown` keeps an unmatched wire string
-/// for forward-compat.
+/// Les workflows approuvables. `unknown` conserve une valeur inconnue du fil
+/// pour rester compatible avec un serveur plus recent.
 enum ApprovalType {
   leave('leave'),
   permission('permission'),
   objective('objective'),
+  /// Site de pointage propose par le RH, en attente du visa de la direction.
+  pointageSite('pointage_site'),
   unknown('');
 
   const ApprovalType(this.wire);
@@ -22,6 +24,7 @@ enum ApprovalType {
     ApprovalType.leave => 'Congé',
     ApprovalType.permission => 'Permission',
     ApprovalType.objective => 'Objectif',
+    ApprovalType.pointageSite => 'Site de pointage',
     ApprovalType.unknown => 'Demande',
   };
 }
@@ -60,9 +63,21 @@ class ApprovalStage {
 
 @immutable
 class ApprovalPayload {
-  const ApprovalPayload({this.palier, this.step, this.requestType});
+  const ApprovalPayload({
+    this.palier,
+    this.step,
+    this.requestType,
+    this.latitude,
+    this.longitude,
+    this.radiusMeters,
+  });
   final String? palier;
   final String? step;
+
+  /// Site de pointage : position proposee et rayon autorise.
+  final double? latitude;
+  final double? longitude;
+  final int? radiusMeters;
 
   /// Sous-type de la demande côté RH : `permission` ou `mission`.
   final String? requestType;
@@ -133,40 +148,58 @@ class ApprovalItem {
 
 @immutable
 class ApprovalCounts {
-  const ApprovalCounts({this.leave = 0, this.permission = 0, this.objective = 0});
+  const ApprovalCounts({
+    this.leave = 0,
+    this.permission = 0,
+    this.objective = 0,
+    this.pointageSite = 0,
+  });
 
   final int leave;
   final int permission;
   final int objective;
+  final int pointageSite;
 
-  int get total => leave + permission + objective;
+  int get total => leave + permission + objective + pointageSite;
 
   int forType(ApprovalType t) => switch (t) {
     ApprovalType.leave => leave,
     ApprovalType.permission => permission,
     ApprovalType.objective => objective,
+    ApprovalType.pointageSite => pointageSite,
     ApprovalType.unknown => 0,
   };
 
-  /// Returns a copy with [type]'s count decremented (floored at 0).
+  /// Copie dont le compteur de [type] est decremente, plancher a zero.
+  ///
+  /// Chaque branche recopiait auparavant les trois compteurs a la main :
+  /// ajouter un type obligeait a modifier toutes les branches, et en oublier
+  /// une remettait silencieusement un compteur a zero.
   ApprovalCounts decrement(ApprovalType type) => switch (type) {
-    ApprovalType.leave => ApprovalCounts(
-      leave: leave > 0 ? leave - 1 : 0,
-      permission: permission,
-      objective: objective,
-    ),
-    ApprovalType.permission => ApprovalCounts(
-      leave: leave,
+    ApprovalType.leave => _copyWith(leave: leave > 0 ? leave - 1 : 0),
+    ApprovalType.permission => _copyWith(
       permission: permission > 0 ? permission - 1 : 0,
-      objective: objective,
     ),
-    ApprovalType.objective => ApprovalCounts(
-      leave: leave,
-      permission: permission,
+    ApprovalType.objective => _copyWith(
       objective: objective > 0 ? objective - 1 : 0,
+    ),
+    ApprovalType.pointageSite => _copyWith(
+      pointageSite: pointageSite > 0 ? pointageSite - 1 : 0,
     ),
     ApprovalType.unknown => this,
   };
+
+  ApprovalCounts _copyWith({
+    int? leave,
+    int? permission,
+    int? objective,
+    int? pointageSite,
+  }) => ApprovalCounts(
+    leave: leave ?? this.leave,
+    permission: permission ?? this.permission,
+    objective: objective ?? this.objective,
+    pointageSite: pointageSite ?? this.pointageSite,
+  );
 }
 
 @immutable

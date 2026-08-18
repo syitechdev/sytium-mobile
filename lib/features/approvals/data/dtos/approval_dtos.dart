@@ -30,6 +30,7 @@ class ApprovalCountsDto with _$ApprovalCountsDto {
     @Default(0) int leave,
     @Default(0) int permission,
     @Default(0) int objective,
+    @JsonKey(name: 'pointage_site') @Default(0) int pointageSite,
   }) = _ApprovalCountsDto;
 
   factory ApprovalCountsDto.fromJson(Map<String, dynamic> json) =>
@@ -97,6 +98,10 @@ class ApprovalPayloadDto with _$ApprovalPayloadDto {
     String? palier,
     String? step,
     @JsonKey(name: 'request_type') String? requestType,
+    // Site de pointage : de quoi situer la demande sans quitter la boite.
+    double? latitude,
+    double? longitude,
+    @JsonKey(name: 'radius_meters') int? radiusMeters,
   }) = _ApprovalPayloadDto;
 
   factory ApprovalPayloadDto.fromJson(Map<String, dynamic> json) =>

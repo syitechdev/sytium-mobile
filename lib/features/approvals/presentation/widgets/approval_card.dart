@@ -15,6 +15,7 @@ const _kAvatarRadius = 20.0;
   ApprovalType.leave => (label: 'Congé', color: c.info),
   ApprovalType.permission => (label: 'Permission', color: c.warning),
   ApprovalType.objective => (label: 'Objectif', color: c.brand),
+  ApprovalType.pointageSite => (label: 'Site', color: c.success),
   ApprovalType.unknown => (label: 'Demande', color: c.textMuted),
 };
 
@@ -38,7 +39,8 @@ class ApprovalCard extends StatelessWidget {
     final theme = Theme.of(context).textTheme;
     final pill = approvalTypeStyle(item.type, colors);
     final isObjective = item.type == ApprovalType.objective;
-    final approveLabel = isObjective ? 'Valider' : 'Approuver';
+    final isSite = item.type == ApprovalType.pointageSite;
+    final approveLabel = isObjective || isSite ? 'Valider' : 'Approuver';
 
     return Container(
       decoration: BoxDecoration(

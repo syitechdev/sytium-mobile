@@ -225,6 +225,8 @@ mixin _$ApprovalCountsDto {
   int get leave => throw _privateConstructorUsedError;
   int get permission => throw _privateConstructorUsedError;
   int get objective => throw _privateConstructorUsedError;
+  @JsonKey(name: 'pointage_site')
+  int get pointageSite => throw _privateConstructorUsedError;
 
   /// Serializes this ApprovalCountsDto to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -243,7 +245,12 @@ abstract class $ApprovalCountsDtoCopyWith<$Res> {
     $Res Function(ApprovalCountsDto) then,
   ) = _$ApprovalCountsDtoCopyWithImpl<$Res, ApprovalCountsDto>;
   @useResult
-  $Res call({int leave, int permission, int objective});
+  $Res call({
+    int leave,
+    int permission,
+    int objective,
+    @JsonKey(name: 'pointage_site') int pointageSite,
+  });
 }
 
 /// @nodoc
@@ -264,6 +271,7 @@ class _$ApprovalCountsDtoCopyWithImpl<$Res, $Val extends ApprovalCountsDto>
     Object? leave = null,
     Object? permission = null,
     Object? objective = null,
+    Object? pointageSite = null,
   }) {
     return _then(
       _value.copyWith(
@@ -278,6 +286,10 @@ class _$ApprovalCountsDtoCopyWithImpl<$Res, $Val extends ApprovalCountsDto>
             objective: null == objective
                 ? _value.objective
                 : objective // ignore: cast_nullable_to_non_nullable
+                      as int,
+            pointageSite: null == pointageSite
+                ? _value.pointageSite
+                : pointageSite // ignore: cast_nullable_to_non_nullable
                       as int,
           )
           as $Val,
@@ -294,7 +306,12 @@ abstract class _$$ApprovalCountsDtoImplCopyWith<$Res>
   ) = __$$ApprovalCountsDtoImplCopyWithImpl<$Res>;
   @override
   @useResult
-  $Res call({int leave, int permission, int objective});
+  $Res call({
+    int leave,
+    int permission,
+    int objective,
+    @JsonKey(name: 'pointage_site') int pointageSite,
+  });
 }
 
 /// @nodoc
@@ -314,6 +331,7 @@ class __$$ApprovalCountsDtoImplCopyWithImpl<$Res>
     Object? leave = null,
     Object? permission = null,
     Object? objective = null,
+    Object? pointageSite = null,
   }) {
     return _then(
       _$ApprovalCountsDtoImpl(
@@ -329,6 +347,10 @@ class __$$ApprovalCountsDtoImplCopyWithImpl<$Res>
             ? _value.objective
             : objective // ignore: cast_nullable_to_non_nullable
                   as int,
+        pointageSite: null == pointageSite
+            ? _value.pointageSite
+            : pointageSite // ignore: cast_nullable_to_non_nullable
+                  as int,
       ),
     );
   }
@@ -341,6 +363,7 @@ class _$ApprovalCountsDtoImpl implements _ApprovalCountsDto {
     this.leave = 0,
     this.permission = 0,
     this.objective = 0,
+    @JsonKey(name: 'pointage_site') this.pointageSite = 0,
   });
 
   factory _$ApprovalCountsDtoImpl.fromJson(Map<String, dynamic> json) =>
@@ -355,10 +378,13 @@ class _$ApprovalCountsDtoImpl implements _ApprovalCountsDto {
   @override
   @JsonKey()
   final int objective;
+  @override
+  @JsonKey(name: 'pointage_site')
+  final int pointageSite;
 
   @override
   String toString() {
-    return 'ApprovalCountsDto(leave: $leave, permission: $permission, objective: $objective)';
+    return 'ApprovalCountsDto(leave: $leave, permission: $permission, objective: $objective, pointageSite: $pointageSite)';
   }
 
   @override
@@ -370,12 +396,15 @@ class _$ApprovalCountsDtoImpl implements _ApprovalCountsDto {
             (identical(other.permission, permission) ||
                 other.permission == permission) &&
             (identical(other.objective, objective) ||
-                other.objective == objective));
+                other.objective == objective) &&
+            (identical(other.pointageSite, pointageSite) ||
+                other.pointageSite == pointageSite));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode => Object.hash(runtimeType, leave, permission, objective);
+  int get hashCode =>
+      Object.hash(runtimeType, leave, permission, objective, pointageSite);
 
   /// Create a copy of ApprovalCountsDto
   /// with the given fields replaced by the non-null parameter values.
@@ -399,6 +428,7 @@ abstract class _ApprovalCountsDto implements ApprovalCountsDto {
     final int leave,
     final int permission,
     final int objective,
+    @JsonKey(name: 'pointage_site') final int pointageSite,
   }) = _$ApprovalCountsDtoImpl;
 
   factory _ApprovalCountsDto.fromJson(Map<String, dynamic> json) =
@@ -410,6 +440,9 @@ abstract class _ApprovalCountsDto implements ApprovalCountsDto {
   int get permission;
   @override
   int get objective;
+  @override
+  @JsonKey(name: 'pointage_site')
+  int get pointageSite;
 
   /// Create a copy of ApprovalCountsDto
   /// with the given fields replaced by the non-null parameter values.
@@ -1470,7 +1503,11 @@ mixin _$ApprovalPayloadDto {
   String? get palier => throw _privateConstructorUsedError;
   String? get step => throw _privateConstructorUsedError;
   @JsonKey(name: 'request_type')
-  String? get requestType => throw _privateConstructorUsedError;
+  String? get requestType => throw _privateConstructorUsedError; // Site de pointage : de quoi situer la demande sans quitter la boite.
+  double? get latitude => throw _privateConstructorUsedError;
+  double? get longitude => throw _privateConstructorUsedError;
+  @JsonKey(name: 'radius_meters')
+  int? get radiusMeters => throw _privateConstructorUsedError;
 
   /// Serializes this ApprovalPayloadDto to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -1493,6 +1530,9 @@ abstract class $ApprovalPayloadDtoCopyWith<$Res> {
     String? palier,
     String? step,
     @JsonKey(name: 'request_type') String? requestType,
+    double? latitude,
+    double? longitude,
+    @JsonKey(name: 'radius_meters') int? radiusMeters,
   });
 }
 
@@ -1514,6 +1554,9 @@ class _$ApprovalPayloadDtoCopyWithImpl<$Res, $Val extends ApprovalPayloadDto>
     Object? palier = freezed,
     Object? step = freezed,
     Object? requestType = freezed,
+    Object? latitude = freezed,
+    Object? longitude = freezed,
+    Object? radiusMeters = freezed,
   }) {
     return _then(
       _value.copyWith(
@@ -1529,6 +1572,18 @@ class _$ApprovalPayloadDtoCopyWithImpl<$Res, $Val extends ApprovalPayloadDto>
                 ? _value.requestType
                 : requestType // ignore: cast_nullable_to_non_nullable
                       as String?,
+            latitude: freezed == latitude
+                ? _value.latitude
+                : latitude // ignore: cast_nullable_to_non_nullable
+                      as double?,
+            longitude: freezed == longitude
+                ? _value.longitude
+                : longitude // ignore: cast_nullable_to_non_nullable
+                      as double?,
+            radiusMeters: freezed == radiusMeters
+                ? _value.radiusMeters
+                : radiusMeters // ignore: cast_nullable_to_non_nullable
+                      as int?,
           )
           as $Val,
     );
@@ -1548,6 +1603,9 @@ abstract class _$$ApprovalPayloadDtoImplCopyWith<$Res>
     String? palier,
     String? step,
     @JsonKey(name: 'request_type') String? requestType,
+    double? latitude,
+    double? longitude,
+    @JsonKey(name: 'radius_meters') int? radiusMeters,
   });
 }
 
@@ -1568,6 +1626,9 @@ class __$$ApprovalPayloadDtoImplCopyWithImpl<$Res>
     Object? palier = freezed,
     Object? step = freezed,
     Object? requestType = freezed,
+    Object? latitude = freezed,
+    Object? longitude = freezed,
+    Object? radiusMeters = freezed,
   }) {
     return _then(
       _$ApprovalPayloadDtoImpl(
@@ -1583,6 +1644,18 @@ class __$$ApprovalPayloadDtoImplCopyWithImpl<$Res>
             ? _value.requestType
             : requestType // ignore: cast_nullable_to_non_nullable
                   as String?,
+        latitude: freezed == latitude
+            ? _value.latitude
+            : latitude // ignore: cast_nullable_to_non_nullable
+                  as double?,
+        longitude: freezed == longitude
+            ? _value.longitude
+            : longitude // ignore: cast_nullable_to_non_nullable
+                  as double?,
+        radiusMeters: freezed == radiusMeters
+            ? _value.radiusMeters
+            : radiusMeters // ignore: cast_nullable_to_non_nullable
+                  as int?,
       ),
     );
   }
@@ -1595,6 +1668,9 @@ class _$ApprovalPayloadDtoImpl implements _ApprovalPayloadDto {
     this.palier,
     this.step,
     @JsonKey(name: 'request_type') this.requestType,
+    this.latitude,
+    this.longitude,
+    @JsonKey(name: 'radius_meters') this.radiusMeters,
   });
 
   factory _$ApprovalPayloadDtoImpl.fromJson(Map<String, dynamic> json) =>
@@ -1607,10 +1683,18 @@ class _$ApprovalPayloadDtoImpl implements _ApprovalPayloadDto {
   @override
   @JsonKey(name: 'request_type')
   final String? requestType;
+  // Site de pointage : de quoi situer la demande sans quitter la boite.
+  @override
+  final double? latitude;
+  @override
+  final double? longitude;
+  @override
+  @JsonKey(name: 'radius_meters')
+  final int? radiusMeters;
 
   @override
   String toString() {
-    return 'ApprovalPayloadDto(palier: $palier, step: $step, requestType: $requestType)';
+    return 'ApprovalPayloadDto(palier: $palier, step: $step, requestType: $requestType, latitude: $latitude, longitude: $longitude, radiusMeters: $radiusMeters)';
   }
 
   @override
@@ -1621,12 +1705,26 @@ class _$ApprovalPayloadDtoImpl implements _ApprovalPayloadDto {
             (identical(other.palier, palier) || other.palier == palier) &&
             (identical(other.step, step) || other.step == step) &&
             (identical(other.requestType, requestType) ||
-                other.requestType == requestType));
+                other.requestType == requestType) &&
+            (identical(other.latitude, latitude) ||
+                other.latitude == latitude) &&
+            (identical(other.longitude, longitude) ||
+                other.longitude == longitude) &&
+            (identical(other.radiusMeters, radiusMeters) ||
+                other.radiusMeters == radiusMeters));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode => Object.hash(runtimeType, palier, step, requestType);
+  int get hashCode => Object.hash(
+    runtimeType,
+    palier,
+    step,
+    requestType,
+    latitude,
+    longitude,
+    radiusMeters,
+  );
 
   /// Create a copy of ApprovalPayloadDto
   /// with the given fields replaced by the non-null parameter values.
@@ -1650,6 +1748,9 @@ abstract class _ApprovalPayloadDto implements ApprovalPayloadDto {
     final String? palier,
     final String? step,
     @JsonKey(name: 'request_type') final String? requestType,
+    final double? latitude,
+    final double? longitude,
+    @JsonKey(name: 'radius_meters') final int? radiusMeters,
   }) = _$ApprovalPayloadDtoImpl;
 
   factory _ApprovalPayloadDto.fromJson(Map<String, dynamic> json) =
@@ -1661,7 +1762,14 @@ abstract class _ApprovalPayloadDto implements ApprovalPayloadDto {
   String? get step;
   @override
   @JsonKey(name: 'request_type')
-  String? get requestType;
+  String? get requestType; // Site de pointage : de quoi situer la demande sans quitter la boite.
+  @override
+  double? get latitude;
+  @override
+  double? get longitude;
+  @override
+  @JsonKey(name: 'radius_meters')
+  int? get radiusMeters;
 
   /// Create a copy of ApprovalPayloadDto
   /// with the given fields replaced by the non-null parameter values.

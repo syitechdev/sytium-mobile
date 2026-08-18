@@ -19,7 +19,7 @@ const _kSkeletonCards = 3;
 const _kSkeletonCardHeight = 180.0;
 
 /// The filter chips. `null` type = Tous.
-enum _Filter { tous, conges, permissions, objectifs }
+enum _Filter { tous, conges, permissions, objectifs, sites }
 
 extension on _Filter {
   ApprovalType? get type => switch (this) {
@@ -27,12 +27,14 @@ extension on _Filter {
     _Filter.conges => ApprovalType.leave,
     _Filter.permissions => ApprovalType.permission,
     _Filter.objectifs => ApprovalType.objective,
+    _Filter.sites => ApprovalType.pointageSite,
   };
   String get label => switch (this) {
     _Filter.tous => 'Tous',
     _Filter.conges => 'Congés',
     _Filter.permissions => 'Permissions',
     _Filter.objectifs => 'Objectifs',
+    _Filter.sites => 'Sites',
   };
 }
 
@@ -95,6 +97,7 @@ class _ApprovalsScreenState extends ConsumerState<ApprovalsScreen> {
         proof: proof,
       ),
       ApprovalType.objective => await repo.validateObjective(item.id),
+      ApprovalType.pointageSite => await repo.approvePointageSite(item.id),
       ApprovalType.unknown => const Err<void>(UnknownFailure()),
     };
     _handle(item, result, successMsg: 'Demande traitée.');
@@ -111,10 +114,21 @@ class _ApprovalsScreenState extends ConsumerState<ApprovalsScreen> {
     final c = comment.isEmpty ? null : comment;
     final result = switch (item.type) {
       ApprovalType.leave => await repo.rejectLeave(item.id, commentaire: c),
-      ApprovalType.permission =>
-        await repo.rejectPermission(item.id, commentaire: c),
-      ApprovalType.objective =>
-        await repo.validateObjective(item.id, rejetMotif: comment),
+      ApprovalType.permission => await repo.rejectPermission(
+        item.id,
+        commentaire: c,
+      ),
+      ApprovalType.objective => await repo.validateObjective(
+        item.id,
+        rejetMotif: comment,
+      ),
+      // Le motif est obligatoire cote serveur : la feuille de refus l'exige
+      // deja (`rejectRequiresReason`), on ne peut donc pas arriver ici avec
+      // une chaine vide.
+      ApprovalType.pointageSite => await repo.rejectPointageSite(
+        item.id,
+        motif: comment,
+      ),
       ApprovalType.unknown => const Err<void>(UnknownFailure()),
     };
     _handle(item, result, successMsg: 'Demande refusée.');
@@ -169,9 +183,7 @@ class _ApprovalsScreenState extends ConsumerState<ApprovalsScreen> {
   void _toast(String message, {required bool error}) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        backgroundColor: error
-            ? context.colors.danger
-            : context.colors.success,
+        backgroundColor: error ? context.colors.danger : context.colors.success,
         // Fond sémantique saturé (rouge/vert) dans les deux thèmes : sans couleur
         // explicite, le texte héritait de `onInverseSurface` — sombre en thème
         // sombre, donc noir sur rouge, illisible. Blanc = contraste correct.
@@ -257,8 +269,7 @@ class _Filters extends StatelessWidget {
   final int total;
   final ValueChanged<_Filter> onSelected;
 
-  int _count(_Filter f) =>
-      f.type == null ? total : counts.forType(f.type!);
+  int _count(_Filter f) => f.type == null ? total : counts.forType(f.type!);
 
   @override
   Widget build(BuildContext context) {
@@ -266,13 +277,19 @@ class _Filters extends StatelessWidget {
     return Wrap(
       spacing: Tokens.space8,
       children: [
+        // « Sites » ne s'affiche qu'a partir d'une demande. Contrairement aux
+        // trois autres, ce type est reserve a la direction : un valideur RH
+        // aurait vu « Sites (0) » en permanence, sans pouvoir y arriver un
+        // jour. Le filtre reste visible tant qu'il est selectionne, sinon il
+        // disparaitrait sous les doigts de qui vient de traiter la derniere.
         for (final f in _Filter.values)
-          ChoiceChip(
-            label: Text('${f.label} (${_count(f)})'),
-            selected: selected == f,
-            selectedColor: colors.brand.withValues(alpha: 0.16),
-            onSelected: (_) => onSelected(f),
-          ),
+          if (f != _Filter.sites || _count(f) > 0 || selected == f)
+            ChoiceChip(
+              label: Text('${f.label} (${_count(f)})'),
+              selected: selected == f,
+              selectedColor: colors.brand.withValues(alpha: 0.16),
+              onSelected: (_) => onSelected(f),
+            ),
       ],
     );
   }

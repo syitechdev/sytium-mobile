@@ -105,6 +105,15 @@ class _FakeApprovalsRepo implements ApprovalsRepository {
     String? commentaire,
     String? rejetMotif,
   }) async => const Ok(null);
+
+  @override
+  Future<Result<void>> approvePointageSite(String id) async => const Ok(null);
+
+  @override
+  Future<Result<void>> rejectPointageSite(
+    String id, {
+    required String motif,
+  }) async => const Ok(null);
 }
 
 // ---------------------------------------------------------------------------

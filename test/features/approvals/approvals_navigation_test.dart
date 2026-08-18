@@ -26,6 +26,10 @@ class _EmptyRepo implements ApprovalsRepository {
   Future<Result<void>> rejectPermission(String id, {String? commentaire}) async => const Ok(null);
   @override
   Future<Result<void>> validateObjective(String id, {String? commentaire, String? rejetMotif}) async => const Ok(null);
+  @override
+  Future<Result<void>> approvePointageSite(String id) async => const Ok(null);
+  @override
+  Future<Result<void>> rejectPointageSite(String id, {required String motif}) async => const Ok(null);
 }
 
 void main() {

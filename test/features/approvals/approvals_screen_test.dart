@@ -76,6 +76,13 @@ class _FakeRepo implements ApprovalsRepository {
     String? commentaire,
     String? rejetMotif,
   }) => _action();
+
+  @override
+  Future<Result<void>> approvePointageSite(String id) => _action();
+
+  @override
+  Future<Result<void>> rejectPointageSite(String id, {required String motif}) =>
+      _action();
 }
 
 ApprovalItem _leave(String id) => ApprovalItem(

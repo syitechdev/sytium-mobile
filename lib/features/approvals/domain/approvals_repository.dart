@@ -23,6 +23,11 @@ abstract interface class ApprovalsRepository {
   });
   Future<Result<void>> rejectPermission(String id, {String? commentaire});
 
+  /// Site de pointage propose par le RH, vise par la direction. Le motif de
+  /// refus est OBLIGATOIRE : sans lui, la meme demande revient a l'identique.
+  Future<Result<void>> approvePointageSite(String id);
+  Future<Result<void>> rejectPointageSite(String id, {required String motif});
+
   /// Objectives: a non-empty [rejetMotif] is a rejection; otherwise validation.
   Future<Result<void>> validateObjective(
     String id, {

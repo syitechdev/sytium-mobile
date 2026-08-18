@@ -21,6 +21,7 @@ class ApprovalsRepositoryImpl implements ApprovalsRepository {
         leave: dto.counts.leave,
         permission: dto.counts.permission,
         objective: dto.counts.objective,
+        pointageSite: dto.counts.pointageSite,
       ),
     );
   });
@@ -51,6 +52,14 @@ class ApprovalsRepositoryImpl implements ApprovalsRepository {
   @override
   Future<Result<void>> rejectPermission(String id, {String? commentaire}) =>
       _guard(() => _remote.rejectPermission(id, commentaire: commentaire));
+
+  @override
+  Future<Result<void>> approvePointageSite(String id) =>
+      _guard(() => _remote.approvePointageSite(id));
+
+  @override
+  Future<Result<void>> rejectPointageSite(String id, {required String motif}) =>
+      _guard(() => _remote.rejectPointageSite(id, motif: motif));
 
   @override
   Future<Result<void>> validateObjective(
@@ -92,6 +101,9 @@ class ApprovalsRepositoryImpl implements ApprovalsRepository {
               palier: d.action.payload!.palier,
               step: d.action.payload!.step,
               requestType: d.action.payload!.requestType,
+              latitude: d.action.payload!.latitude,
+              longitude: d.action.payload!.longitude,
+              radiusMeters: d.action.payload!.radiusMeters,
             ),
     ),
   );

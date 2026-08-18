@@ -29,6 +29,7 @@ _$ApprovalCountsDtoImpl _$$ApprovalCountsDtoImplFromJson(
   leave: (json['leave'] as num?)?.toInt() ?? 0,
   permission: (json['permission'] as num?)?.toInt() ?? 0,
   objective: (json['objective'] as num?)?.toInt() ?? 0,
+  pointageSite: (json['pointage_site'] as num?)?.toInt() ?? 0,
 );
 
 Map<String, dynamic> _$$ApprovalCountsDtoImplToJson(
@@ -37,6 +38,7 @@ Map<String, dynamic> _$$ApprovalCountsDtoImplToJson(
   'leave': instance.leave,
   'permission': instance.permission,
   'objective': instance.objective,
+  'pointage_site': instance.pointageSite,
 };
 
 _$ApprovalItemDtoImpl _$$ApprovalItemDtoImplFromJson(
@@ -124,6 +126,9 @@ _$ApprovalPayloadDtoImpl _$$ApprovalPayloadDtoImplFromJson(
   palier: json['palier'] as String?,
   step: json['step'] as String?,
   requestType: json['request_type'] as String?,
+  latitude: (json['latitude'] as num?)?.toDouble(),
+  longitude: (json['longitude'] as num?)?.toDouble(),
+  radiusMeters: (json['radius_meters'] as num?)?.toInt(),
 );
 
 Map<String, dynamic> _$$ApprovalPayloadDtoImplToJson(
@@ -132,4 +137,7 @@ Map<String, dynamic> _$$ApprovalPayloadDtoImplToJson(
   'palier': instance.palier,
   'step': instance.step,
   'request_type': instance.requestType,
+  'latitude': instance.latitude,
+  'longitude': instance.longitude,
+  'radius_meters': instance.radiusMeters,
 };
