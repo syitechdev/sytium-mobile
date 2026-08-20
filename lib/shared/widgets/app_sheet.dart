@@ -55,16 +55,27 @@ class AppSheet extends StatelessWidget {
     // remonte le contenu au-dessus du clavier ; la liste `Flexible` se réduit
     // pour rester défilable dans l'espace visible restant.
     final keyboardInset = MediaQuery.viewInsetsOf(context).bottom;
+
     return Padding(
       padding: EdgeInsets.only(bottom: keyboardInset),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const _SheetBar(),
-          // Flexible et non Expanded : une feuille courte garde sa hauteur
-          // naturelle au lieu d'être étirée jusqu'au plafond.
-          Flexible(child: child),
-        ],
+      // Les insets sont CONSOMMÉS ici : le contenu ne doit plus les voir.
+      // Dix formulaires les compensaient à leur tour, en plus de ce padding —
+      // le contenu remontait de deux hauteurs de clavier, sortait du cadre, et
+      // la feuille apparaissait vide dès qu'on touchait un champ. Les remettre
+      // à zéro pour les enfants règle le cas à la racine : un écran qui les lit
+      // encore, aujourd'hui ou demain, n'ajoute plus rien.
+      child: MediaQuery.removeViewInsets(
+        context: context,
+        removeBottom: true,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const _SheetBar(),
+            // Flexible et non Expanded : une feuille courte garde sa hauteur
+            // naturelle au lieu d'être étirée jusqu'au plafond.
+            Flexible(child: child),
+          ],
+        ),
       ),
     );
   }

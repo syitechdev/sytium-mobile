@@ -116,6 +116,39 @@ void main() {
     expect(markerBottom, lessThanOrEqualTo(_kPhone.height - keyboard + 1));
   });
 
+  testWidgets('un contenu qui compense LUI AUSSI le clavier reste visible', (
+    tester,
+  ) async {
+    // Le défaut signalé : dix formulaires ajoutaient leur propre padding de
+    // clavier en plus de celui d'AppSheet. Le contenu remontait de deux
+    // hauteurs de clavier et sortait du cadre — la feuille paraissait vide.
+    const keyboard = 300.0;
+    tester.view.viewInsets = const FakeViewPadding(bottom: keyboard);
+    addTearDown(tester.view.resetViewInsets);
+
+    await tester.pumpWidget(
+      _host(
+        Builder(
+          builder: (context) => Padding(
+            padding: EdgeInsets.only(
+              bottom: MediaQuery.of(context).viewInsets.bottom,
+            ),
+            child: const SizedBox(key: ValueKey('champ'), height: 120),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('ouvrir'));
+    await tester.pumpAndSettle();
+
+    // AppSheet ne doit plus exposer d'insets à ses enfants : celui qui les lit
+    // encore n'ajoute rien, et son contenu garde sa hauteur.
+    expect(tester.getSize(find.byKey(const ValueKey('champ'))).height, 120);
+    final champ = tester.getRect(find.byKey(const ValueKey('champ')));
+    expect(champ.bottom, lessThanOrEqualTo(_kPhone.height - keyboard + 1));
+    expect(champ.top, greaterThanOrEqualTo(0));
+  });
+
   testWidgets('la feuille se ferme au toucher de la barrière', (tester) async {
     await tester.pumpWidget(_host(const Text('contenu')));
     await tester.tap(find.text('ouvrir'));

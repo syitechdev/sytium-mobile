@@ -74,71 +74,71 @@ class _MissionProofSheetState extends ConsumerState<_MissionProofSheet> {
     final colors = context.colors;
     final theme = Theme.of(context).textTheme;
 
-    return Padding(
-      padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(Tokens.space24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text('Preuve d’approbation', style: theme.titleLarge),
-            const SizedBox(height: Tokens.space4),
-            Text(
-              'Ordre de mission · validation Direction',
-              style: theme.bodySmall?.copyWith(color: colors.textMuted),
-            ),
-            const SizedBox(height: Tokens.space24),
-            if (_banner != null) ...[
-              Container(
-                padding: const EdgeInsets.all(Tokens.space12),
-                decoration: BoxDecoration(
-                  color: colors.danger.withValues(alpha: 0.10),
-                  borderRadius: BorderRadius.circular(Tokens.radiusMd),
-                ),
-                child: Text(
-                  _banner!,
-                  style: theme.bodySmall?.copyWith(color: colors.danger),
-                ),
+    // Pas de compensation du clavier ici : `AppSheet` la pose déjà pour toutes
+    // les feuilles. La refaire ici la doublait — le contenu remontait de deux
+    // hauteurs de clavier et sortait du cadre, laissant la feuille vide.
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(Tokens.space24),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text('Preuve d’approbation', style: theme.titleLarge),
+          const SizedBox(height: Tokens.space4),
+          Text(
+            'Ordre de mission · validation Direction',
+            style: theme.bodySmall?.copyWith(color: colors.textMuted),
+          ),
+          const SizedBox(height: Tokens.space24),
+          if (_banner != null) ...[
+            Container(
+              padding: const EdgeInsets.all(Tokens.space12),
+              decoration: BoxDecoration(
+                color: colors.danger.withValues(alpha: 0.10),
+                borderRadius: BorderRadius.circular(Tokens.radiusMd),
               ),
-              const SizedBox(height: Tokens.space16),
-            ],
-            Text(
-              'Approuver un ordre de mission exige d’en garder une trace : '
-              'note signée, e-mail d’accord, document scanné.',
-              style: theme.bodySmall?.copyWith(color: colors.textMuted),
+              child: Text(
+                _banner!,
+                style: theme.bodySmall?.copyWith(color: colors.danger),
+              ),
             ),
             const SizedBox(height: Tokens.space16),
-            AttachmentField(
-              label: 'Document justificatif',
-              actionLabel: 'Joindre la preuve',
-              value: _proof,
-              allowedExtensions: const [
-                'jpg',
-                'jpeg',
-                'png',
-                'webp',
-                'pdf',
-                'doc',
-                'docx',
-                'xls',
-                'xlsx',
-                'txt',
-              ],
-              errorText: _error,
-              onChanged: (p) => setState(() {
-                _proof = p;
-                _error = null;
-              }),
-            ),
-            const SizedBox(height: Tokens.space24),
-            AppPrimaryButton(
-              label: 'Approuver la mission',
-              isLoading: _submitting,
-              onPressed: _submit,
-            ),
           ],
-        ),
+          Text(
+            'Approuver un ordre de mission exige d’en garder une trace : '
+            'note signée, e-mail d’accord, document scanné.',
+            style: theme.bodySmall?.copyWith(color: colors.textMuted),
+          ),
+          const SizedBox(height: Tokens.space16),
+          AttachmentField(
+            label: 'Document justificatif',
+            actionLabel: 'Joindre la preuve',
+            value: _proof,
+            allowedExtensions: const [
+              'jpg',
+              'jpeg',
+              'png',
+              'webp',
+              'pdf',
+              'doc',
+              'docx',
+              'xls',
+              'xlsx',
+              'txt',
+            ],
+            errorText: _error,
+            onChanged: (p) => setState(() {
+              _proof = p;
+              _error = null;
+            }),
+          ),
+          const SizedBox(height: Tokens.space24),
+          AppPrimaryButton(
+            label: 'Approuver la mission',
+            isLoading: _submitting,
+            onPressed: _submit,
+          ),
+        ],
       ),
     );
   }

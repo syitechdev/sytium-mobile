@@ -158,16 +158,13 @@ class _LeaveFormSheetState extends ConsumerState<_LeaveFormSheet> {
   Widget build(BuildContext context) {
     final colors = context.colors;
     final theme = Theme.of(context).textTheme;
-    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
 
     return SafeArea(
       child: Padding(
-        padding: EdgeInsets.only(
-          left: Tokens.space24,
-          right: Tokens.space24,
-          top: Tokens.space24,
-          bottom: Tokens.space24 + bottomInset,
-        ),
+        // Pas de compensation du clavier ici : `AppSheet` la pose déjà pour
+        // toutes les feuilles. La refaire doublait la hauteur soustraite — le
+        // contenu sortait du cadre et la feuille paraissait vide.
+        padding: const EdgeInsets.all(Tokens.space24),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,

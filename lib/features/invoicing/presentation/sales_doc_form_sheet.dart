@@ -21,7 +21,6 @@ import 'package:sytium_mobile/shared/widgets/search_picker_sheet.dart';
 import 'package:sytium_mobile/theme/sytium_colors.dart';
 import 'package:sytium_mobile/theme/tokens.dart';
 
-
 /// Opens « Émission de pièce commerciale ». Resolves to `true` on success.
 ///
 /// [initialKind] présélectionne le type de pièce (proforma ou comptant). Le
@@ -107,6 +106,7 @@ class _SalesDocFormSheetState extends ConsumerState<_SalesDocFormSheet> {
   String? _objetError;
 
   late SalesDocKind _kind = widget.initialKind;
+
   /// Taux de TVA : celui de l'organisation tant que l'employé n'en choisit pas
   /// un autre, et figé si le régime l'exonère.
   num? _tauxChoisi;
@@ -268,11 +268,7 @@ class _SalesDocFormSheetState extends ConsumerState<_SalesDocFormSheet> {
       emptyLabel: 'Aucun produit actif au catalogue.',
       entries: [
         for (final p in products)
-          PickerEntry(
-            value: p,
-            label: p.label,
-            detail: Money.fcfa(p.prixHt),
-          ),
+          PickerEntry(value: p, label: p.label, detail: Money.fcfa(p.prixHt)),
       ],
     );
     if (picked == null || !mounted) return;
@@ -430,179 +426,178 @@ class _SalesDocFormSheetState extends ConsumerState<_SalesDocFormSheet> {
 
     final colors = context.colors;
     final theme = Theme.of(context).textTheme;
-    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
     final comptant = _kind == SalesDocKind.comptant;
     final editing = widget.editing;
 
-    return Padding(
-      padding: EdgeInsets.only(bottom: bottomInset),
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(Tokens.space24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(
-              editing == null
-                  ? 'Émission de pièce commerciale'
-                  : 'Modifier la proforma',
-              style: theme.titleLarge,
-            ),
-            const SizedBox(height: Tokens.space4),
-            Text(
-              editing != null
-                  ? editing.numero
-                  : comptant
-                  ? 'Facture comptant · intègre la trésorerie'
-                  : 'Proforma · devis non comptabilisé',
-              style: theme.bodySmall?.copyWith(color: colors.textMuted),
-            ),
-            const SizedBox(height: Tokens.space24),
-            if (comptant && editing == null) ...[
-              _ComptantNotice(),
-              const SizedBox(height: Tokens.space16),
-            ],
-            if (_banner != null) ...[
-              _Banner(message: _banner!),
-              const SizedBox(height: Tokens.space16),
-            ],
-            if (_canComptant && editing == null)
-              SegmentedButton<SalesDocKind>(
-                showSelectedIcon: false,
-                segments: const [
-                  ButtonSegment(
-                    value: SalesDocKind.proforma,
-                    label: Text('Proforma'),
-                  ),
-                  ButtonSegment(
-                    value: SalesDocKind.comptant,
-                    label: Text('Comptant'),
-                  ),
-                ],
-                selected: {_kind},
-                onSelectionChanged: (s) => setState(() => _kind = s.first),
-              ),
-            if (_canComptant && editing == null)
-              const SizedBox(height: Tokens.space16),
-            AppTextField(
-              controller: _client,
-              label: 'Client',
-              hint: 'Ex : SODECI, Orange CI…',
-              // Le web laisse aussi taper un nom non répertorié : le devis
-              // n'est pas lié au référentiel, il en recopie les valeurs.
-              suffix: IconButton(
-                onPressed: _pickClient,
-                icon: const Icon(Icons.search),
-                tooltip: 'Rechercher un client',
-              ),
-              onChanged: (_) => _clientRef = null,
-              prefixIcon: Icons.business_outlined,
-              errorText: _clientError,
-            ),
+    // Pas de compensation du clavier ici : `AppSheet` la pose déjà pour toutes
+    // les feuilles. La refaire ici la doublait — le contenu remontait de deux
+    // hauteurs de clavier et sortait du cadre, laissant la feuille vide.
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(Tokens.space24),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            editing == null
+                ? 'Émission de pièce commerciale'
+                : 'Modifier la proforma',
+            style: theme.titleLarge,
+          ),
+          const SizedBox(height: Tokens.space4),
+          Text(
+            editing != null
+                ? editing.numero
+                : comptant
+                ? 'Facture comptant · intègre la trésorerie'
+                : 'Proforma · devis non comptabilisé',
+            style: theme.bodySmall?.copyWith(color: colors.textMuted),
+          ),
+          const SizedBox(height: Tokens.space24),
+          if (comptant && editing == null) ...[
+            _ComptantNotice(),
             const SizedBox(height: Tokens.space16),
-            AppTextField(
-              controller: _objet,
-              label: 'Objet de la commande',
-              hint: 'Ex : Prestation, fourniture…',
-              prefixIcon: Icons.subject,
-              errorText: _objetError,
-            ),
+          ],
+          if (_banner != null) ...[
+            _Banner(message: _banner!),
             const SizedBox(height: Tokens.space16),
-            _ValidityFields(
-              emission: _dateEmission,
-              echeance: _dateEcheance,
-              days: _validityDays,
-              onEmission: (d) => setState(() {
-                _dateEmission = d;
-                _applyValidity();
-              }),
-              onDays: (d) => setState(() {
-                _validityDays = d;
-                _applyValidity();
-              }),
-              onEcheance: (d) => setState(() {
-                _dateEcheance = d;
-                _validityDays = null;
-              }),
-            ),
-            const SizedBox(height: Tokens.space24),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text('Lignes', style: theme.titleSmall),
-                TextButton.icon(
-                  onPressed: _addLine,
-                  icon: const Icon(Icons.add, size: 18),
-                  label: const Text('Ajouter'),
+          ],
+          if (_canComptant && editing == null)
+            SegmentedButton<SalesDocKind>(
+              showSelectedIcon: false,
+              segments: const [
+                ButtonSegment(
+                  value: SalesDocKind.proforma,
+                  label: Text('Proforma'),
+                ),
+                ButtonSegment(
+                  value: SalesDocKind.comptant,
+                  label: Text('Comptant'),
                 ),
               ],
+              selected: {_kind},
+              onSelectionChanged: (s) => setState(() => _kind = s.first),
             ),
-            if (_itemsError != null)
-              Padding(
-                padding: const EdgeInsets.only(bottom: Tokens.space8),
-                child: Text(
-                  _itemsError!,
-                  style: theme.bodySmall?.copyWith(color: colors.danger),
-                ),
-              ),
-            for (var i = 0; i < _lines.length; i++)
-              _LineEditor(
-                line: _lines[i],
-                canRemove: _lines.length > 1,
-                onRemove: () => _removeLine(i),
-                onPickProduct: () => _pickProduct(_lines[i]),
-              ),
+          if (_canComptant && editing == null)
             const SizedBox(height: Tokens.space16),
-            _TvaField(
-              value: _taux,
-              rule: _fiscal,
-              onChanged: (v) => setState(() => _tauxChoisi = v),
+          AppTextField(
+            controller: _client,
+            label: 'Client',
+            hint: 'Ex : SODECI, Orange CI…',
+            // Le web laisse aussi taper un nom non répertorié : le devis
+            // n'est pas lié au référentiel, il en recopie les valeurs.
+            suffix: IconButton(
+              onPressed: _pickClient,
+              icon: const Icon(Icons.search),
+              tooltip: 'Rechercher un client',
             ),
-            if (comptant) ...[
-              const SizedBox(height: Tokens.space16),
-              _AccountPicker(
-                value: _account,
-                errorText: _accountError,
-                onChanged: (a) => setState(() => _account = a),
+            onChanged: (_) => _clientRef = null,
+            prefixIcon: Icons.business_outlined,
+            errorText: _clientError,
+          ),
+          const SizedBox(height: Tokens.space16),
+          AppTextField(
+            controller: _objet,
+            label: 'Objet de la commande',
+            hint: 'Ex : Prestation, fourniture…',
+            prefixIcon: Icons.subject,
+            errorText: _objetError,
+          ),
+          const SizedBox(height: Tokens.space16),
+          _ValidityFields(
+            emission: _dateEmission,
+            echeance: _dateEcheance,
+            days: _validityDays,
+            onEmission: (d) => setState(() {
+              _dateEmission = d;
+              _applyValidity();
+            }),
+            onDays: (d) => setState(() {
+              _validityDays = d;
+              _applyValidity();
+            }),
+            onEcheance: (d) => setState(() {
+              _dateEcheance = d;
+              _validityDays = null;
+            }),
+          ),
+          const SizedBox(height: Tokens.space24),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text('Lignes', style: theme.titleSmall),
+              TextButton.icon(
+                onPressed: _addLine,
+                icon: const Icon(Icons.add, size: 18),
+                label: const Text('Ajouter'),
               ),
             ],
-            const SizedBox(height: Tokens.space16),
-            if (!comptant) ...[
-              _StatusField(
-                value: _statut,
-                onChanged: (v) => setState(() => _statut = v),
+          ),
+          if (_itemsError != null)
+            Padding(
+              padding: const EdgeInsets.only(bottom: Tokens.space8),
+              child: Text(
+                _itemsError!,
+                style: theme.bodySmall?.copyWith(color: colors.danger),
               ),
-              const SizedBox(height: Tokens.space16),
-            ],
-            AppTextField(
-              controller: _notes,
-              label: 'Notes (optionnel)',
-              hint: 'Conditions, précisions…',
-              maxLines: 2,
             ),
-            const SizedBox(height: Tokens.space24),
-            _TotalsCard(
-              brut: _brut,
-              remise: _remise,
-              remiseType: _remiseType,
-              remiseValeur: _remiseValeur,
-              ht: _ht,
-              tvaPct: _taux,
-              tva: _tva,
-              ttc: _ttc,
+          for (var i = 0; i < _lines.length; i++)
+            _LineEditor(
+              line: _lines[i],
+              canRemove: _lines.length > 1,
+              onRemove: () => _removeLine(i),
+              onPickProduct: () => _pickProduct(_lines[i]),
             ),
-            const SizedBox(height: Tokens.space24),
-            AppPrimaryButton(
-              label: editing != null
-                  ? 'Enregistrer les modifications'
-                  : comptant
-                  ? 'Générer & encaisser la facture'
-                  : 'Émettre le proforma',
-              isLoading: _submitting,
-              onPressed: _submit,
+          const SizedBox(height: Tokens.space16),
+          _TvaField(
+            value: _taux,
+            rule: _fiscal,
+            onChanged: (v) => setState(() => _tauxChoisi = v),
+          ),
+          if (comptant) ...[
+            const SizedBox(height: Tokens.space16),
+            _AccountPicker(
+              value: _account,
+              errorText: _accountError,
+              onChanged: (a) => setState(() => _account = a),
             ),
           ],
-        ),
+          const SizedBox(height: Tokens.space16),
+          if (!comptant) ...[
+            _StatusField(
+              value: _statut,
+              onChanged: (v) => setState(() => _statut = v),
+            ),
+            const SizedBox(height: Tokens.space16),
+          ],
+          AppTextField(
+            controller: _notes,
+            label: 'Notes (optionnel)',
+            hint: 'Conditions, précisions…',
+            maxLines: 2,
+          ),
+          const SizedBox(height: Tokens.space24),
+          _TotalsCard(
+            brut: _brut,
+            remise: _remise,
+            remiseType: _remiseType,
+            remiseValeur: _remiseValeur,
+            ht: _ht,
+            tvaPct: _taux,
+            tva: _tva,
+            ttc: _ttc,
+          ),
+          const SizedBox(height: Tokens.space24),
+          AppPrimaryButton(
+            label: editing != null
+                ? 'Enregistrer les modifications'
+                : comptant
+                ? 'Générer & encaisser la facture'
+                : 'Émettre le proforma',
+            isLoading: _submitting,
+            onPressed: _submit,
+          ),
+        ],
       ),
     );
   }

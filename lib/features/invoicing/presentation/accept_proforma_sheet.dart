@@ -122,79 +122,77 @@ class _AcceptProformaSheetState extends ConsumerState<_AcceptProformaSheet> {
     final colors = context.colors;
     final theme = Theme.of(context).textTheme;
 
-    return Padding(
-      padding: EdgeInsets.only(
-        bottom: MediaQuery.of(context).viewInsets.bottom,
-      ),
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(Tokens.space24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text('Accepter la proforma', style: theme.titleLarge),
-            const SizedBox(height: Tokens.space4),
-            Text(
-              widget.numero,
-              style: theme.bodySmall?.copyWith(color: colors.textMuted),
-            ),
-            const SizedBox(height: Tokens.space24),
-            if (_banner != null) ...[
-              Container(
-                padding: const EdgeInsets.all(Tokens.space12),
-                decoration: BoxDecoration(
-                  color: colors.danger.withValues(alpha: 0.10),
-                  borderRadius: BorderRadius.circular(Tokens.radiusMd),
-                ),
-                child: Text(
-                  _banner!,
-                  style: theme.bodySmall?.copyWith(color: colors.danger),
-                ),
+    // Pas de compensation du clavier ici : `AppSheet` la pose déjà pour toutes
+    // les feuilles. La refaire ici la doublait — le contenu remontait de deux
+    // hauteurs de clavier et sortait du cadre, laissant la feuille vide.
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(Tokens.space24),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text('Accepter la proforma', style: theme.titleLarge),
+          const SizedBox(height: Tokens.space4),
+          Text(
+            widget.numero,
+            style: theme.bodySmall?.copyWith(color: colors.textMuted),
+          ),
+          const SizedBox(height: Tokens.space24),
+          if (_banner != null) ...[
+            Container(
+              padding: const EdgeInsets.all(Tokens.space12),
+              decoration: BoxDecoration(
+                color: colors.danger.withValues(alpha: 0.10),
+                borderRadius: BorderRadius.circular(Tokens.radiusMd),
               ),
-              const SizedBox(height: Tokens.space16),
-            ],
-            Text(
-              'Gardez une trace de cet accord : un mot du client, un bon de '
-              'commande, un e-mail. L’un des deux suffit.',
-              style: theme.bodySmall?.copyWith(color: colors.textMuted),
+              child: Text(
+                _banner!,
+                style: theme.bodySmall?.copyWith(color: colors.danger),
+              ),
             ),
             const SizedBox(height: Tokens.space16),
-            AppTextField(
-              controller: _note,
-              label: 'Mot de validation',
-              hint: 'Ex : accord par téléphone du 21/07, M. Koffi',
-              maxLines: 3,
-              errorText: _error,
-            ),
-            const SizedBox(height: Tokens.space16),
-            AttachmentField(
-              label: 'Preuve (optionnelle)',
-              actionLabel: 'Joindre une preuve',
-              value: _proof,
-              allowedExtensions: const [
-                'jpg',
-                'jpeg',
-                'png',
-                'webp',
-                'pdf',
-                'doc',
-                'docx',
-                'xls',
-                'xlsx',
-              ],
-              onChanged: (p) => setState(() {
-                _proof = p;
-                _error = null;
-              }),
-            ),
-            const SizedBox(height: Tokens.space24),
-            AppPrimaryButton(
-              label: 'Accepter la proforma',
-              isLoading: _submitting,
-              onPressed: _submit,
-            ),
           ],
-        ),
+          Text(
+            'Gardez une trace de cet accord : un mot du client, un bon de '
+            'commande, un e-mail. L’un des deux suffit.',
+            style: theme.bodySmall?.copyWith(color: colors.textMuted),
+          ),
+          const SizedBox(height: Tokens.space16),
+          AppTextField(
+            controller: _note,
+            label: 'Mot de validation',
+            hint: 'Ex : accord par téléphone du 21/07, M. Koffi',
+            maxLines: 3,
+            errorText: _error,
+          ),
+          const SizedBox(height: Tokens.space16),
+          AttachmentField(
+            label: 'Preuve (optionnelle)',
+            actionLabel: 'Joindre une preuve',
+            value: _proof,
+            allowedExtensions: const [
+              'jpg',
+              'jpeg',
+              'png',
+              'webp',
+              'pdf',
+              'doc',
+              'docx',
+              'xls',
+              'xlsx',
+            ],
+            onChanged: (p) => setState(() {
+              _proof = p;
+              _error = null;
+            }),
+          ),
+          const SizedBox(height: Tokens.space24),
+          AppPrimaryButton(
+            label: 'Accepter la proforma',
+            isLoading: _submitting,
+            onPressed: _submit,
+          ),
+        ],
       ),
     );
   }

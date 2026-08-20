@@ -104,7 +104,9 @@ class _CashMovementSheetState extends ConsumerState<_CashMovementSheet> {
       _type == CashMovementType.sortie && _beneficiaryType.picksFromDatabase;
 
   Future<void> _pickBeneficiary() async {
-    final entries = await ref.read(beneficiariesProvider(_beneficiaryType).future);
+    final entries = await ref.read(
+      beneficiariesProvider(_beneficiaryType).future,
+    );
     if (!mounted) return;
 
     final picked = await showSearchPicker<Beneficiary>(
@@ -252,139 +254,136 @@ class _CashMovementSheetState extends ConsumerState<_CashMovementSheet> {
     final colors = context.colors;
     final theme = Theme.of(context).textTheme;
     final accountsAsync = ref.watch(cashAccountsProvider);
-    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
 
-    return Padding(
-      padding: EdgeInsets.only(bottom: bottomInset),
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(Tokens.space24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text('Nouveau mouvement', style: theme.titleLarge),
-            const SizedBox(height: Tokens.space4),
-            Text(
-              'Enregistrer un encaissement ou un décaissement',
-              style: theme.bodySmall?.copyWith(color: colors.textMuted),
-            ),
-            const SizedBox(height: Tokens.space24),
-            if (_banner != null) ...[
-              _Banner(message: _banner!),
-              const SizedBox(height: Tokens.space16),
-            ],
-            SegmentedButton<CashMovementType>(
-              segments: const [
-                ButtonSegment(
-                  value: CashMovementType.entree,
-                  label: Text('Encaissement'),
-                  icon: Icon(Icons.south_west),
-                ),
-                ButtonSegment(
-                  value: CashMovementType.sortie,
-                  label: Text('Décaissement'),
-                  icon: Icon(Icons.north_east),
-                ),
-              ],
-              selected: {_type},
-              onSelectionChanged: (s) => setState(() {
-                _type = s.first;
-                // Un encaissement n'a pas de bénéficiaire : on repart propre.
-                if (_type == CashMovementType.entree) {
-                  _beneficiary = null;
-                  _beneficiaryError = null;
-                }
-              }),
-            ),
-            if (_type == CashMovementType.sortie) ...[
-              const SizedBox(height: Tokens.space16),
-              _BeneficiaryBlock(
-                type: _beneficiaryType,
-                value: _beneficiary,
-                errorText: _beneficiaryError,
-                onTypeChanged: (t) => setState(() {
-                  _beneficiaryType = t;
-                  _beneficiary = null;
-                  _beneficiaryError = null;
-                }),
-                onPick: _pickBeneficiary,
+    // Pas de compensation du clavier ici : `AppSheet` la pose déjà pour toutes
+    // les feuilles. La refaire ici la doublait — le contenu remontait de deux
+    // hauteurs de clavier et sortait du cadre, laissant la feuille vide.
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(Tokens.space24),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text('Nouveau mouvement', style: theme.titleLarge),
+          const SizedBox(height: Tokens.space4),
+          Text(
+            'Enregistrer un encaissement ou un décaissement',
+            style: theme.bodySmall?.copyWith(color: colors.textMuted),
+          ),
+          const SizedBox(height: Tokens.space24),
+          if (_banner != null) ...[
+            _Banner(message: _banner!),
+            const SizedBox(height: Tokens.space16),
+          ],
+          SegmentedButton<CashMovementType>(
+            segments: const [
+              ButtonSegment(
+                value: CashMovementType.entree,
+                label: Text('Encaissement'),
+                icon: Icon(Icons.south_west),
+              ),
+              ButtonSegment(
+                value: CashMovementType.sortie,
+                label: Text('Décaissement'),
+                icon: Icon(Icons.north_east),
               ),
             ],
-            const SizedBox(height: Tokens.space24),
-            Text('Compte', style: theme.labelLarge),
-            const SizedBox(height: Tokens.space8),
-            accountsAsync.when(
-              loading: () => const _AccountsLoading(),
-              error: (e, _) => ErrorState(
-                message: 'Comptes indisponibles.',
-                onRetry: () => ref.invalidate(cashAccountsProvider),
-              ),
-              data: (accounts) => _AccountDropdown(
-                accounts: accounts,
-                value: _account,
-                errorText: _accountError,
-                onChanged: (a) => setState(() => _account = a),
-              ),
-            ),
+            selected: {_type},
+            onSelectionChanged: (s) => setState(() {
+              _type = s.first;
+              // Un encaissement n'a pas de bénéficiaire : on repart propre.
+              if (_type == CashMovementType.entree) {
+                _beneficiary = null;
+                _beneficiaryError = null;
+              }
+            }),
+          ),
+          if (_type == CashMovementType.sortie) ...[
             const SizedBox(height: Tokens.space16),
-            AppTextField(
-              controller: _montant,
-              label: 'Montant (FCFA)',
-              hint: 'Ex : 250 000',
-              keyboardType: const TextInputType.numberWithOptions(
-                decimal: true,
-              ),
-              prefixIcon: Icons.payments_outlined,
-              errorText: _montantError,
-            ),
-            const SizedBox(height: Tokens.space16),
-            AppTextField(
-              controller: _libelle,
-              label: 'Libellé',
-              hint: 'Ex : Acompte client, achat fournitures…',
-              prefixIcon: Icons.notes_outlined,
-              errorText: _libelleError,
-            ),
-            const SizedBox(height: Tokens.space16),
-            _DateField(value: _date, onTap: _pickDate),
-            const SizedBox(height: Tokens.space16),
-            AppTextField(
-              controller: _reference,
-              label: 'Référence (optionnel)',
-              hint: 'Ex : chèque, virement, DEC-2026-014',
-              prefixIcon: Icons.tag,
-            ),
-            const SizedBox(height: Tokens.space16),
-            _FilialeField(
-              value: _filiale,
-              onChanged: (v) => setState(() => _filiale = v),
-            ),
-            const SizedBox(height: Tokens.space16),
-            AppTextField(
-              controller: _notes,
-              label: 'Notes (optionnel)',
-              hint: 'Détails complémentaires',
-              maxLines: 2,
-            ),
-            const SizedBox(height: Tokens.space16),
-            AttachmentField(
-              label: 'Preuve de paiement',
-              actionLabel: 'Joindre un justificatif',
-              value: _proof,
-              errorText: _proofError,
-              onChanged: (p) => setState(() {
-                _proof = p;
-                _proofError = null;
+            _BeneficiaryBlock(
+              type: _beneficiaryType,
+              value: _beneficiary,
+              errorText: _beneficiaryError,
+              onTypeChanged: (t) => setState(() {
+                _beneficiaryType = t;
+                _beneficiary = null;
+                _beneficiaryError = null;
               }),
-            ),
-            const SizedBox(height: Tokens.space24),
-            AppPrimaryButton(
-              label: 'Enregistrer',
-              isLoading: _submitting,
-              onPressed: _submit,
+              onPick: _pickBeneficiary,
             ),
           ],
-        ),
+          const SizedBox(height: Tokens.space24),
+          Text('Compte', style: theme.labelLarge),
+          const SizedBox(height: Tokens.space8),
+          accountsAsync.when(
+            loading: () => const _AccountsLoading(),
+            error: (e, _) => ErrorState(
+              message: 'Comptes indisponibles.',
+              onRetry: () => ref.invalidate(cashAccountsProvider),
+            ),
+            data: (accounts) => _AccountDropdown(
+              accounts: accounts,
+              value: _account,
+              errorText: _accountError,
+              onChanged: (a) => setState(() => _account = a),
+            ),
+          ),
+          const SizedBox(height: Tokens.space16),
+          AppTextField(
+            controller: _montant,
+            label: 'Montant (FCFA)',
+            hint: 'Ex : 250 000',
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            prefixIcon: Icons.payments_outlined,
+            errorText: _montantError,
+          ),
+          const SizedBox(height: Tokens.space16),
+          AppTextField(
+            controller: _libelle,
+            label: 'Libellé',
+            hint: 'Ex : Acompte client, achat fournitures…',
+            prefixIcon: Icons.notes_outlined,
+            errorText: _libelleError,
+          ),
+          const SizedBox(height: Tokens.space16),
+          _DateField(value: _date, onTap: _pickDate),
+          const SizedBox(height: Tokens.space16),
+          AppTextField(
+            controller: _reference,
+            label: 'Référence (optionnel)',
+            hint: 'Ex : chèque, virement, DEC-2026-014',
+            prefixIcon: Icons.tag,
+          ),
+          const SizedBox(height: Tokens.space16),
+          _FilialeField(
+            value: _filiale,
+            onChanged: (v) => setState(() => _filiale = v),
+          ),
+          const SizedBox(height: Tokens.space16),
+          AppTextField(
+            controller: _notes,
+            label: 'Notes (optionnel)',
+            hint: 'Détails complémentaires',
+            maxLines: 2,
+          ),
+          const SizedBox(height: Tokens.space16),
+          AttachmentField(
+            label: 'Preuve de paiement',
+            actionLabel: 'Joindre un justificatif',
+            value: _proof,
+            errorText: _proofError,
+            onChanged: (p) => setState(() {
+              _proof = p;
+              _proofError = null;
+            }),
+          ),
+          const SizedBox(height: Tokens.space24),
+          AppPrimaryButton(
+            label: 'Enregistrer',
+            isLoading: _submitting,
+            onPressed: _submit,
+          ),
+        ],
       ),
     );
   }
@@ -486,13 +485,17 @@ class _FilialeField extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final filiales = ref.watch(filialesProvider).valueOrNull ?? const <String>[];
+    final filiales =
+        ref.watch(filialesProvider).valueOrNull ?? const <String>[];
     if (filiales.isEmpty) return const SizedBox.shrink();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Text('Filiale (optionnel)', style: Theme.of(context).textTheme.labelLarge),
+        Text(
+          'Filiale (optionnel)',
+          style: Theme.of(context).textTheme.labelLarge,
+        ),
         const SizedBox(height: Tokens.space8),
         DropdownButtonFormField<String?>(
           initialValue: value,
@@ -533,10 +536,7 @@ class _DateField extends StatelessWidget {
         OutlinedButton.icon(
           onPressed: onTap,
           icon: const Icon(Icons.event_outlined),
-          label: Align(
-            alignment: Alignment.centerLeft,
-            child: Text(label),
-          ),
+          label: Align(alignment: Alignment.centerLeft, child: Text(label)),
           style: OutlinedButton.styleFrom(
             minimumSize: const Size.fromHeight(52),
             alignment: Alignment.centerLeft,

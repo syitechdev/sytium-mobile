@@ -71,80 +71,77 @@ class _CreateChannelSheetState extends ConsumerState<_CreateChannelSheet> {
   Widget build(BuildContext context) {
     final colors = context.colors;
     final theme = Theme.of(context).textTheme;
-    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
 
-    return Padding(
-      padding: EdgeInsets.only(bottom: bottomInset),
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(Tokens.space24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text('Nouveau canal', style: theme.titleLarge),
-            const SizedBox(height: Tokens.space24),
-            if (_banner != null) ...[
-              Container(
-                padding: const EdgeInsets.all(Tokens.space12),
-                decoration: BoxDecoration(
-                  color: colors.danger.withValues(alpha: 0.08),
-                  borderRadius: BorderRadius.circular(Tokens.radiusSm),
-                  border: Border.all(
-                    color: colors.danger.withValues(alpha: 0.4),
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    Icon(Icons.error_outline, color: colors.danger, size: 20),
-                    const SizedBox(width: Tokens.space8),
-                    Expanded(child: Text(_banner!)),
-                  ],
-                ),
+    // Pas de compensation du clavier ici : `AppSheet` la pose déjà pour toutes
+    // les feuilles. La refaire ici la doublait — le contenu remontait de deux
+    // hauteurs de clavier et sortait du cadre, laissant la feuille vide.
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(Tokens.space24),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text('Nouveau canal', style: theme.titleLarge),
+          const SizedBox(height: Tokens.space24),
+          if (_banner != null) ...[
+            Container(
+              padding: const EdgeInsets.all(Tokens.space12),
+              decoration: BoxDecoration(
+                color: colors.danger.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(Tokens.radiusSm),
+                border: Border.all(color: colors.danger.withValues(alpha: 0.4)),
               ),
-              const SizedBox(height: Tokens.space16),
-            ],
-            AppTextField(
-              controller: _name,
-              label: 'Nom du canal',
-              hint: 'Ex : direction, chantier-abidjan…',
-              prefixIcon: Icons.tag,
-              errorText: _nameError,
+              child: Row(
+                children: [
+                  Icon(Icons.error_outline, color: colors.danger, size: 20),
+                  const SizedBox(width: Tokens.space8),
+                  Expanded(child: Text(_banner!)),
+                ],
+              ),
             ),
             const SizedBox(height: Tokens.space16),
-            Text('Visibilité', style: theme.labelLarge),
-            const SizedBox(height: Tokens.space8),
-            SegmentedButton<_ChannelKind>(
-              showSelectedIcon: false,
-              segments: const [
-                ButtonSegment(
-                  value: _ChannelKind.public,
-                  label: Text('Public'),
-                  icon: Icon(Icons.tag),
-                ),
-                ButtonSegment(
-                  value: _ChannelKind.private,
-                  label: Text('Privé'),
-                  icon: Icon(Icons.lock_outline),
-                ),
-              ],
-              selected: {_kind},
-              onSelectionChanged: (s) => setState(() => _kind = s.first),
-            ),
-            const SizedBox(height: Tokens.space16),
-            AppTextField(
-              controller: _description,
-              label: 'Description (optionnel)',
-              hint: 'À quoi sert ce canal ?',
-              maxLines: 2,
-            ),
-            const SizedBox(height: Tokens.space24),
-            AppPrimaryButton(
-              label: 'Créer le canal',
-              isLoading: _submitting,
-              onPressed: _submit,
-            ),
           ],
-        ),
+          AppTextField(
+            controller: _name,
+            label: 'Nom du canal',
+            hint: 'Ex : direction, chantier-abidjan…',
+            prefixIcon: Icons.tag,
+            errorText: _nameError,
+          ),
+          const SizedBox(height: Tokens.space16),
+          Text('Visibilité', style: theme.labelLarge),
+          const SizedBox(height: Tokens.space8),
+          SegmentedButton<_ChannelKind>(
+            showSelectedIcon: false,
+            segments: const [
+              ButtonSegment(
+                value: _ChannelKind.public,
+                label: Text('Public'),
+                icon: Icon(Icons.tag),
+              ),
+              ButtonSegment(
+                value: _ChannelKind.private,
+                label: Text('Privé'),
+                icon: Icon(Icons.lock_outline),
+              ),
+            ],
+            selected: {_kind},
+            onSelectionChanged: (s) => setState(() => _kind = s.first),
+          ),
+          const SizedBox(height: Tokens.space16),
+          AppTextField(
+            controller: _description,
+            label: 'Description (optionnel)',
+            hint: 'À quoi sert ce canal ?',
+            maxLines: 2,
+          ),
+          const SizedBox(height: Tokens.space24),
+          AppPrimaryButton(
+            label: 'Créer le canal',
+            isLoading: _submitting,
+            onPressed: _submit,
+          ),
+        ],
       ),
     );
   }
