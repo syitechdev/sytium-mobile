@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:sytium_mobile/features/approvals/presentation/approvals_screen.dart';
 import 'package:sytium_mobile/features/commercial/presentation/commercial_dashboard_screen.dart';
+import 'package:sytium_mobile/features/employee_space/presentation/employee_space_screen.dart';
 import 'package:sytium_mobile/features/finance/presentation/finance_dashboard_screen.dart';
 import 'package:sytium_mobile/features/objectives/presentation/objectives_screen.dart';
 import 'package:sytium_mobile/features/requests/presentation/requests_screen.dart';
@@ -20,8 +21,8 @@ String moduleDestinationLabel(String? featureKey) => switch (featureKey) {
 };
 
 /// Pushes the destination for [featureKey]. `objectives` opens ObjectivesScreen,
-/// `requests` opens RequestsScreen; employee_space and unknown keys use a titled
-/// "bientôt" placeholder.
+/// `requests` opens RequestsScreen, `employee_space` opens EmployeeSpaceScreen ;
+/// les clés inconnues gardent le titre et l'écran « bientôt ».
 void navigateForModule(BuildContext context, String? featureKey) {
   final destination = switch (featureKey) {
     'objectives' => const ObjectivesScreen(),
@@ -29,7 +30,7 @@ void navigateForModule(BuildContext context, String? featureKey) {
     'approvals' => const ApprovalsScreen(),
     'commercial' => const CommercialDashboardScreen(),
     'finance' => const FinanceDashboardScreen(),
-    // employee_space lands in a later sub-project.
+    'employee_space' => const EmployeeSpaceScreen(),
     _ => _ComingSoonScreen(title: moduleDestinationLabel(featureKey)),
   };
   Navigator.of(context).push(
