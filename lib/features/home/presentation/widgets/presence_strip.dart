@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:sytium_mobile/features/pointage/presentation/presence_today_sheet.dart';
 import 'package:sytium_mobile/features/stats/domain/dashboard_models.dart';
 import 'package:sytium_mobile/theme/sytium_colors.dart';
 import 'package:sytium_mobile/theme/tokens.dart';
@@ -23,63 +24,78 @@ class PresenceStrip extends StatelessWidget {
     final theme = Theme.of(context).textTheme;
 
     return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(Tokens.space16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'Présence du jour',
-                  style: theme.bodySmall?.copyWith(color: colors.textMuted),
-                ),
-                Text(
-                  '${presence.effectifActif} actifs',
-                  style: theme.bodySmall?.copyWith(
-                    color: colors.textMuted,
-                    fontWeight: FontWeight.w600,
+      // La carte s'ouvre : trois nombres ne disent pas QUI est absent.
+      child: InkWell(
+        onTap: () => showPresenceTodaySheet(context),
+        borderRadius: BorderRadius.circular(Tokens.radiusLg),
+        child: Padding(
+          padding: const EdgeInsets.all(Tokens.space16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Présence du jour',
+                    style: theme.bodySmall?.copyWith(color: colors.textMuted),
                   ),
-                ),
-              ],
-            ),
-            const SizedBox(height: Tokens.space12),
-            if (presence.isEmpty)
-              Text(
-                'Aucun employé actif.',
-                style: theme.bodyMedium?.copyWith(color: colors.textMuted),
-              )
-            else ...[
-              _StackedBar(
-                segments: [
-                  (presence.presents, colors.success),
-                  (presence.enMission, colors.info),
-                  (presence.absents, colors.warning),
+                  Row(
+                    children: [
+                      Text(
+                        '${presence.effectifActif} actifs',
+                        style: theme.bodySmall?.copyWith(
+                          color: colors.textMuted,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(width: Tokens.space4),
+                      Icon(
+                        Icons.chevron_right,
+                        size: Tokens.space16,
+                        color: colors.textMuted,
+                      ),
+                    ],
+                  ),
                 ],
               ),
               const SizedBox(height: Tokens.space12),
-              Row(
-                children: [
-                  _Count(
-                    value: presence.presents,
-                    label: 'Présents',
-                    color: colors.success,
-                  ),
-                  _Count(
-                    value: presence.enMission,
-                    label: 'En mission',
-                    color: colors.info,
-                  ),
-                  _Count(
-                    value: presence.absents,
-                    label: 'Absents',
-                    color: colors.warning,
-                  ),
-                ],
-              ),
+              if (presence.isEmpty)
+                Text(
+                  'Aucun employé actif.',
+                  style: theme.bodyMedium?.copyWith(color: colors.textMuted),
+                )
+              else ...[
+                _StackedBar(
+                  segments: [
+                    (presence.presents, colors.success),
+                    (presence.enMission, colors.info),
+                    (presence.absents, colors.warning),
+                  ],
+                ),
+                const SizedBox(height: Tokens.space12),
+                Row(
+                  children: [
+                    _Count(
+                      value: presence.presents,
+                      label: 'Présents',
+                      color: colors.success,
+                    ),
+                    _Count(
+                      value: presence.enMission,
+                      label: 'En mission',
+                      color: colors.info,
+                    ),
+                    _Count(
+                      value: presence.absents,
+                      label: 'Absents',
+                      color: colors.warning,
+                    ),
+                  ],
+                ),
+              ],
             ],
-          ],
+          ),
         ),
       ),
     );

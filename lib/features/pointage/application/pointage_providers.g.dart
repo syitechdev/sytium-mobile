@@ -88,6 +88,28 @@ final pointageStatusProvider = FutureProvider<PointageStatus>.internal(
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef PointageStatusRef = FutureProviderRef<PointageStatus>;
+String _$presenceTodayHash() => r'af87c4f6c8a776d043c253c610d66792afa595f0';
+
+/// Detail nominatif de la presence du jour, derriere la carte de l'accueil.
+///
+/// Pas de `keepAlive` : l'etat change toute la journee au fil des pointages,
+/// une donnee gardee en cache afficherait une photo perimee a la reouverture.
+///
+/// Copied from [presenceToday].
+@ProviderFor(presenceToday)
+final presenceTodayProvider = AutoDisposeFutureProvider<PresenceToday>.internal(
+  presenceToday,
+  name: r'presenceTodayProvider',
+  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+      ? null
+      : _$presenceTodayHash,
+  dependencies: null,
+  allTransitiveDependencies: null,
+);
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+typedef PresenceTodayRef = AutoDisposeFutureProviderRef<PresenceToday>;
 String _$pointageZonesHash() => r'7079b639d33e9e166caf432052abb74fed26e6a0';
 
 /// Active geofence zones for the org (for the out-of-zone pre-warning).

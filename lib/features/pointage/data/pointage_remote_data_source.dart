@@ -24,6 +24,15 @@ class PointageRemoteDataSource {
     return PointageScanResultDto.fromJson(res.data!['data'] as Map<String, dynamic>);
   }
 
+  /// Qui est la aujourd'hui, nommement. Le perimetre est celui du serveur :
+  /// un salarie sans droit de lecture globale n'y voit que sa propre ligne.
+  Future<PresenceTodayDto> presenceToday() async {
+    final res = await _dio.get<Map<String, dynamic>>(
+      '/mobile/pointage/presence-today',
+    );
+    return PresenceTodayDto.fromJson(res.data!['data'] as Map<String, dynamic>);
+  }
+
   Future<List<PointageEntryDto>> history({int page = 1}) async {
     final res = await _dio.get<Map<String, dynamic>>(
       '/mobile/pointage/history',

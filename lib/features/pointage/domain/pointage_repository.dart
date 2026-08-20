@@ -6,4 +6,7 @@ abstract interface class PointageRepository {
   Future<Result<List<PointageZone>>> sites();
   Future<Result<PointageScanResult>> scan(PointageScanInput input);
   Future<Result<List<PointageHistoryEntry>>> history({int page});
+
+  /// Detail nominatif de la presence du jour.
+  Future<Result<PresenceToday>> presenceToday();
 }

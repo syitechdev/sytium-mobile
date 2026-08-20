@@ -50,6 +50,9 @@ class _FakePointageRepo implements PointageRepository {
   @override
   Future<Result<List<PointageHistoryEntry>>> history({int page = 1}) async =>
       const Ok([]);
+  @override
+  Future<Result<PresenceToday>> presenceToday() async =>
+      const Ok(PresenceToday(summary: PresenceSummary(), rows: []));
 }
 
 /// Compte les appels de statut : c'est le marqueur d'un rechargement.

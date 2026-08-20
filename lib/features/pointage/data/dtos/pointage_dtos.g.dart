@@ -168,3 +168,86 @@ Map<String, dynamic> _$$PointageEntryDtoImplToJson(
   'fraud_flag': instance.fraudFlag,
   'distance_m': instance.distanceM,
 };
+
+_$PresenceTodayDtoImpl _$$PresenceTodayDtoImplFromJson(
+  Map<String, dynamic> json,
+) => _$PresenceTodayDtoImpl(
+  date: json['date'] as String?,
+  summary: json['summary'] == null
+      ? const PresenceSummaryDto()
+      : PresenceSummaryDto.fromJson(json['summary'] as Map<String, dynamic>),
+  rows:
+      (json['rows'] as List<dynamic>?)
+          ?.map((e) => PresenceRowDto.fromJson(e as Map<String, dynamic>))
+          .toList() ??
+      const <PresenceRowDto>[],
+);
+
+Map<String, dynamic> _$$PresenceTodayDtoImplToJson(
+  _$PresenceTodayDtoImpl instance,
+) => <String, dynamic>{
+  'date': instance.date,
+  'summary': instance.summary,
+  'rows': instance.rows,
+};
+
+_$PresenceSummaryDtoImpl _$$PresenceSummaryDtoImplFromJson(
+  Map<String, dynamic> json,
+) => _$PresenceSummaryDtoImpl(
+  totalActifs: (json['total_actifs'] as num?)?.toInt() ?? 0,
+  presents: (json['presents'] as num?)?.toInt() ?? 0,
+  absents: (json['absents'] as num?)?.toInt() ?? 0,
+  retards: (json['retards'] as num?)?.toInt() ?? 0,
+  enPause: (json['en_pause'] as num?)?.toInt() ?? 0,
+  sortis: (json['sortis'] as num?)?.toInt() ?? 0,
+  surPermission: (json['sur_permission'] as num?)?.toInt() ?? 0,
+);
+
+Map<String, dynamic> _$$PresenceSummaryDtoImplToJson(
+  _$PresenceSummaryDtoImpl instance,
+) => <String, dynamic>{
+  'total_actifs': instance.totalActifs,
+  'presents': instance.presents,
+  'absents': instance.absents,
+  'retards': instance.retards,
+  'en_pause': instance.enPause,
+  'sortis': instance.sortis,
+  'sur_permission': instance.surPermission,
+};
+
+_$PresenceRowDtoImpl _$$PresenceRowDtoImplFromJson(Map<String, dynamic> json) =>
+    _$PresenceRowDtoImpl(
+      employeeId: json['employee_id'] as String,
+      nom: json['nom'] as String? ?? '',
+      poste: json['poste'] as String?,
+      departement: json['departement'] as String?,
+      statut: json['statut'] as String? ?? '',
+      premiereEntree: json['premiere_entree'] as String?,
+      dernierPointage: json['dernier_pointage'] as String?,
+      dernierType: json['dernier_type'] as String?,
+      minutesRetard: (json['minutes_retard'] as num?)?.toInt() ?? 0,
+      pausePrise: json['pause_prise'] as bool? ?? false,
+      enPause: json['en_pause'] as bool? ?? false,
+      surPermission: json['sur_permission'] as bool? ?? false,
+      permissionMotif: json['permission_motif'] as String?,
+      heuresTravaillees: (json['heures_travaillees'] as num?)?.toDouble() ?? 0,
+    );
+
+Map<String, dynamic> _$$PresenceRowDtoImplToJson(
+  _$PresenceRowDtoImpl instance,
+) => <String, dynamic>{
+  'employee_id': instance.employeeId,
+  'nom': instance.nom,
+  'poste': instance.poste,
+  'departement': instance.departement,
+  'statut': instance.statut,
+  'premiere_entree': instance.premiereEntree,
+  'dernier_pointage': instance.dernierPointage,
+  'dernier_type': instance.dernierType,
+  'minutes_retard': instance.minutesRetard,
+  'pause_prise': instance.pausePrise,
+  'en_pause': instance.enPause,
+  'sur_permission': instance.surPermission,
+  'permission_motif': instance.permissionMotif,
+  'heures_travaillees': instance.heuresTravaillees,
+};

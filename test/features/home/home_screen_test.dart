@@ -110,6 +110,10 @@ class _PointageRepo implements PointageRepository {
   @override
   Future<Result<List<PointageHistoryEntry>>> history({int page = 1}) async =>
       const Ok([]);
+
+  @override
+  Future<Result<PresenceToday>> presenceToday() async =>
+      const Ok(PresenceToday(summary: PresenceSummary(), rows: []));
 }
 
 /// Dépôt de stats qui répond tout de suite. Contrairement à [_StatsLoadingRepo],

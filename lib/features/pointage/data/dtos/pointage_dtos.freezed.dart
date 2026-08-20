@@ -2119,3 +2119,1031 @@ abstract class _PointageEntryDto implements PointageEntryDto {
   _$$PointageEntryDtoImplCopyWith<_$PointageEntryDtoImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }
+
+PresenceTodayDto _$PresenceTodayDtoFromJson(Map<String, dynamic> json) {
+  return _PresenceTodayDto.fromJson(json);
+}
+
+/// @nodoc
+mixin _$PresenceTodayDto {
+  String? get date => throw _privateConstructorUsedError;
+  PresenceSummaryDto get summary => throw _privateConstructorUsedError;
+  List<PresenceRowDto> get rows => throw _privateConstructorUsedError;
+
+  /// Serializes this PresenceTodayDto to a JSON map.
+  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
+
+  /// Create a copy of PresenceTodayDto
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  $PresenceTodayDtoCopyWith<PresenceTodayDto> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+abstract class $PresenceTodayDtoCopyWith<$Res> {
+  factory $PresenceTodayDtoCopyWith(
+    PresenceTodayDto value,
+    $Res Function(PresenceTodayDto) then,
+  ) = _$PresenceTodayDtoCopyWithImpl<$Res, PresenceTodayDto>;
+  @useResult
+  $Res call({
+    String? date,
+    PresenceSummaryDto summary,
+    List<PresenceRowDto> rows,
+  });
+
+  $PresenceSummaryDtoCopyWith<$Res> get summary;
+}
+
+/// @nodoc
+class _$PresenceTodayDtoCopyWithImpl<$Res, $Val extends PresenceTodayDto>
+    implements $PresenceTodayDtoCopyWith<$Res> {
+  _$PresenceTodayDtoCopyWithImpl(this._value, this._then);
+
+  // ignore: unused_field
+  final $Val _value;
+  // ignore: unused_field
+  final $Res Function($Val) _then;
+
+  /// Create a copy of PresenceTodayDto
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? date = freezed,
+    Object? summary = null,
+    Object? rows = null,
+  }) {
+    return _then(
+      _value.copyWith(
+            date: freezed == date
+                ? _value.date
+                : date // ignore: cast_nullable_to_non_nullable
+                      as String?,
+            summary: null == summary
+                ? _value.summary
+                : summary // ignore: cast_nullable_to_non_nullable
+                      as PresenceSummaryDto,
+            rows: null == rows
+                ? _value.rows
+                : rows // ignore: cast_nullable_to_non_nullable
+                      as List<PresenceRowDto>,
+          )
+          as $Val,
+    );
+  }
+
+  /// Create a copy of PresenceTodayDto
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @pragma('vm:prefer-inline')
+  $PresenceSummaryDtoCopyWith<$Res> get summary {
+    return $PresenceSummaryDtoCopyWith<$Res>(_value.summary, (value) {
+      return _then(_value.copyWith(summary: value) as $Val);
+    });
+  }
+}
+
+/// @nodoc
+abstract class _$$PresenceTodayDtoImplCopyWith<$Res>
+    implements $PresenceTodayDtoCopyWith<$Res> {
+  factory _$$PresenceTodayDtoImplCopyWith(
+    _$PresenceTodayDtoImpl value,
+    $Res Function(_$PresenceTodayDtoImpl) then,
+  ) = __$$PresenceTodayDtoImplCopyWithImpl<$Res>;
+  @override
+  @useResult
+  $Res call({
+    String? date,
+    PresenceSummaryDto summary,
+    List<PresenceRowDto> rows,
+  });
+
+  @override
+  $PresenceSummaryDtoCopyWith<$Res> get summary;
+}
+
+/// @nodoc
+class __$$PresenceTodayDtoImplCopyWithImpl<$Res>
+    extends _$PresenceTodayDtoCopyWithImpl<$Res, _$PresenceTodayDtoImpl>
+    implements _$$PresenceTodayDtoImplCopyWith<$Res> {
+  __$$PresenceTodayDtoImplCopyWithImpl(
+    _$PresenceTodayDtoImpl _value,
+    $Res Function(_$PresenceTodayDtoImpl) _then,
+  ) : super(_value, _then);
+
+  /// Create a copy of PresenceTodayDto
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? date = freezed,
+    Object? summary = null,
+    Object? rows = null,
+  }) {
+    return _then(
+      _$PresenceTodayDtoImpl(
+        date: freezed == date
+            ? _value.date
+            : date // ignore: cast_nullable_to_non_nullable
+                  as String?,
+        summary: null == summary
+            ? _value.summary
+            : summary // ignore: cast_nullable_to_non_nullable
+                  as PresenceSummaryDto,
+        rows: null == rows
+            ? _value._rows
+            : rows // ignore: cast_nullable_to_non_nullable
+                  as List<PresenceRowDto>,
+      ),
+    );
+  }
+}
+
+/// @nodoc
+@JsonSerializable()
+class _$PresenceTodayDtoImpl implements _PresenceTodayDto {
+  const _$PresenceTodayDtoImpl({
+    this.date,
+    this.summary = const PresenceSummaryDto(),
+    final List<PresenceRowDto> rows = const <PresenceRowDto>[],
+  }) : _rows = rows;
+
+  factory _$PresenceTodayDtoImpl.fromJson(Map<String, dynamic> json) =>
+      _$$PresenceTodayDtoImplFromJson(json);
+
+  @override
+  final String? date;
+  @override
+  @JsonKey()
+  final PresenceSummaryDto summary;
+  final List<PresenceRowDto> _rows;
+  @override
+  @JsonKey()
+  List<PresenceRowDto> get rows {
+    if (_rows is EqualUnmodifiableListView) return _rows;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(_rows);
+  }
+
+  @override
+  String toString() {
+    return 'PresenceTodayDto(date: $date, summary: $summary, rows: $rows)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$PresenceTodayDtoImpl &&
+            (identical(other.date, date) || other.date == date) &&
+            (identical(other.summary, summary) || other.summary == summary) &&
+            const DeepCollectionEquality().equals(other._rows, _rows));
+  }
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  int get hashCode => Object.hash(
+    runtimeType,
+    date,
+    summary,
+    const DeepCollectionEquality().hash(_rows),
+  );
+
+  /// Create a copy of PresenceTodayDto
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$PresenceTodayDtoImplCopyWith<_$PresenceTodayDtoImpl> get copyWith =>
+      __$$PresenceTodayDtoImplCopyWithImpl<_$PresenceTodayDtoImpl>(
+        this,
+        _$identity,
+      );
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$$PresenceTodayDtoImplToJson(this);
+  }
+}
+
+abstract class _PresenceTodayDto implements PresenceTodayDto {
+  const factory _PresenceTodayDto({
+    final String? date,
+    final PresenceSummaryDto summary,
+    final List<PresenceRowDto> rows,
+  }) = _$PresenceTodayDtoImpl;
+
+  factory _PresenceTodayDto.fromJson(Map<String, dynamic> json) =
+      _$PresenceTodayDtoImpl.fromJson;
+
+  @override
+  String? get date;
+  @override
+  PresenceSummaryDto get summary;
+  @override
+  List<PresenceRowDto> get rows;
+
+  /// Create a copy of PresenceTodayDto
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  _$$PresenceTodayDtoImplCopyWith<_$PresenceTodayDtoImpl> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+PresenceSummaryDto _$PresenceSummaryDtoFromJson(Map<String, dynamic> json) {
+  return _PresenceSummaryDto.fromJson(json);
+}
+
+/// @nodoc
+mixin _$PresenceSummaryDto {
+  @JsonKey(name: 'total_actifs')
+  int get totalActifs => throw _privateConstructorUsedError;
+  int get presents => throw _privateConstructorUsedError;
+  int get absents => throw _privateConstructorUsedError;
+  int get retards => throw _privateConstructorUsedError;
+  @JsonKey(name: 'en_pause')
+  int get enPause => throw _privateConstructorUsedError;
+  int get sortis => throw _privateConstructorUsedError;
+  @JsonKey(name: 'sur_permission')
+  int get surPermission => throw _privateConstructorUsedError;
+
+  /// Serializes this PresenceSummaryDto to a JSON map.
+  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
+
+  /// Create a copy of PresenceSummaryDto
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  $PresenceSummaryDtoCopyWith<PresenceSummaryDto> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+abstract class $PresenceSummaryDtoCopyWith<$Res> {
+  factory $PresenceSummaryDtoCopyWith(
+    PresenceSummaryDto value,
+    $Res Function(PresenceSummaryDto) then,
+  ) = _$PresenceSummaryDtoCopyWithImpl<$Res, PresenceSummaryDto>;
+  @useResult
+  $Res call({
+    @JsonKey(name: 'total_actifs') int totalActifs,
+    int presents,
+    int absents,
+    int retards,
+    @JsonKey(name: 'en_pause') int enPause,
+    int sortis,
+    @JsonKey(name: 'sur_permission') int surPermission,
+  });
+}
+
+/// @nodoc
+class _$PresenceSummaryDtoCopyWithImpl<$Res, $Val extends PresenceSummaryDto>
+    implements $PresenceSummaryDtoCopyWith<$Res> {
+  _$PresenceSummaryDtoCopyWithImpl(this._value, this._then);
+
+  // ignore: unused_field
+  final $Val _value;
+  // ignore: unused_field
+  final $Res Function($Val) _then;
+
+  /// Create a copy of PresenceSummaryDto
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? totalActifs = null,
+    Object? presents = null,
+    Object? absents = null,
+    Object? retards = null,
+    Object? enPause = null,
+    Object? sortis = null,
+    Object? surPermission = null,
+  }) {
+    return _then(
+      _value.copyWith(
+            totalActifs: null == totalActifs
+                ? _value.totalActifs
+                : totalActifs // ignore: cast_nullable_to_non_nullable
+                      as int,
+            presents: null == presents
+                ? _value.presents
+                : presents // ignore: cast_nullable_to_non_nullable
+                      as int,
+            absents: null == absents
+                ? _value.absents
+                : absents // ignore: cast_nullable_to_non_nullable
+                      as int,
+            retards: null == retards
+                ? _value.retards
+                : retards // ignore: cast_nullable_to_non_nullable
+                      as int,
+            enPause: null == enPause
+                ? _value.enPause
+                : enPause // ignore: cast_nullable_to_non_nullable
+                      as int,
+            sortis: null == sortis
+                ? _value.sortis
+                : sortis // ignore: cast_nullable_to_non_nullable
+                      as int,
+            surPermission: null == surPermission
+                ? _value.surPermission
+                : surPermission // ignore: cast_nullable_to_non_nullable
+                      as int,
+          )
+          as $Val,
+    );
+  }
+}
+
+/// @nodoc
+abstract class _$$PresenceSummaryDtoImplCopyWith<$Res>
+    implements $PresenceSummaryDtoCopyWith<$Res> {
+  factory _$$PresenceSummaryDtoImplCopyWith(
+    _$PresenceSummaryDtoImpl value,
+    $Res Function(_$PresenceSummaryDtoImpl) then,
+  ) = __$$PresenceSummaryDtoImplCopyWithImpl<$Res>;
+  @override
+  @useResult
+  $Res call({
+    @JsonKey(name: 'total_actifs') int totalActifs,
+    int presents,
+    int absents,
+    int retards,
+    @JsonKey(name: 'en_pause') int enPause,
+    int sortis,
+    @JsonKey(name: 'sur_permission') int surPermission,
+  });
+}
+
+/// @nodoc
+class __$$PresenceSummaryDtoImplCopyWithImpl<$Res>
+    extends _$PresenceSummaryDtoCopyWithImpl<$Res, _$PresenceSummaryDtoImpl>
+    implements _$$PresenceSummaryDtoImplCopyWith<$Res> {
+  __$$PresenceSummaryDtoImplCopyWithImpl(
+    _$PresenceSummaryDtoImpl _value,
+    $Res Function(_$PresenceSummaryDtoImpl) _then,
+  ) : super(_value, _then);
+
+  /// Create a copy of PresenceSummaryDto
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? totalActifs = null,
+    Object? presents = null,
+    Object? absents = null,
+    Object? retards = null,
+    Object? enPause = null,
+    Object? sortis = null,
+    Object? surPermission = null,
+  }) {
+    return _then(
+      _$PresenceSummaryDtoImpl(
+        totalActifs: null == totalActifs
+            ? _value.totalActifs
+            : totalActifs // ignore: cast_nullable_to_non_nullable
+                  as int,
+        presents: null == presents
+            ? _value.presents
+            : presents // ignore: cast_nullable_to_non_nullable
+                  as int,
+        absents: null == absents
+            ? _value.absents
+            : absents // ignore: cast_nullable_to_non_nullable
+                  as int,
+        retards: null == retards
+            ? _value.retards
+            : retards // ignore: cast_nullable_to_non_nullable
+                  as int,
+        enPause: null == enPause
+            ? _value.enPause
+            : enPause // ignore: cast_nullable_to_non_nullable
+                  as int,
+        sortis: null == sortis
+            ? _value.sortis
+            : sortis // ignore: cast_nullable_to_non_nullable
+                  as int,
+        surPermission: null == surPermission
+            ? _value.surPermission
+            : surPermission // ignore: cast_nullable_to_non_nullable
+                  as int,
+      ),
+    );
+  }
+}
+
+/// @nodoc
+@JsonSerializable()
+class _$PresenceSummaryDtoImpl implements _PresenceSummaryDto {
+  const _$PresenceSummaryDtoImpl({
+    @JsonKey(name: 'total_actifs') this.totalActifs = 0,
+    this.presents = 0,
+    this.absents = 0,
+    this.retards = 0,
+    @JsonKey(name: 'en_pause') this.enPause = 0,
+    this.sortis = 0,
+    @JsonKey(name: 'sur_permission') this.surPermission = 0,
+  });
+
+  factory _$PresenceSummaryDtoImpl.fromJson(Map<String, dynamic> json) =>
+      _$$PresenceSummaryDtoImplFromJson(json);
+
+  @override
+  @JsonKey(name: 'total_actifs')
+  final int totalActifs;
+  @override
+  @JsonKey()
+  final int presents;
+  @override
+  @JsonKey()
+  final int absents;
+  @override
+  @JsonKey()
+  final int retards;
+  @override
+  @JsonKey(name: 'en_pause')
+  final int enPause;
+  @override
+  @JsonKey()
+  final int sortis;
+  @override
+  @JsonKey(name: 'sur_permission')
+  final int surPermission;
+
+  @override
+  String toString() {
+    return 'PresenceSummaryDto(totalActifs: $totalActifs, presents: $presents, absents: $absents, retards: $retards, enPause: $enPause, sortis: $sortis, surPermission: $surPermission)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$PresenceSummaryDtoImpl &&
+            (identical(other.totalActifs, totalActifs) ||
+                other.totalActifs == totalActifs) &&
+            (identical(other.presents, presents) ||
+                other.presents == presents) &&
+            (identical(other.absents, absents) || other.absents == absents) &&
+            (identical(other.retards, retards) || other.retards == retards) &&
+            (identical(other.enPause, enPause) || other.enPause == enPause) &&
+            (identical(other.sortis, sortis) || other.sortis == sortis) &&
+            (identical(other.surPermission, surPermission) ||
+                other.surPermission == surPermission));
+  }
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  int get hashCode => Object.hash(
+    runtimeType,
+    totalActifs,
+    presents,
+    absents,
+    retards,
+    enPause,
+    sortis,
+    surPermission,
+  );
+
+  /// Create a copy of PresenceSummaryDto
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$PresenceSummaryDtoImplCopyWith<_$PresenceSummaryDtoImpl> get copyWith =>
+      __$$PresenceSummaryDtoImplCopyWithImpl<_$PresenceSummaryDtoImpl>(
+        this,
+        _$identity,
+      );
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$$PresenceSummaryDtoImplToJson(this);
+  }
+}
+
+abstract class _PresenceSummaryDto implements PresenceSummaryDto {
+  const factory _PresenceSummaryDto({
+    @JsonKey(name: 'total_actifs') final int totalActifs,
+    final int presents,
+    final int absents,
+    final int retards,
+    @JsonKey(name: 'en_pause') final int enPause,
+    final int sortis,
+    @JsonKey(name: 'sur_permission') final int surPermission,
+  }) = _$PresenceSummaryDtoImpl;
+
+  factory _PresenceSummaryDto.fromJson(Map<String, dynamic> json) =
+      _$PresenceSummaryDtoImpl.fromJson;
+
+  @override
+  @JsonKey(name: 'total_actifs')
+  int get totalActifs;
+  @override
+  int get presents;
+  @override
+  int get absents;
+  @override
+  int get retards;
+  @override
+  @JsonKey(name: 'en_pause')
+  int get enPause;
+  @override
+  int get sortis;
+  @override
+  @JsonKey(name: 'sur_permission')
+  int get surPermission;
+
+  /// Create a copy of PresenceSummaryDto
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  _$$PresenceSummaryDtoImplCopyWith<_$PresenceSummaryDtoImpl> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+PresenceRowDto _$PresenceRowDtoFromJson(Map<String, dynamic> json) {
+  return _PresenceRowDto.fromJson(json);
+}
+
+/// @nodoc
+mixin _$PresenceRowDto {
+  @JsonKey(name: 'employee_id')
+  String get employeeId => throw _privateConstructorUsedError;
+  String get nom => throw _privateConstructorUsedError;
+  String? get poste => throw _privateConstructorUsedError;
+  String? get departement => throw _privateConstructorUsedError;
+  String get statut => throw _privateConstructorUsedError;
+  @JsonKey(name: 'premiere_entree')
+  String? get premiereEntree => throw _privateConstructorUsedError;
+  @JsonKey(name: 'dernier_pointage')
+  String? get dernierPointage => throw _privateConstructorUsedError;
+  @JsonKey(name: 'dernier_type')
+  String? get dernierType => throw _privateConstructorUsedError;
+  @JsonKey(name: 'minutes_retard')
+  int get minutesRetard => throw _privateConstructorUsedError;
+  @JsonKey(name: 'pause_prise')
+  bool get pausePrise => throw _privateConstructorUsedError;
+  @JsonKey(name: 'en_pause')
+  bool get enPause => throw _privateConstructorUsedError;
+  @JsonKey(name: 'sur_permission')
+  bool get surPermission => throw _privateConstructorUsedError;
+  @JsonKey(name: 'permission_motif')
+  String? get permissionMotif => throw _privateConstructorUsedError;
+  @JsonKey(name: 'heures_travaillees')
+  double get heuresTravaillees => throw _privateConstructorUsedError;
+
+  /// Serializes this PresenceRowDto to a JSON map.
+  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
+
+  /// Create a copy of PresenceRowDto
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  $PresenceRowDtoCopyWith<PresenceRowDto> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+abstract class $PresenceRowDtoCopyWith<$Res> {
+  factory $PresenceRowDtoCopyWith(
+    PresenceRowDto value,
+    $Res Function(PresenceRowDto) then,
+  ) = _$PresenceRowDtoCopyWithImpl<$Res, PresenceRowDto>;
+  @useResult
+  $Res call({
+    @JsonKey(name: 'employee_id') String employeeId,
+    String nom,
+    String? poste,
+    String? departement,
+    String statut,
+    @JsonKey(name: 'premiere_entree') String? premiereEntree,
+    @JsonKey(name: 'dernier_pointage') String? dernierPointage,
+    @JsonKey(name: 'dernier_type') String? dernierType,
+    @JsonKey(name: 'minutes_retard') int minutesRetard,
+    @JsonKey(name: 'pause_prise') bool pausePrise,
+    @JsonKey(name: 'en_pause') bool enPause,
+    @JsonKey(name: 'sur_permission') bool surPermission,
+    @JsonKey(name: 'permission_motif') String? permissionMotif,
+    @JsonKey(name: 'heures_travaillees') double heuresTravaillees,
+  });
+}
+
+/// @nodoc
+class _$PresenceRowDtoCopyWithImpl<$Res, $Val extends PresenceRowDto>
+    implements $PresenceRowDtoCopyWith<$Res> {
+  _$PresenceRowDtoCopyWithImpl(this._value, this._then);
+
+  // ignore: unused_field
+  final $Val _value;
+  // ignore: unused_field
+  final $Res Function($Val) _then;
+
+  /// Create a copy of PresenceRowDto
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? employeeId = null,
+    Object? nom = null,
+    Object? poste = freezed,
+    Object? departement = freezed,
+    Object? statut = null,
+    Object? premiereEntree = freezed,
+    Object? dernierPointage = freezed,
+    Object? dernierType = freezed,
+    Object? minutesRetard = null,
+    Object? pausePrise = null,
+    Object? enPause = null,
+    Object? surPermission = null,
+    Object? permissionMotif = freezed,
+    Object? heuresTravaillees = null,
+  }) {
+    return _then(
+      _value.copyWith(
+            employeeId: null == employeeId
+                ? _value.employeeId
+                : employeeId // ignore: cast_nullable_to_non_nullable
+                      as String,
+            nom: null == nom
+                ? _value.nom
+                : nom // ignore: cast_nullable_to_non_nullable
+                      as String,
+            poste: freezed == poste
+                ? _value.poste
+                : poste // ignore: cast_nullable_to_non_nullable
+                      as String?,
+            departement: freezed == departement
+                ? _value.departement
+                : departement // ignore: cast_nullable_to_non_nullable
+                      as String?,
+            statut: null == statut
+                ? _value.statut
+                : statut // ignore: cast_nullable_to_non_nullable
+                      as String,
+            premiereEntree: freezed == premiereEntree
+                ? _value.premiereEntree
+                : premiereEntree // ignore: cast_nullable_to_non_nullable
+                      as String?,
+            dernierPointage: freezed == dernierPointage
+                ? _value.dernierPointage
+                : dernierPointage // ignore: cast_nullable_to_non_nullable
+                      as String?,
+            dernierType: freezed == dernierType
+                ? _value.dernierType
+                : dernierType // ignore: cast_nullable_to_non_nullable
+                      as String?,
+            minutesRetard: null == minutesRetard
+                ? _value.minutesRetard
+                : minutesRetard // ignore: cast_nullable_to_non_nullable
+                      as int,
+            pausePrise: null == pausePrise
+                ? _value.pausePrise
+                : pausePrise // ignore: cast_nullable_to_non_nullable
+                      as bool,
+            enPause: null == enPause
+                ? _value.enPause
+                : enPause // ignore: cast_nullable_to_non_nullable
+                      as bool,
+            surPermission: null == surPermission
+                ? _value.surPermission
+                : surPermission // ignore: cast_nullable_to_non_nullable
+                      as bool,
+            permissionMotif: freezed == permissionMotif
+                ? _value.permissionMotif
+                : permissionMotif // ignore: cast_nullable_to_non_nullable
+                      as String?,
+            heuresTravaillees: null == heuresTravaillees
+                ? _value.heuresTravaillees
+                : heuresTravaillees // ignore: cast_nullable_to_non_nullable
+                      as double,
+          )
+          as $Val,
+    );
+  }
+}
+
+/// @nodoc
+abstract class _$$PresenceRowDtoImplCopyWith<$Res>
+    implements $PresenceRowDtoCopyWith<$Res> {
+  factory _$$PresenceRowDtoImplCopyWith(
+    _$PresenceRowDtoImpl value,
+    $Res Function(_$PresenceRowDtoImpl) then,
+  ) = __$$PresenceRowDtoImplCopyWithImpl<$Res>;
+  @override
+  @useResult
+  $Res call({
+    @JsonKey(name: 'employee_id') String employeeId,
+    String nom,
+    String? poste,
+    String? departement,
+    String statut,
+    @JsonKey(name: 'premiere_entree') String? premiereEntree,
+    @JsonKey(name: 'dernier_pointage') String? dernierPointage,
+    @JsonKey(name: 'dernier_type') String? dernierType,
+    @JsonKey(name: 'minutes_retard') int minutesRetard,
+    @JsonKey(name: 'pause_prise') bool pausePrise,
+    @JsonKey(name: 'en_pause') bool enPause,
+    @JsonKey(name: 'sur_permission') bool surPermission,
+    @JsonKey(name: 'permission_motif') String? permissionMotif,
+    @JsonKey(name: 'heures_travaillees') double heuresTravaillees,
+  });
+}
+
+/// @nodoc
+class __$$PresenceRowDtoImplCopyWithImpl<$Res>
+    extends _$PresenceRowDtoCopyWithImpl<$Res, _$PresenceRowDtoImpl>
+    implements _$$PresenceRowDtoImplCopyWith<$Res> {
+  __$$PresenceRowDtoImplCopyWithImpl(
+    _$PresenceRowDtoImpl _value,
+    $Res Function(_$PresenceRowDtoImpl) _then,
+  ) : super(_value, _then);
+
+  /// Create a copy of PresenceRowDto
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? employeeId = null,
+    Object? nom = null,
+    Object? poste = freezed,
+    Object? departement = freezed,
+    Object? statut = null,
+    Object? premiereEntree = freezed,
+    Object? dernierPointage = freezed,
+    Object? dernierType = freezed,
+    Object? minutesRetard = null,
+    Object? pausePrise = null,
+    Object? enPause = null,
+    Object? surPermission = null,
+    Object? permissionMotif = freezed,
+    Object? heuresTravaillees = null,
+  }) {
+    return _then(
+      _$PresenceRowDtoImpl(
+        employeeId: null == employeeId
+            ? _value.employeeId
+            : employeeId // ignore: cast_nullable_to_non_nullable
+                  as String,
+        nom: null == nom
+            ? _value.nom
+            : nom // ignore: cast_nullable_to_non_nullable
+                  as String,
+        poste: freezed == poste
+            ? _value.poste
+            : poste // ignore: cast_nullable_to_non_nullable
+                  as String?,
+        departement: freezed == departement
+            ? _value.departement
+            : departement // ignore: cast_nullable_to_non_nullable
+                  as String?,
+        statut: null == statut
+            ? _value.statut
+            : statut // ignore: cast_nullable_to_non_nullable
+                  as String,
+        premiereEntree: freezed == premiereEntree
+            ? _value.premiereEntree
+            : premiereEntree // ignore: cast_nullable_to_non_nullable
+                  as String?,
+        dernierPointage: freezed == dernierPointage
+            ? _value.dernierPointage
+            : dernierPointage // ignore: cast_nullable_to_non_nullable
+                  as String?,
+        dernierType: freezed == dernierType
+            ? _value.dernierType
+            : dernierType // ignore: cast_nullable_to_non_nullable
+                  as String?,
+        minutesRetard: null == minutesRetard
+            ? _value.minutesRetard
+            : minutesRetard // ignore: cast_nullable_to_non_nullable
+                  as int,
+        pausePrise: null == pausePrise
+            ? _value.pausePrise
+            : pausePrise // ignore: cast_nullable_to_non_nullable
+                  as bool,
+        enPause: null == enPause
+            ? _value.enPause
+            : enPause // ignore: cast_nullable_to_non_nullable
+                  as bool,
+        surPermission: null == surPermission
+            ? _value.surPermission
+            : surPermission // ignore: cast_nullable_to_non_nullable
+                  as bool,
+        permissionMotif: freezed == permissionMotif
+            ? _value.permissionMotif
+            : permissionMotif // ignore: cast_nullable_to_non_nullable
+                  as String?,
+        heuresTravaillees: null == heuresTravaillees
+            ? _value.heuresTravaillees
+            : heuresTravaillees // ignore: cast_nullable_to_non_nullable
+                  as double,
+      ),
+    );
+  }
+}
+
+/// @nodoc
+@JsonSerializable()
+class _$PresenceRowDtoImpl implements _PresenceRowDto {
+  const _$PresenceRowDtoImpl({
+    @JsonKey(name: 'employee_id') required this.employeeId,
+    this.nom = '',
+    this.poste,
+    this.departement,
+    this.statut = '',
+    @JsonKey(name: 'premiere_entree') this.premiereEntree,
+    @JsonKey(name: 'dernier_pointage') this.dernierPointage,
+    @JsonKey(name: 'dernier_type') this.dernierType,
+    @JsonKey(name: 'minutes_retard') this.minutesRetard = 0,
+    @JsonKey(name: 'pause_prise') this.pausePrise = false,
+    @JsonKey(name: 'en_pause') this.enPause = false,
+    @JsonKey(name: 'sur_permission') this.surPermission = false,
+    @JsonKey(name: 'permission_motif') this.permissionMotif,
+    @JsonKey(name: 'heures_travaillees') this.heuresTravaillees = 0,
+  });
+
+  factory _$PresenceRowDtoImpl.fromJson(Map<String, dynamic> json) =>
+      _$$PresenceRowDtoImplFromJson(json);
+
+  @override
+  @JsonKey(name: 'employee_id')
+  final String employeeId;
+  @override
+  @JsonKey()
+  final String nom;
+  @override
+  final String? poste;
+  @override
+  final String? departement;
+  @override
+  @JsonKey()
+  final String statut;
+  @override
+  @JsonKey(name: 'premiere_entree')
+  final String? premiereEntree;
+  @override
+  @JsonKey(name: 'dernier_pointage')
+  final String? dernierPointage;
+  @override
+  @JsonKey(name: 'dernier_type')
+  final String? dernierType;
+  @override
+  @JsonKey(name: 'minutes_retard')
+  final int minutesRetard;
+  @override
+  @JsonKey(name: 'pause_prise')
+  final bool pausePrise;
+  @override
+  @JsonKey(name: 'en_pause')
+  final bool enPause;
+  @override
+  @JsonKey(name: 'sur_permission')
+  final bool surPermission;
+  @override
+  @JsonKey(name: 'permission_motif')
+  final String? permissionMotif;
+  @override
+  @JsonKey(name: 'heures_travaillees')
+  final double heuresTravaillees;
+
+  @override
+  String toString() {
+    return 'PresenceRowDto(employeeId: $employeeId, nom: $nom, poste: $poste, departement: $departement, statut: $statut, premiereEntree: $premiereEntree, dernierPointage: $dernierPointage, dernierType: $dernierType, minutesRetard: $minutesRetard, pausePrise: $pausePrise, enPause: $enPause, surPermission: $surPermission, permissionMotif: $permissionMotif, heuresTravaillees: $heuresTravaillees)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$PresenceRowDtoImpl &&
+            (identical(other.employeeId, employeeId) ||
+                other.employeeId == employeeId) &&
+            (identical(other.nom, nom) || other.nom == nom) &&
+            (identical(other.poste, poste) || other.poste == poste) &&
+            (identical(other.departement, departement) ||
+                other.departement == departement) &&
+            (identical(other.statut, statut) || other.statut == statut) &&
+            (identical(other.premiereEntree, premiereEntree) ||
+                other.premiereEntree == premiereEntree) &&
+            (identical(other.dernierPointage, dernierPointage) ||
+                other.dernierPointage == dernierPointage) &&
+            (identical(other.dernierType, dernierType) ||
+                other.dernierType == dernierType) &&
+            (identical(other.minutesRetard, minutesRetard) ||
+                other.minutesRetard == minutesRetard) &&
+            (identical(other.pausePrise, pausePrise) ||
+                other.pausePrise == pausePrise) &&
+            (identical(other.enPause, enPause) || other.enPause == enPause) &&
+            (identical(other.surPermission, surPermission) ||
+                other.surPermission == surPermission) &&
+            (identical(other.permissionMotif, permissionMotif) ||
+                other.permissionMotif == permissionMotif) &&
+            (identical(other.heuresTravaillees, heuresTravaillees) ||
+                other.heuresTravaillees == heuresTravaillees));
+  }
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  int get hashCode => Object.hash(
+    runtimeType,
+    employeeId,
+    nom,
+    poste,
+    departement,
+    statut,
+    premiereEntree,
+    dernierPointage,
+    dernierType,
+    minutesRetard,
+    pausePrise,
+    enPause,
+    surPermission,
+    permissionMotif,
+    heuresTravaillees,
+  );
+
+  /// Create a copy of PresenceRowDto
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$PresenceRowDtoImplCopyWith<_$PresenceRowDtoImpl> get copyWith =>
+      __$$PresenceRowDtoImplCopyWithImpl<_$PresenceRowDtoImpl>(
+        this,
+        _$identity,
+      );
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$$PresenceRowDtoImplToJson(this);
+  }
+}
+
+abstract class _PresenceRowDto implements PresenceRowDto {
+  const factory _PresenceRowDto({
+    @JsonKey(name: 'employee_id') required final String employeeId,
+    final String nom,
+    final String? poste,
+    final String? departement,
+    final String statut,
+    @JsonKey(name: 'premiere_entree') final String? premiereEntree,
+    @JsonKey(name: 'dernier_pointage') final String? dernierPointage,
+    @JsonKey(name: 'dernier_type') final String? dernierType,
+    @JsonKey(name: 'minutes_retard') final int minutesRetard,
+    @JsonKey(name: 'pause_prise') final bool pausePrise,
+    @JsonKey(name: 'en_pause') final bool enPause,
+    @JsonKey(name: 'sur_permission') final bool surPermission,
+    @JsonKey(name: 'permission_motif') final String? permissionMotif,
+    @JsonKey(name: 'heures_travaillees') final double heuresTravaillees,
+  }) = _$PresenceRowDtoImpl;
+
+  factory _PresenceRowDto.fromJson(Map<String, dynamic> json) =
+      _$PresenceRowDtoImpl.fromJson;
+
+  @override
+  @JsonKey(name: 'employee_id')
+  String get employeeId;
+  @override
+  String get nom;
+  @override
+  String? get poste;
+  @override
+  String? get departement;
+  @override
+  String get statut;
+  @override
+  @JsonKey(name: 'premiere_entree')
+  String? get premiereEntree;
+  @override
+  @JsonKey(name: 'dernier_pointage')
+  String? get dernierPointage;
+  @override
+  @JsonKey(name: 'dernier_type')
+  String? get dernierType;
+  @override
+  @JsonKey(name: 'minutes_retard')
+  int get minutesRetard;
+  @override
+  @JsonKey(name: 'pause_prise')
+  bool get pausePrise;
+  @override
+  @JsonKey(name: 'en_pause')
+  bool get enPause;
+  @override
+  @JsonKey(name: 'sur_permission')
+  bool get surPermission;
+  @override
+  @JsonKey(name: 'permission_motif')
+  String? get permissionMotif;
+  @override
+  @JsonKey(name: 'heures_travaillees')
+  double get heuresTravaillees;
+
+  /// Create a copy of PresenceRowDto
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  _$$PresenceRowDtoImplCopyWith<_$PresenceRowDtoImpl> get copyWith =>
+      throw _privateConstructorUsedError;
+}

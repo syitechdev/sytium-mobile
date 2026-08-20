@@ -39,6 +39,19 @@ Future<PointageStatus> pointageStatus(Ref ref) async {
   return result.fold((s) => s, (f) => throw Exception(f.message ?? 'Erreur'));
 }
 
+/// Detail nominatif de la presence du jour, derriere la carte de l'accueil.
+///
+/// Pas de `keepAlive` : l'etat change toute la journee au fil des pointages,
+/// une donnee gardee en cache afficherait une photo perimee a la reouverture.
+@riverpod
+Future<PresenceToday> presenceToday(Ref ref) async {
+  final result = await ref.watch(pointageRepositoryProvider).presenceToday();
+  return result.fold(
+    (p) => p,
+    (f) => throw Exception(f.message ?? 'Présence indisponible'),
+  );
+}
+
 /// Active geofence zones for the org (for the out-of-zone pre-warning).
 @riverpod
 Future<List<PointageZone>> pointageZones(Ref ref) async {

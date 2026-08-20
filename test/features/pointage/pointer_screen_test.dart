@@ -85,6 +85,10 @@ class _FakeRepo implements PointageRepository {
   @override
   Future<Result<List<PointageHistoryEntry>>> history({int page = 1}) async =>
       const Ok([]);
+
+  @override
+  Future<Result<PresenceToday>> presenceToday() async =>
+      const Ok(PresenceToday(summary: PresenceSummary(), rows: []));
 }
 
 Future<void> _pump(

@@ -118,3 +118,55 @@ class PointageEntryDto with _$PointageEntryDto {
   factory PointageEntryDto.fromJson(Map<String, dynamic> json) =>
       _$PointageEntryDtoFromJson(json);
 }
+
+/// Detail nominatif de la presence du jour, derriere la carte de l'accueil.
+@freezed
+class PresenceTodayDto with _$PresenceTodayDto {
+  const factory PresenceTodayDto({
+    String? date,
+    @Default(PresenceSummaryDto()) PresenceSummaryDto summary,
+    @Default(<PresenceRowDto>[]) List<PresenceRowDto> rows,
+  }) = _PresenceTodayDto;
+
+  factory PresenceTodayDto.fromJson(Map<String, dynamic> json) =>
+      _$PresenceTodayDtoFromJson(json);
+}
+
+@freezed
+class PresenceSummaryDto with _$PresenceSummaryDto {
+  const factory PresenceSummaryDto({
+    @JsonKey(name: 'total_actifs') @Default(0) int totalActifs,
+    @Default(0) int presents,
+    @Default(0) int absents,
+    @Default(0) int retards,
+    @JsonKey(name: 'en_pause') @Default(0) int enPause,
+    @Default(0) int sortis,
+    @JsonKey(name: 'sur_permission') @Default(0) int surPermission,
+  }) = _PresenceSummaryDto;
+
+  factory PresenceSummaryDto.fromJson(Map<String, dynamic> json) =>
+      _$PresenceSummaryDtoFromJson(json);
+}
+
+@freezed
+class PresenceRowDto with _$PresenceRowDto {
+  const factory PresenceRowDto({
+    @JsonKey(name: 'employee_id') required String employeeId,
+    @Default('') String nom,
+    String? poste,
+    String? departement,
+    @Default('') String statut,
+    @JsonKey(name: 'premiere_entree') String? premiereEntree,
+    @JsonKey(name: 'dernier_pointage') String? dernierPointage,
+    @JsonKey(name: 'dernier_type') String? dernierType,
+    @JsonKey(name: 'minutes_retard') @Default(0) int minutesRetard,
+    @JsonKey(name: 'pause_prise') @Default(false) bool pausePrise,
+    @JsonKey(name: 'en_pause') @Default(false) bool enPause,
+    @JsonKey(name: 'sur_permission') @Default(false) bool surPermission,
+    @JsonKey(name: 'permission_motif') String? permissionMotif,
+    @JsonKey(name: 'heures_travaillees') @Default(0) double heuresTravaillees,
+  }) = _PresenceRowDto;
+
+  factory PresenceRowDto.fromJson(Map<String, dynamic> json) =>
+      _$PresenceRowDtoFromJson(json);
+}

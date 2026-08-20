@@ -35,6 +35,45 @@ class PointageRepositoryImpl implements PointageRepository {
       });
 
   @override
+  Future<Result<PresenceToday>> presenceToday() => _guard(() async {
+        final dto = await _remote.presenceToday();
+        return PresenceToday(
+          date: dto.date,
+          summary: PresenceSummary(
+            totalActifs: dto.summary.totalActifs,
+            presents: dto.summary.presents,
+            absents: dto.summary.absents,
+            retards: dto.summary.retards,
+            enPause: dto.summary.enPause,
+            sortis: dto.summary.sortis,
+            surPermission: dto.summary.surPermission,
+          ),
+          rows: dto.rows
+              .map(
+                (r) => PresenceRow(
+                  employeeId: r.employeeId,
+                  nom: r.nom,
+                  poste: r.poste,
+                  departement: r.departement,
+                  statut: PresenceStatut.from(r.statut),
+                  arriveeAt: _instant(r.premiereEntree),
+                  dernierPointageAt: _instant(r.dernierPointage),
+                  minutesRetard: r.minutesRetard,
+                  pausePrise: r.pausePrise,
+                  enPause: r.enPause,
+                  permissionMotif: r.permissionMotif,
+                  heuresTravaillees: r.heuresTravaillees,
+                ),
+              )
+              .toList(),
+        );
+      });
+
+  /// Les horodatages arrivent en UTC : on les rend a l'heure de l'appareil.
+  static DateTime? _instant(String? brut) =>
+      brut == null ? null : DateTime.tryParse(brut)?.toLocal();
+
+  @override
   Future<Result<List<PointageZone>>> sites() => _guard(() async {
         final dtos = await _remote.sites();
         return dtos
