@@ -122,6 +122,29 @@ void main() {
     expect(upload.signedPath, isNull);
   });
 
+  testWidgets('un document qui porte les DEUX passe quand même par la signature', (
+    tester,
+  ) async {
+    // Le défaut signalé : la colonne `url` d'un document téléversé porte la
+    // signature figée au moment du dépôt. Périmée, elle donnait un 404. Dès
+    // qu'un chemin existe, c'est lui qui fait foi.
+    final upload = await _pump(
+      tester,
+      const LegalDocDetail(
+        id: 'd1',
+        libelle: 'Offre Syitech Music',
+        url: 'https://api.sytium.tech/private-storage/uploads/org/legal-documents/f.pdf?expires=1779810260&signature=perimee',
+        storagePath: 'uploads/org/legal-documents/f.pdf',
+        storageBucket: 'legal-documents',
+      ),
+    );
+
+    await tester.tap(find.text('Ouvrir le document'));
+    await tester.pumpAndSettle();
+
+    expect(upload.signedPath, 'uploads/org/legal-documents/f.pdf');
+  });
+
   testWidgets('un stockage qui ne sait pas signer le dit', (tester) async {
     await _pump(
       tester,

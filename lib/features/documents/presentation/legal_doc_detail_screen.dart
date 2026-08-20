@@ -26,18 +26,25 @@ class _LegalDocDetailScreenState extends ConsumerState<LegalDocDetailScreen> {
 
   /// Ouvre le document.
   ///
-  /// Un lien externe part tel quel. Un fichier de la plateforme, lui, est privé
-  /// : on demande au serveur un accès signé de courte durée plutôt que de
-  /// rendre le fichier public ou d'espérer que le navigateur soit connecté.
+  /// Un fichier de la plateforme est PRIVÉ : on redemande au serveur un accès
+  /// signé de courte durée, à chaque ouverture. C'est aussi ce que fait le web.
+  ///
+  /// Le chemin passe AVANT le lien : la colonne `url` d'un document téléversé
+  /// porte la signature figée au moment du dépôt, périmée quelques minutes
+  /// plus tard. L'ouvrir telle quelle donnait un 404 — le défaut signalé. Le
+  /// lien ne sert donc que lorsqu'il n'y a rien à signer : un document hébergé
+  /// ailleurs.
   Future<void> _open(LegalDocDetail d) async {
-    final external = d.url;
-    if (external != null && external.isNotEmpty) {
-      await _launch(external);
+    final path = d.storagePath;
+    if (path == null || path.isEmpty) {
+      final external = d.url;
+      if (external != null && external.isNotEmpty) {
+        await _launch(external);
+      } else {
+        _say("Ce document n'a pas de fichier consultable.");
+      }
       return;
     }
-
-    final path = d.storagePath;
-    if (path == null || path.isEmpty) return;
 
     setState(() => _opening = true);
     final signed = await ref
@@ -48,6 +55,15 @@ class _LegalDocDetailScreenState extends ConsumerState<LegalDocDetailScreen> {
 
     final url = signed.valueOrNull;
     if (url == null || url.isEmpty) {
+      // Dernier recours : un lien que le serveur nous aurait transmis parce
+      // qu'il pointe VRAIMENT ailleurs. Mieux vaut l'essayer que de renvoyer
+      // l'utilisateur sans rien.
+      final external = d.url;
+      if (external != null && external.isNotEmpty) {
+        await _launch(external);
+        return;
+      }
+
       _say(
         signed.failureOrNull?.message ??
             "Ce document n'est pas consultable pour le moment.",
