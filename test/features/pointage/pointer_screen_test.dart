@@ -51,20 +51,34 @@ Position _outside() => Position(
 
 /// Dépôt scriptable : le pointage réussit, ou échoue avec le code voulu.
 class _FakeRepo implements PointageRepository {
-  _FakeRepo({this.initialStatus, this.refusal});
+  _FakeRepo({this.initialStatus, this.refusal, this.statusApresRelecture});
 
   final PointageStatus? initialStatus;
   final PointageFailure? refusal;
 
+  /// Statut renvoyé à partir du DEUXIÈME appel : sert à jouer le lendemain
+  /// matin, quand le serveur rouvre la journée.
+  final PointageStatus? statusApresRelecture;
+
+  int appelsStatus = 0;
+
   @override
-  Future<Result<PointageStatus>> status() async => Ok(
-    initialStatus ??
-        const PointageStatus(
-          hasEmployee: true,
-          nextType: 'entree',
-          dayClosed: false,
-        ),
-  );
+  Future<Result<PointageStatus>> status() async {
+    appelsStatus++;
+
+    if (appelsStatus > 1 && statusApresRelecture != null) {
+      return Ok(statusApresRelecture!);
+    }
+
+    return Ok(
+      initialStatus ??
+          const PointageStatus(
+            hasEmployee: true,
+            nextType: 'entree',
+            dayClosed: false,
+          ),
+    );
+  }
 
   @override
   Future<Result<List<PointageZone>>> sites() async => const Ok([_kSite]);
@@ -95,6 +109,7 @@ Future<void> _pump(
   WidgetTester tester, {
   required LocationService location,
   PointageRepository? repo,
+  DateTime Function()? horloge,
 }) async {
   await tester.pumpWidget(
     ProviderScope(
@@ -104,10 +119,21 @@ Future<void> _pump(
         // Le détecteur de VPN touche la plateforme : inutile hors appareil.
         vpnActiveProvider.overrideWith((ref) => Stream.value(false)),
       ],
-      child: MaterialApp(theme: AppTheme.dark(), home: const PointerScreen()),
+      child: MaterialApp(
+        theme: AppTheme.dark(),
+        home: PointerScreen(horloge: horloge ?? DateTime.now),
+      ),
     ),
   );
   await tester.pump();
+}
+
+/// Surface haute : la surface par defaut (800x600) laisse le bas de l'ecran
+/// de pointage hors champ, et un bouton hors champ ne se tape pas.
+Future<void> _surfaceHaute(WidgetTester tester) async {
+  tester.view.physicalSize = const Size(1200, 2400);
+  tester.view.devicePixelRatio = 1;
+  addTearDown(tester.view.reset);
 }
 
 LocationService _grantedAt(Position position) => LocationService(
@@ -238,5 +264,89 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.textContaining('Pointer '), findsNothing);
+  });
+
+  testWidgets('journee close : un bouton permet de relire le statut', (
+    tester,
+  ) async {
+    // L'ecran n'offrait ni bouton ni rafraichissement dans cet etat, et le
+    // statut vivait en cache pour toute la duree du processus : le salarie
+    // qui pointait sa sortie le soir retrouvait « a demain » le lendemain
+    // matin, sans aucun moyen d'en sortir.
+    final repo = _FakeRepo(
+      initialStatus: const PointageStatus(
+        hasEmployee: true,
+        nextType: null,
+        dayClosed: true,
+      ),
+      statusApresRelecture: const PointageStatus(
+        hasEmployee: true,
+        nextType: 'entree',
+        dayClosed: false,
+      ),
+    );
+
+    await _surfaceHaute(tester);
+    await _pump(tester, location: _grantedAt(_inside()), repo: repo);
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('journée de pointage est terminée'), findsOne);
+
+    await tester.tap(find.text('Actualiser'));
+    await tester.pumpAndSettle();
+
+    expect(repo.appelsStatus, greaterThan(1));
+    expect(
+      find.textContaining('journée de pointage est terminée'),
+      findsNothing,
+    );
+  });
+
+  testWidgets('le retour au premier plan un autre jour relit le statut', (
+    tester,
+  ) async {
+    final repo = _FakeRepo(
+      initialStatus: const PointageStatus(
+        hasEmployee: true,
+        nextType: null,
+        dayClosed: true,
+      ),
+      statusApresRelecture: const PointageStatus(
+        hasEmployee: true,
+        nextType: 'entree',
+        dayClosed: false,
+      ),
+    );
+
+    var jour = DateTime(2026, 9, 8, 17, 16);
+
+    await _surfaceHaute(tester);
+    await _pump(
+      tester,
+      location: _grantedAt(_inside()),
+      repo: repo,
+      horloge: () => jour,
+    );
+    await tester.pumpAndSettle();
+
+    final appelsLaVeille = repo.appelsStatus;
+
+    // Meme journee : rien a relire, l'application ne doit pas rappeler le
+    // serveur pour rien.
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+    await tester.pumpAndSettle();
+    expect(repo.appelsStatus, appelsLaVeille);
+
+    // Le lendemain matin : le telephone se rallume, le statut de la veille
+    // est faux. C'est exactement le cas signale.
+    jour = DateTime(2026, 9, 9, 8, 41);
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+    await tester.pumpAndSettle();
+
+    expect(repo.appelsStatus, greaterThan(appelsLaVeille));
+    expect(
+      find.textContaining('journée de pointage est terminée'),
+      findsNothing,
+    );
   });
 }

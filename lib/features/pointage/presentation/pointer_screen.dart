@@ -46,13 +46,20 @@ enum ZoneVerdict {
 }
 
 class PointerScreen extends ConsumerStatefulWidget {
-  const PointerScreen({super.key});
+  const PointerScreen({super.key, this.horloge = DateTime.now});
+
+  /// Source de l'heure locale, injectable pour les tests.
+  ///
+  /// L'écran décide de relire le statut quand la date a tourné ; sans cette
+  /// couture, ce comportement ne pourrait être vérifié qu'en attendant minuit.
+  final DateTime Function() horloge;
 
   @override
   ConsumerState<PointerScreen> createState() => _PointerScreenState();
 }
 
-class _PointerScreenState extends ConsumerState<PointerScreen> {
+class _PointerScreenState extends ConsumerState<PointerScreen>
+    with WidgetsBindingObserver {
   LocationService get _location => ref.read(locationServiceProvider);
 
   bool _checkingGuard = true;
@@ -70,10 +77,53 @@ class _PointerScreenState extends ConsumerState<PointerScreen> {
   /// Évite de rouvrir la fenêtre de blocage à chaque reconstruction.
   bool _outOfZoneShown = false;
 
+  /// Jour local de la dernière lecture du statut.
+  ///
+  /// Le statut est mis en cache pour toute la vie du processus
+  /// (`keepAlive: true`). Un salarié qui pointe sa sortie le soir et rouvre
+  /// l'application le lendemain retrouvait donc « journée terminée » — un état
+  /// sans bouton, sans rafraîchissement, dont rien ne permettait de sortir.
+  DateTime? _jourDuStatut;
+
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _runGuard();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  /// Le téléphone dort la nuit : le retour au premier plan est le moment exact
+  /// où le statut de la veille devient faux.
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) _rafraichirSiJourChange();
+  }
+
+  /// Relit le statut quand la date locale a tourné depuis la dernière lecture.
+  ///
+  /// Se fonde sur l'horloge DU TÉLÉPHONE, la seule que l'écran connaisse. Elle
+  /// peut être décalée, mais le serveur reste juge : il ne renvoie que les
+  /// pointages de sa propre journée, une relecture inutile ne coûte qu'un appel.
+  void _rafraichirSiJourChange() {
+    final dernier = _jourDuStatut;
+
+    if (dernier == null || !_memeJour(dernier, widget.horloge())) {
+      _rafraichirStatut();
+    }
+  }
+
+  static bool _memeJour(DateTime a, DateTime b) =>
+      a.year == b.year && a.month == b.month && a.day == b.day;
+
+  void _rafraichirStatut() {
+    _jourDuStatut = widget.horloge();
+    ref.invalidate(pointageStatusProvider);
   }
 
   Future<void> _runGuard() async {
@@ -353,9 +403,30 @@ class _PointerScreenState extends ConsumerState<PointerScreen> {
         onRetry: () => ref.invalidate(pointageStatusProvider),
       ),
       data: (status) {
+        // La journée peut aussi tourner pendant que l'écran est affiché, sans
+        // aucun retour au premier plan — une équipe de nuit, un téléphone posé
+        // sur un bureau. On relit alors APRÈS la frame : invalider pendant la
+        // construction relancerait un rendu au milieu de celui-ci.
+        final maintenant = widget.horloge();
+        final lu = _jourDuStatut;
+
+        if (lu == null) {
+          _jourDuStatut = maintenant;
+        } else if (!_memeJour(lu, maintenant)) {
+          WidgetsBinding.instance.addPostFrameCallback(
+            (_) => _rafraichirStatut(),
+          );
+        }
+
         final next = status.nextType;
         if (!status.hasEmployee) return const _NoEmployee();
-        if (next == null && _phase is! PunchDone) return const _DayClosed();
+        if (next == null && _phase is! PunchDone) {
+          // Une sortie sans issue : l'écran n'offrait ni bouton ni
+          // rafraîchissement, et le statut vivait en cache pour toute la durée
+          // du processus. Le salarié restait bloqué sur « à demain » le
+          // lendemain matin.
+          return _DayClosed(onRafraichir: _rafraichirStatut);
+        }
 
         // Hors zone, l'action est remplacee par une invitation a refaire le
         // controle : proposer « Pointer » serait promettre un refus.
@@ -507,10 +578,9 @@ class _LocationPrompt extends StatelessWidget {
             Text(
               msg,
               textAlign: TextAlign.center,
-              style: Theme.of(context)
-                  .textTheme
-                  .bodyMedium
-                  ?.copyWith(color: colors.textMuted),
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(color: colors.textMuted),
             ),
             const SizedBox(height: Tokens.space24),
             FilledButton(
@@ -534,29 +604,42 @@ class _NoEmployee extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.all(Tokens.space24),
-        child: Center(
-          child: Text(
-            'Aucun profil employé associé à votre compte.',
-            textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.titleMedium,
-          ),
-        ),
-      );
+    padding: const EdgeInsets.all(Tokens.space24),
+    child: Center(
+      child: Text(
+        'Aucun profil employé associé à votre compte.',
+        textAlign: TextAlign.center,
+        style: Theme.of(context).textTheme.titleMedium,
+      ),
+    ),
+  );
 }
 
 class _DayClosed extends StatelessWidget {
-  const _DayClosed();
+  const _DayClosed({required this.onRafraichir});
+
+  final VoidCallback onRafraichir;
 
   @override
   Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.all(Tokens.space24),
-        child: Center(
-          child: Text(
-            'Votre journée de pointage est terminée. À demain !',
-            textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.titleMedium,
-          ),
+    padding: const EdgeInsets.all(Tokens.space24),
+    child: Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          'Votre journée de pointage est terminée. À demain !',
+          textAlign: TextAlign.center,
+          style: Theme.of(context).textTheme.titleMedium,
         ),
-      );
+        const SizedBox(height: Tokens.space16),
+        // Le filet de sécurité : si l'écran se trompe de journée, le
+        // salarié doit pouvoir le lui dire sans réinstaller l'application.
+        OutlinedButton.icon(
+          onPressed: onRafraichir,
+          icon: const Icon(Icons.refresh),
+          label: const Text('Actualiser'),
+        ),
+      ],
+    ),
+  );
 }
