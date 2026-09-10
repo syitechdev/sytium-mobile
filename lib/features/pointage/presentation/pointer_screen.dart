@@ -438,12 +438,25 @@ class _PointerScreenState extends ConsumerState<PointerScreen>
           );
         }
 
-        return PunchCard(
-          phase: _phase,
-          nextLabel: next == null ? '' : (_motifLabels[next] ?? next),
-          onPunch: next == null
-              ? () {}
-              : () => _punch(next, arrivedAt: status.arrivedAt),
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            PunchCard(
+              phase: _phase,
+              nextLabel: next == null ? '' : (_motifLabels[next] ?? next),
+              onPunch: next == null
+                  ? () {}
+                  : () => _punch(next, arrivedAt: status.arrivedAt),
+            ),
+            // L'horaire auquel le salarié est mesuré, sur l'écran même où il
+            // pointe : être déclaré en retard sur une heure qu'on ne peut pas
+            // consulter est un contrôle à l'aveugle. Masqué si le serveur ne le
+            // sert pas encore, plutôt que d'afficher des heures inventées.
+            if (status.horaire?.resume != null) ...[
+              const SizedBox(height: Tokens.space12),
+              _HoraireDuJour(resume: status.horaire!.resume!),
+            ],
+          ],
         );
       },
     );
@@ -547,6 +560,36 @@ class _BackButton extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// Rappel discret de l'horaire attendu, sous la carte de pointage.
+class _HoraireDuJour extends StatelessWidget {
+  const _HoraireDuJour({required this.resume});
+
+  final String resume;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(Icons.schedule, size: 14, color: colors.textMuted),
+        const SizedBox(width: Tokens.space8),
+        Flexible(
+          child: Text(
+            resume,
+            textAlign: TextAlign.center,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: colors.textMuted,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

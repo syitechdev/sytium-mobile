@@ -17,6 +17,7 @@ class PointageStatus {
     required this.dayClosed,
     this.todayCount = 0,
     this.todayEntries = const [],
+    this.horaire,
   });
 
   final bool hasEmployee;
@@ -27,12 +28,44 @@ class PointageStatus {
   /// Pointages deja enregistres aujourd'hui, dans l'ordre chronologique.
   final List<PointageTodayEntry> todayEntries;
 
+  /// Horaire du jour. `null` si le serveur ne le sert pas encore (build mobile
+  /// plus recent qu'une API deployee) : l'ecran masque alors la ligne plutot
+  /// que d'afficher des heures inventees.
+  final PointageHoraire? horaire;
+
   /// Heure d'arrivee du jour, si elle a eu lieu.
   DateTime? get arrivedAt {
     for (final entry in todayEntries) {
       if (entry.type == 'entree') return entry.at;
     }
     return null;
+  }
+}
+
+/// Horaire auquel le salarie est mesure, tel que le serveur l'a resolu.
+@immutable
+class PointageHoraire {
+  const PointageHoraire({
+    this.heureDebut,
+    this.heureFin,
+    this.pauseDebut,
+    this.pauseFin,
+    this.toleranceRetardMinutes,
+  });
+
+  final String? heureDebut;
+  final String? heureFin;
+  final String? pauseDebut;
+  final String? pauseFin;
+  final int? toleranceRetardMinutes;
+
+  bool get hasPause => pauseDebut != null && pauseFin != null;
+
+  /// Resume affichable, ou `null` si l'horaire n'a rien d'exploitable.
+  String? get resume {
+    if (heureDebut == null || heureFin == null) return null;
+    final pause = hasPause ? ' · Pause $pauseDebut–$pauseFin' : '';
+    return '$heureDebut – $heureFin$pause';
   }
 }
 

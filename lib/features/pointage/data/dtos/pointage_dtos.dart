@@ -13,10 +13,27 @@ class PointageStatusDto with _$PointageStatusDto {
     PointageEmployeeDto? employee,
     @JsonKey(name: 'today_entries')
     @Default(<PointageTodayEntryDto>[]) List<PointageTodayEntryDto> todayEntries,
+    PointageHoraireDto? horaire,
   }) = _PointageStatusDto;
 
   factory PointageStatusDto.fromJson(Map<String, dynamic> json) =>
       _$PointageStatusDtoFromJson(json);
+}
+
+/// Horaire effectif du salarie, cascade organisation -> exception deja
+/// appliquee par le serveur. Le mobile ne resout rien : il affiche.
+@freezed
+class PointageHoraireDto with _$PointageHoraireDto {
+  const factory PointageHoraireDto({
+    @JsonKey(name: 'heure_debut') String? heureDebut,
+    @JsonKey(name: 'heure_fin') String? heureFin,
+    @JsonKey(name: 'pause_debut') String? pauseDebut,
+    @JsonKey(name: 'pause_fin') String? pauseFin,
+    @JsonKey(name: 'late_tolerance_minutes') int? toleranceRetardMinutes,
+  }) = _PointageHoraireDto;
+
+  factory PointageHoraireDto.fromJson(Map<String, dynamic> json) =>
+      _$PointageHoraireDtoFromJson(json);
 }
 
 @freezed

@@ -29,6 +29,7 @@ mixin _$PointageStatusDto {
   @JsonKey(name: 'today_entries')
   List<PointageTodayEntryDto> get todayEntries =>
       throw _privateConstructorUsedError;
+  PointageHoraireDto? get horaire => throw _privateConstructorUsedError;
 
   /// Serializes this PointageStatusDto to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -52,9 +53,11 @@ abstract class $PointageStatusDtoCopyWith<$Res> {
     @JsonKey(name: 'day_closed') bool dayClosed,
     PointageEmployeeDto? employee,
     @JsonKey(name: 'today_entries') List<PointageTodayEntryDto> todayEntries,
+    PointageHoraireDto? horaire,
   });
 
   $PointageEmployeeDtoCopyWith<$Res>? get employee;
+  $PointageHoraireDtoCopyWith<$Res>? get horaire;
 }
 
 /// @nodoc
@@ -76,6 +79,7 @@ class _$PointageStatusDtoCopyWithImpl<$Res, $Val extends PointageStatusDto>
     Object? dayClosed = null,
     Object? employee = freezed,
     Object? todayEntries = null,
+    Object? horaire = freezed,
   }) {
     return _then(
       _value.copyWith(
@@ -95,6 +99,10 @@ class _$PointageStatusDtoCopyWithImpl<$Res, $Val extends PointageStatusDto>
                 ? _value.todayEntries
                 : todayEntries // ignore: cast_nullable_to_non_nullable
                       as List<PointageTodayEntryDto>,
+            horaire: freezed == horaire
+                ? _value.horaire
+                : horaire // ignore: cast_nullable_to_non_nullable
+                      as PointageHoraireDto?,
           )
           as $Val,
     );
@@ -113,6 +121,20 @@ class _$PointageStatusDtoCopyWithImpl<$Res, $Val extends PointageStatusDto>
       return _then(_value.copyWith(employee: value) as $Val);
     });
   }
+
+  /// Create a copy of PointageStatusDto
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @pragma('vm:prefer-inline')
+  $PointageHoraireDtoCopyWith<$Res>? get horaire {
+    if (_value.horaire == null) {
+      return null;
+    }
+
+    return $PointageHoraireDtoCopyWith<$Res>(_value.horaire!, (value) {
+      return _then(_value.copyWith(horaire: value) as $Val);
+    });
+  }
 }
 
 /// @nodoc
@@ -129,10 +151,13 @@ abstract class _$$PointageStatusDtoImplCopyWith<$Res>
     @JsonKey(name: 'day_closed') bool dayClosed,
     PointageEmployeeDto? employee,
     @JsonKey(name: 'today_entries') List<PointageTodayEntryDto> todayEntries,
+    PointageHoraireDto? horaire,
   });
 
   @override
   $PointageEmployeeDtoCopyWith<$Res>? get employee;
+  @override
+  $PointageHoraireDtoCopyWith<$Res>? get horaire;
 }
 
 /// @nodoc
@@ -153,6 +178,7 @@ class __$$PointageStatusDtoImplCopyWithImpl<$Res>
     Object? dayClosed = null,
     Object? employee = freezed,
     Object? todayEntries = null,
+    Object? horaire = freezed,
   }) {
     return _then(
       _$PointageStatusDtoImpl(
@@ -172,6 +198,10 @@ class __$$PointageStatusDtoImplCopyWithImpl<$Res>
             ? _value._todayEntries
             : todayEntries // ignore: cast_nullable_to_non_nullable
                   as List<PointageTodayEntryDto>,
+        horaire: freezed == horaire
+            ? _value.horaire
+            : horaire // ignore: cast_nullable_to_non_nullable
+                  as PointageHoraireDto?,
       ),
     );
   }
@@ -187,6 +217,7 @@ class _$PointageStatusDtoImpl implements _PointageStatusDto {
     @JsonKey(name: 'today_entries')
     final List<PointageTodayEntryDto> todayEntries =
         const <PointageTodayEntryDto>[],
+    this.horaire,
   }) : _todayEntries = todayEntries;
 
   factory _$PointageStatusDtoImpl.fromJson(Map<String, dynamic> json) =>
@@ -210,8 +241,11 @@ class _$PointageStatusDtoImpl implements _PointageStatusDto {
   }
 
   @override
+  final PointageHoraireDto? horaire;
+
+  @override
   String toString() {
-    return 'PointageStatusDto(nextType: $nextType, dayClosed: $dayClosed, employee: $employee, todayEntries: $todayEntries)';
+    return 'PointageStatusDto(nextType: $nextType, dayClosed: $dayClosed, employee: $employee, todayEntries: $todayEntries, horaire: $horaire)';
   }
 
   @override
@@ -228,7 +262,8 @@ class _$PointageStatusDtoImpl implements _PointageStatusDto {
             const DeepCollectionEquality().equals(
               other._todayEntries,
               _todayEntries,
-            ));
+            ) &&
+            (identical(other.horaire, horaire) || other.horaire == horaire));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
@@ -239,6 +274,7 @@ class _$PointageStatusDtoImpl implements _PointageStatusDto {
     dayClosed,
     employee,
     const DeepCollectionEquality().hash(_todayEntries),
+    horaire,
   );
 
   /// Create a copy of PointageStatusDto
@@ -265,6 +301,7 @@ abstract class _PointageStatusDto implements PointageStatusDto {
     final PointageEmployeeDto? employee,
     @JsonKey(name: 'today_entries')
     final List<PointageTodayEntryDto> todayEntries,
+    final PointageHoraireDto? horaire,
   }) = _$PointageStatusDtoImpl;
 
   factory _PointageStatusDto.fromJson(Map<String, dynamic> json) =
@@ -281,12 +318,287 @@ abstract class _PointageStatusDto implements PointageStatusDto {
   @override
   @JsonKey(name: 'today_entries')
   List<PointageTodayEntryDto> get todayEntries;
+  @override
+  PointageHoraireDto? get horaire;
 
   /// Create a copy of PointageStatusDto
   /// with the given fields replaced by the non-null parameter values.
   @override
   @JsonKey(includeFromJson: false, includeToJson: false)
   _$$PointageStatusDtoImplCopyWith<_$PointageStatusDtoImpl> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+PointageHoraireDto _$PointageHoraireDtoFromJson(Map<String, dynamic> json) {
+  return _PointageHoraireDto.fromJson(json);
+}
+
+/// @nodoc
+mixin _$PointageHoraireDto {
+  @JsonKey(name: 'heure_debut')
+  String? get heureDebut => throw _privateConstructorUsedError;
+  @JsonKey(name: 'heure_fin')
+  String? get heureFin => throw _privateConstructorUsedError;
+  @JsonKey(name: 'pause_debut')
+  String? get pauseDebut => throw _privateConstructorUsedError;
+  @JsonKey(name: 'pause_fin')
+  String? get pauseFin => throw _privateConstructorUsedError;
+  @JsonKey(name: 'late_tolerance_minutes')
+  int? get toleranceRetardMinutes => throw _privateConstructorUsedError;
+
+  /// Serializes this PointageHoraireDto to a JSON map.
+  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
+
+  /// Create a copy of PointageHoraireDto
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  $PointageHoraireDtoCopyWith<PointageHoraireDto> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+abstract class $PointageHoraireDtoCopyWith<$Res> {
+  factory $PointageHoraireDtoCopyWith(
+    PointageHoraireDto value,
+    $Res Function(PointageHoraireDto) then,
+  ) = _$PointageHoraireDtoCopyWithImpl<$Res, PointageHoraireDto>;
+  @useResult
+  $Res call({
+    @JsonKey(name: 'heure_debut') String? heureDebut,
+    @JsonKey(name: 'heure_fin') String? heureFin,
+    @JsonKey(name: 'pause_debut') String? pauseDebut,
+    @JsonKey(name: 'pause_fin') String? pauseFin,
+    @JsonKey(name: 'late_tolerance_minutes') int? toleranceRetardMinutes,
+  });
+}
+
+/// @nodoc
+class _$PointageHoraireDtoCopyWithImpl<$Res, $Val extends PointageHoraireDto>
+    implements $PointageHoraireDtoCopyWith<$Res> {
+  _$PointageHoraireDtoCopyWithImpl(this._value, this._then);
+
+  // ignore: unused_field
+  final $Val _value;
+  // ignore: unused_field
+  final $Res Function($Val) _then;
+
+  /// Create a copy of PointageHoraireDto
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? heureDebut = freezed,
+    Object? heureFin = freezed,
+    Object? pauseDebut = freezed,
+    Object? pauseFin = freezed,
+    Object? toleranceRetardMinutes = freezed,
+  }) {
+    return _then(
+      _value.copyWith(
+            heureDebut: freezed == heureDebut
+                ? _value.heureDebut
+                : heureDebut // ignore: cast_nullable_to_non_nullable
+                      as String?,
+            heureFin: freezed == heureFin
+                ? _value.heureFin
+                : heureFin // ignore: cast_nullable_to_non_nullable
+                      as String?,
+            pauseDebut: freezed == pauseDebut
+                ? _value.pauseDebut
+                : pauseDebut // ignore: cast_nullable_to_non_nullable
+                      as String?,
+            pauseFin: freezed == pauseFin
+                ? _value.pauseFin
+                : pauseFin // ignore: cast_nullable_to_non_nullable
+                      as String?,
+            toleranceRetardMinutes: freezed == toleranceRetardMinutes
+                ? _value.toleranceRetardMinutes
+                : toleranceRetardMinutes // ignore: cast_nullable_to_non_nullable
+                      as int?,
+          )
+          as $Val,
+    );
+  }
+}
+
+/// @nodoc
+abstract class _$$PointageHoraireDtoImplCopyWith<$Res>
+    implements $PointageHoraireDtoCopyWith<$Res> {
+  factory _$$PointageHoraireDtoImplCopyWith(
+    _$PointageHoraireDtoImpl value,
+    $Res Function(_$PointageHoraireDtoImpl) then,
+  ) = __$$PointageHoraireDtoImplCopyWithImpl<$Res>;
+  @override
+  @useResult
+  $Res call({
+    @JsonKey(name: 'heure_debut') String? heureDebut,
+    @JsonKey(name: 'heure_fin') String? heureFin,
+    @JsonKey(name: 'pause_debut') String? pauseDebut,
+    @JsonKey(name: 'pause_fin') String? pauseFin,
+    @JsonKey(name: 'late_tolerance_minutes') int? toleranceRetardMinutes,
+  });
+}
+
+/// @nodoc
+class __$$PointageHoraireDtoImplCopyWithImpl<$Res>
+    extends _$PointageHoraireDtoCopyWithImpl<$Res, _$PointageHoraireDtoImpl>
+    implements _$$PointageHoraireDtoImplCopyWith<$Res> {
+  __$$PointageHoraireDtoImplCopyWithImpl(
+    _$PointageHoraireDtoImpl _value,
+    $Res Function(_$PointageHoraireDtoImpl) _then,
+  ) : super(_value, _then);
+
+  /// Create a copy of PointageHoraireDto
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? heureDebut = freezed,
+    Object? heureFin = freezed,
+    Object? pauseDebut = freezed,
+    Object? pauseFin = freezed,
+    Object? toleranceRetardMinutes = freezed,
+  }) {
+    return _then(
+      _$PointageHoraireDtoImpl(
+        heureDebut: freezed == heureDebut
+            ? _value.heureDebut
+            : heureDebut // ignore: cast_nullable_to_non_nullable
+                  as String?,
+        heureFin: freezed == heureFin
+            ? _value.heureFin
+            : heureFin // ignore: cast_nullable_to_non_nullable
+                  as String?,
+        pauseDebut: freezed == pauseDebut
+            ? _value.pauseDebut
+            : pauseDebut // ignore: cast_nullable_to_non_nullable
+                  as String?,
+        pauseFin: freezed == pauseFin
+            ? _value.pauseFin
+            : pauseFin // ignore: cast_nullable_to_non_nullable
+                  as String?,
+        toleranceRetardMinutes: freezed == toleranceRetardMinutes
+            ? _value.toleranceRetardMinutes
+            : toleranceRetardMinutes // ignore: cast_nullable_to_non_nullable
+                  as int?,
+      ),
+    );
+  }
+}
+
+/// @nodoc
+@JsonSerializable()
+class _$PointageHoraireDtoImpl implements _PointageHoraireDto {
+  const _$PointageHoraireDtoImpl({
+    @JsonKey(name: 'heure_debut') this.heureDebut,
+    @JsonKey(name: 'heure_fin') this.heureFin,
+    @JsonKey(name: 'pause_debut') this.pauseDebut,
+    @JsonKey(name: 'pause_fin') this.pauseFin,
+    @JsonKey(name: 'late_tolerance_minutes') this.toleranceRetardMinutes,
+  });
+
+  factory _$PointageHoraireDtoImpl.fromJson(Map<String, dynamic> json) =>
+      _$$PointageHoraireDtoImplFromJson(json);
+
+  @override
+  @JsonKey(name: 'heure_debut')
+  final String? heureDebut;
+  @override
+  @JsonKey(name: 'heure_fin')
+  final String? heureFin;
+  @override
+  @JsonKey(name: 'pause_debut')
+  final String? pauseDebut;
+  @override
+  @JsonKey(name: 'pause_fin')
+  final String? pauseFin;
+  @override
+  @JsonKey(name: 'late_tolerance_minutes')
+  final int? toleranceRetardMinutes;
+
+  @override
+  String toString() {
+    return 'PointageHoraireDto(heureDebut: $heureDebut, heureFin: $heureFin, pauseDebut: $pauseDebut, pauseFin: $pauseFin, toleranceRetardMinutes: $toleranceRetardMinutes)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$PointageHoraireDtoImpl &&
+            (identical(other.heureDebut, heureDebut) ||
+                other.heureDebut == heureDebut) &&
+            (identical(other.heureFin, heureFin) ||
+                other.heureFin == heureFin) &&
+            (identical(other.pauseDebut, pauseDebut) ||
+                other.pauseDebut == pauseDebut) &&
+            (identical(other.pauseFin, pauseFin) ||
+                other.pauseFin == pauseFin) &&
+            (identical(other.toleranceRetardMinutes, toleranceRetardMinutes) ||
+                other.toleranceRetardMinutes == toleranceRetardMinutes));
+  }
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  int get hashCode => Object.hash(
+    runtimeType,
+    heureDebut,
+    heureFin,
+    pauseDebut,
+    pauseFin,
+    toleranceRetardMinutes,
+  );
+
+  /// Create a copy of PointageHoraireDto
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$PointageHoraireDtoImplCopyWith<_$PointageHoraireDtoImpl> get copyWith =>
+      __$$PointageHoraireDtoImplCopyWithImpl<_$PointageHoraireDtoImpl>(
+        this,
+        _$identity,
+      );
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$$PointageHoraireDtoImplToJson(this);
+  }
+}
+
+abstract class _PointageHoraireDto implements PointageHoraireDto {
+  const factory _PointageHoraireDto({
+    @JsonKey(name: 'heure_debut') final String? heureDebut,
+    @JsonKey(name: 'heure_fin') final String? heureFin,
+    @JsonKey(name: 'pause_debut') final String? pauseDebut,
+    @JsonKey(name: 'pause_fin') final String? pauseFin,
+    @JsonKey(name: 'late_tolerance_minutes') final int? toleranceRetardMinutes,
+  }) = _$PointageHoraireDtoImpl;
+
+  factory _PointageHoraireDto.fromJson(Map<String, dynamic> json) =
+      _$PointageHoraireDtoImpl.fromJson;
+
+  @override
+  @JsonKey(name: 'heure_debut')
+  String? get heureDebut;
+  @override
+  @JsonKey(name: 'heure_fin')
+  String? get heureFin;
+  @override
+  @JsonKey(name: 'pause_debut')
+  String? get pauseDebut;
+  @override
+  @JsonKey(name: 'pause_fin')
+  String? get pauseFin;
+  @override
+  @JsonKey(name: 'late_tolerance_minutes')
+  int? get toleranceRetardMinutes;
+
+  /// Create a copy of PointageHoraireDto
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  _$$PointageHoraireDtoImplCopyWith<_$PointageHoraireDtoImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }
 

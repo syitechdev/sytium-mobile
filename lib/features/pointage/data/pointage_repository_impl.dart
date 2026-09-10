@@ -23,6 +23,15 @@ class PointageRepositoryImpl implements PointageRepository {
           nextType: dto.nextType,
           dayClosed: dto.dayClosed,
           todayCount: dto.todayEntries.length,
+          horaire: dto.horaire == null
+              ? null
+              : PointageHoraire(
+                  heureDebut: dto.horaire!.heureDebut,
+                  heureFin: dto.horaire!.heureFin,
+                  pauseDebut: dto.horaire!.pauseDebut,
+                  pauseFin: dto.horaire!.pauseFin,
+                  toleranceRetardMinutes: dto.horaire!.toleranceRetardMinutes,
+                ),
           todayEntries: dto.todayEntries
               .map(
                 (e) => PointageTodayEntry(

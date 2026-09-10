@@ -21,6 +21,9 @@ _$PointageStatusDtoImpl _$$PointageStatusDtoImplFromJson(
           )
           .toList() ??
       const <PointageTodayEntryDto>[],
+  horaire: json['horaire'] == null
+      ? null
+      : PointageHoraireDto.fromJson(json['horaire'] as Map<String, dynamic>),
 );
 
 Map<String, dynamic> _$$PointageStatusDtoImplToJson(
@@ -30,6 +33,27 @@ Map<String, dynamic> _$$PointageStatusDtoImplToJson(
   'day_closed': instance.dayClosed,
   'employee': instance.employee,
   'today_entries': instance.todayEntries,
+  'horaire': instance.horaire,
+};
+
+_$PointageHoraireDtoImpl _$$PointageHoraireDtoImplFromJson(
+  Map<String, dynamic> json,
+) => _$PointageHoraireDtoImpl(
+  heureDebut: json['heure_debut'] as String?,
+  heureFin: json['heure_fin'] as String?,
+  pauseDebut: json['pause_debut'] as String?,
+  pauseFin: json['pause_fin'] as String?,
+  toleranceRetardMinutes: (json['late_tolerance_minutes'] as num?)?.toInt(),
+);
+
+Map<String, dynamic> _$$PointageHoraireDtoImplToJson(
+  _$PointageHoraireDtoImpl instance,
+) => <String, dynamic>{
+  'heure_debut': instance.heureDebut,
+  'heure_fin': instance.heureFin,
+  'pause_debut': instance.pauseDebut,
+  'pause_fin': instance.pauseFin,
+  'late_tolerance_minutes': instance.toleranceRetardMinutes,
 };
 
 _$PointageEmployeeDtoImpl _$$PointageEmployeeDtoImplFromJson(
