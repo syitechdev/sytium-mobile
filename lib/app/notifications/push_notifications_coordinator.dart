@@ -15,12 +15,15 @@ import 'package:sytium_mobile/core/notifications/device_identity.dart';
 import 'package:sytium_mobile/core/notifications/device_token_registrar.dart';
 import 'package:sytium_mobile/core/notifications/push_messaging_service.dart';
 import 'package:sytium_mobile/core/notifications/push_payload.dart';
+import 'package:sytium_mobile/features/approvals/presentation/approvals_screen.dart';
 import 'package:sytium_mobile/features/auth/application/auth_providers.dart';
 import 'package:sytium_mobile/features/calls/application/call_controller.dart';
 import 'package:sytium_mobile/features/calls/application/calls_providers.dart';
 import 'package:sytium_mobile/features/calls/domain/call_models.dart';
 import 'package:sytium_mobile/features/notifications/application/notifications_providers.dart';
 import 'package:sytium_mobile/features/notifications/presentation/notifications_screen.dart';
+import 'package:sytium_mobile/features/pointage/presentation/pointer_screen.dart';
+import 'package:sytium_mobile/features/requests/presentation/requests_screen.dart';
 import 'package:sytium_mobile/features/shell/application/home_tab.dart';
 import 'package:sytium_mobile/features/workspace/application/active_chat_channel.dart';
 import 'package:sytium_mobile/features/workspace/application/workspace_providers.dart';
@@ -242,14 +245,24 @@ class PushNotificationsCoordinator {
   // ---- Taps notification ----------------------------------------------------
 
   /// Notification tapée : rafraîchit la liste in-app puis ouvre l'écran visé.
-  /// Un push de message mène à SA conversation ; tout le reste retombe sur la
-  /// liste des notifications.
+  ///
+  /// Un push de message mène à SA conversation ; une notification métier mène à
+  /// l'écran où l'action se fait — viser une demande, lire le motif d'un refus,
+  /// pointer. Poser l'utilisateur sur la liste générique lui laisserait un
+  /// second geste à trouver, ce qui est précisément ce qu'un rappel cherche à
+  /// éviter. Tout ce qu'on ne sait pas placer retombe sur la liste.
   void _handleOpened(RemoteMessage message) {
     _ref.invalidate(notificationsProvider);
 
     switch (destinationFor(PushPayload.fromData(message.data))) {
       case OpenConversation(:final channelId):
         unawaited(_openConversation(channelId));
+      case OpenApprovals():
+        _navigateWhenHome((_) => const ApprovalsScreen());
+      case OpenMyRequests():
+        _navigateWhenHome((_) => const RequestsScreen());
+      case OpenPointage():
+        _navigateWhenHome((_) => const PointerScreen());
       case OpenNotificationList():
         _navigateWhenHome((_) => const NotificationsScreen());
     }

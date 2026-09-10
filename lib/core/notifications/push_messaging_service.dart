@@ -40,8 +40,11 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
     case PushKind.callCancelled:
       if (payload.callId != null) await CallKitService.end(payload.callId!);
     case PushKind.message:
+    case PushKind.notification:
     case PushKind.unknown:
-      // Message notification affiché par le système ; rien à faire ici.
+      // Notification affichée par le système via le canal par défaut ; rien à
+      // faire ici. Le routage au tap se joue dans le coordinateur, pas dans cet
+      // isolate qui n'a aucun accès à l'UI.
       if (kDebugMode) {
         debugPrint('[FCM] background message: ${message.messageId}');
       }

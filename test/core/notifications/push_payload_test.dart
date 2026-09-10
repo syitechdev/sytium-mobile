@@ -15,6 +15,20 @@ void main() {
       expect(payload.messageId, 'm-7');
     });
 
+    test('reads a business notification push', () {
+      final payload = PushPayload.fromData(const {
+        'type': 'notification',
+        'notification_id': 'n-9',
+        'notification_type': 'hr_permission_approved',
+        'link': '/rh/permissions-missions',
+      });
+
+      expect(payload.kind, PushKind.notification);
+      expect(payload.notificationId, 'n-9');
+      expect(payload.notificationType, 'hr_permission_approved');
+      expect(payload.link, '/rh/permissions-missions');
+    });
+
     test('an unknown type never crashes the tap handler', () {
       expect(PushPayload.fromData(const {'type': 'zzz'}).kind, PushKind.unknown);
       expect(PushPayload.fromData(const {}).kind, PushKind.unknown);
@@ -90,6 +104,69 @@ void main() {
       );
       expect(
         destinationFor(PushPayload.fromData(const {'type': 'approval'})),
+        isA<OpenNotificationList>(),
+      );
+    });
+  });
+
+  group('destinationFor · notifications métier', () {
+    PushDestination forType(String type) => destinationFor(
+      PushPayload.fromData({'type': 'notification', 'notification_type': type}),
+    );
+
+    test('une décision sur ma demande ouvre « Mes demandes »', () {
+      // C'est là que se lit le motif d'un refus.
+      expect(forType('hr_permission_rejected'), isA<OpenMyRequests>());
+      expect(forType('hr_permission_approved'), isA<OpenMyRequests>());
+      expect(forType('hr_leave_rejected'), isA<OpenMyRequests>());
+    });
+
+    test('une demande qui attend mon visa ouvre les approbations', () {
+      expect(forType('hr_permission_submitted'), isA<OpenApprovals>());
+      expect(forType('hr_permission_waiting_rh'), isA<OpenApprovals>());
+      expect(forType('hr_leave_requested'), isA<OpenApprovals>());
+      expect(forType('hr_approval_pending_reminder'), isA<OpenApprovals>());
+    });
+
+    test("un rappel de pointage ouvre l'écran de pointage", () {
+      // Le seul geste utile en réponse à ce rappel est de pointer : poser
+      // l'utilisateur ailleurs lui laisserait une navigation à trouver.
+      expect(forType('hr_pointage_reminder'), isA<OpenPointage>());
+      expect(forType('hr_pointage_absence_alert'), isA<OpenPointage>());
+    });
+
+    test('le routage suit le type métier, jamais le lien serveur', () {
+      // Le même lien /rh/permissions-missions désigne deux écrans selon qu'on
+      // est le demandeur ou le validateur.
+      const link = '/rh/permissions-missions';
+      expect(
+        destinationFor(
+          PushPayload.fromData(const {
+            'type': 'notification',
+            'notification_type': 'hr_permission_approved',
+            'link': link,
+          }),
+        ),
+        isA<OpenMyRequests>(),
+      );
+      expect(
+        destinationFor(
+          PushPayload.fromData(const {
+            'type': 'notification',
+            'notification_type': 'hr_permission_waiting_rh',
+            'link': link,
+          }),
+        ),
+        isA<OpenApprovals>(),
+      );
+    });
+
+    test('un type métier inconnu retombe sur la liste', () {
+      // Un serveur plus récent peut pousser un type que ce build ignore : il
+      // doit atterrir quelque part, pas nulle part.
+      expect(forType('hr_type_du_futur'), isA<OpenNotificationList>());
+      expect(
+        destinationFor(PushPayload.fromData(const {'type': 'notification'})),
         isA<OpenNotificationList>(),
       );
     });
