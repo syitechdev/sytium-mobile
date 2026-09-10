@@ -45,11 +45,44 @@ void main() {
   });
 
   _horaireDuJour();
+  _choixSecondaire();
+}
+
+void _choixSecondaire() {
+  group('PointageStatus.alternativeType', () {
+    PointageStatus statut(String? next, List<String> allowed) => PointageStatus(
+      hasEmployee: true,
+      nextType: next,
+      dayClosed: false,
+      allowedTypes: allowed,
+    );
+
+    test('propose la sortie quand la pause est facultative', () {
+      // Le bug corrige par le lot 2 : apres son arrivee, un salarie qui ne
+      // dejeune pas sur place doit pouvoir pointer sa sortie sans passer par
+      // la pause, sinon il reste bloque toute la journee.
+      expect(
+        statut('pause_debut', ['pause_debut', 'sortie']).alternativeType,
+        'sortie',
+      );
+    });
+
+    test('aucun second choix quand un seul type est acceptable', () {
+      expect(statut('entree', ['entree']).alternativeType, isNull);
+      expect(statut('pause_fin', ['pause_fin']).alternativeType, isNull);
+    });
+
+    test('aucun second choix si le serveur ne sert pas la liste', () {
+      // API plus ancienne : on retombe sur le seul type propose, comportement
+      // d'avant, plutot que d'offrir une action que le serveur refusera.
+      expect(statut('pause_debut', const []).alternativeType, isNull);
+    });
+  });
 }
 
 void _horaireDuJour() {
   group('PointageHoraire', () {
-    test('resume l\'horaire avec sa pause', () {
+    test("resume l'horaire avec sa pause", () {
       const horaire = PointageHoraire(
         heureDebut: '08:00',
         heureFin: '17:30',
@@ -68,7 +101,7 @@ void _horaireDuJour() {
       expect(horaire.resume, '08:00 – 17:30');
     });
 
-    test('un horaire incomplet ne s\'affiche pas', () {
+    test("un horaire incomplet ne s'affiche pas", () {
       // Un serveur plus ancien ne sert pas encore l'horaire : mieux vaut ne
       // rien montrer que des heures inventées, puisque c'est sur elles que le
       // salarié sera jugé en retard.

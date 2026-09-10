@@ -14,6 +14,8 @@ class PointageStatusDto with _$PointageStatusDto {
     @JsonKey(name: 'today_entries')
     @Default(<PointageTodayEntryDto>[]) List<PointageTodayEntryDto> todayEntries,
     PointageHoraireDto? horaire,
+    @JsonKey(name: 'allowed_types')
+    @Default(<String>[]) List<String> allowedTypes,
   }) = _PointageStatusDto;
 
   factory PointageStatusDto.fromJson(Map<String, dynamic> json) =>

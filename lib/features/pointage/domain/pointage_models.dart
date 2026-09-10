@@ -18,6 +18,7 @@ class PointageStatus {
     this.todayCount = 0,
     this.todayEntries = const [],
     this.horaire,
+    this.allowedTypes = const [],
   });
 
   final bool hasEmployee;
@@ -32,6 +33,20 @@ class PointageStatus {
   /// plus recent qu'une API deployee) : l'ecran masque alors la ligne plutot
   /// que d'afficher des heures inventees.
   final PointageHoraire? horaire;
+
+  /// Tous les pointages acceptables maintenant, le premier etant celui que le
+  /// serveur propose. Plusieurs sont possibles : apres son arrivee, un salarie
+  /// qui ne dejeune pas sur place peut pointer sa sortie sans passer par la
+  /// pause. Vide si l'API ne les sert pas encore — on retombe alors sur
+  /// [nextType] seul, comportement d'avant.
+  final List<String> allowedTypes;
+
+  /// Choix SECONDAIRE, quand un autre pointage que celui propose est possible.
+  /// `null` s'il n'y en a qu'un.
+  String? get alternativeType {
+    final autres = allowedTypes.where((t) => t != nextType);
+    return autres.isEmpty ? null : autres.first;
+  }
 
   /// Heure d'arrivee du jour, si elle a eu lieu.
   DateTime? get arrivedAt {

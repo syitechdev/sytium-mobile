@@ -30,6 +30,8 @@ mixin _$PointageStatusDto {
   List<PointageTodayEntryDto> get todayEntries =>
       throw _privateConstructorUsedError;
   PointageHoraireDto? get horaire => throw _privateConstructorUsedError;
+  @JsonKey(name: 'allowed_types')
+  List<String> get allowedTypes => throw _privateConstructorUsedError;
 
   /// Serializes this PointageStatusDto to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -54,6 +56,7 @@ abstract class $PointageStatusDtoCopyWith<$Res> {
     PointageEmployeeDto? employee,
     @JsonKey(name: 'today_entries') List<PointageTodayEntryDto> todayEntries,
     PointageHoraireDto? horaire,
+    @JsonKey(name: 'allowed_types') List<String> allowedTypes,
   });
 
   $PointageEmployeeDtoCopyWith<$Res>? get employee;
@@ -80,6 +83,7 @@ class _$PointageStatusDtoCopyWithImpl<$Res, $Val extends PointageStatusDto>
     Object? employee = freezed,
     Object? todayEntries = null,
     Object? horaire = freezed,
+    Object? allowedTypes = null,
   }) {
     return _then(
       _value.copyWith(
@@ -103,6 +107,10 @@ class _$PointageStatusDtoCopyWithImpl<$Res, $Val extends PointageStatusDto>
                 ? _value.horaire
                 : horaire // ignore: cast_nullable_to_non_nullable
                       as PointageHoraireDto?,
+            allowedTypes: null == allowedTypes
+                ? _value.allowedTypes
+                : allowedTypes // ignore: cast_nullable_to_non_nullable
+                      as List<String>,
           )
           as $Val,
     );
@@ -152,6 +160,7 @@ abstract class _$$PointageStatusDtoImplCopyWith<$Res>
     PointageEmployeeDto? employee,
     @JsonKey(name: 'today_entries') List<PointageTodayEntryDto> todayEntries,
     PointageHoraireDto? horaire,
+    @JsonKey(name: 'allowed_types') List<String> allowedTypes,
   });
 
   @override
@@ -179,6 +188,7 @@ class __$$PointageStatusDtoImplCopyWithImpl<$Res>
     Object? employee = freezed,
     Object? todayEntries = null,
     Object? horaire = freezed,
+    Object? allowedTypes = null,
   }) {
     return _then(
       _$PointageStatusDtoImpl(
@@ -202,6 +212,10 @@ class __$$PointageStatusDtoImplCopyWithImpl<$Res>
             ? _value.horaire
             : horaire // ignore: cast_nullable_to_non_nullable
                   as PointageHoraireDto?,
+        allowedTypes: null == allowedTypes
+            ? _value._allowedTypes
+            : allowedTypes // ignore: cast_nullable_to_non_nullable
+                  as List<String>,
       ),
     );
   }
@@ -218,7 +232,10 @@ class _$PointageStatusDtoImpl implements _PointageStatusDto {
     final List<PointageTodayEntryDto> todayEntries =
         const <PointageTodayEntryDto>[],
     this.horaire,
-  }) : _todayEntries = todayEntries;
+    @JsonKey(name: 'allowed_types')
+    final List<String> allowedTypes = const <String>[],
+  }) : _todayEntries = todayEntries,
+       _allowedTypes = allowedTypes;
 
   factory _$PointageStatusDtoImpl.fromJson(Map<String, dynamic> json) =>
       _$$PointageStatusDtoImplFromJson(json);
@@ -242,10 +259,18 @@ class _$PointageStatusDtoImpl implements _PointageStatusDto {
 
   @override
   final PointageHoraireDto? horaire;
+  final List<String> _allowedTypes;
+  @override
+  @JsonKey(name: 'allowed_types')
+  List<String> get allowedTypes {
+    if (_allowedTypes is EqualUnmodifiableListView) return _allowedTypes;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(_allowedTypes);
+  }
 
   @override
   String toString() {
-    return 'PointageStatusDto(nextType: $nextType, dayClosed: $dayClosed, employee: $employee, todayEntries: $todayEntries, horaire: $horaire)';
+    return 'PointageStatusDto(nextType: $nextType, dayClosed: $dayClosed, employee: $employee, todayEntries: $todayEntries, horaire: $horaire, allowedTypes: $allowedTypes)';
   }
 
   @override
@@ -263,7 +288,11 @@ class _$PointageStatusDtoImpl implements _PointageStatusDto {
               other._todayEntries,
               _todayEntries,
             ) &&
-            (identical(other.horaire, horaire) || other.horaire == horaire));
+            (identical(other.horaire, horaire) || other.horaire == horaire) &&
+            const DeepCollectionEquality().equals(
+              other._allowedTypes,
+              _allowedTypes,
+            ));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
@@ -275,6 +304,7 @@ class _$PointageStatusDtoImpl implements _PointageStatusDto {
     employee,
     const DeepCollectionEquality().hash(_todayEntries),
     horaire,
+    const DeepCollectionEquality().hash(_allowedTypes),
   );
 
   /// Create a copy of PointageStatusDto
@@ -302,6 +332,7 @@ abstract class _PointageStatusDto implements PointageStatusDto {
     @JsonKey(name: 'today_entries')
     final List<PointageTodayEntryDto> todayEntries,
     final PointageHoraireDto? horaire,
+    @JsonKey(name: 'allowed_types') final List<String> allowedTypes,
   }) = _$PointageStatusDtoImpl;
 
   factory _PointageStatusDto.fromJson(Map<String, dynamic> json) =
@@ -320,6 +351,9 @@ abstract class _PointageStatusDto implements PointageStatusDto {
   List<PointageTodayEntryDto> get todayEntries;
   @override
   PointageHoraireDto? get horaire;
+  @override
+  @JsonKey(name: 'allowed_types')
+  List<String> get allowedTypes;
 
   /// Create a copy of PointageStatusDto
   /// with the given fields replaced by the non-null parameter values.

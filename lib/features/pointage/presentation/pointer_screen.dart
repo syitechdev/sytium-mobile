@@ -448,6 +448,22 @@ class _PointerScreenState extends ConsumerState<PointerScreen>
                   ? () {}
                   : () => _punch(next, arrivedAt: status.arrivedAt),
             ),
+            // Second choix, quand la journée en autorise un autre. La séquence
+            // n'offrait qu'un seul type possible : un salarié qui ne prenait
+            // pas de pause — ou oubliait de la pointer — n'avait plus aucune
+            // action valide et ne pouvait plus pointer sa sortie de la journée.
+            if (_phase is PunchIdle && status.alternativeType != null) ...[
+              const SizedBox(height: Tokens.space8),
+              TextButton(
+                onPressed: () => _punch(
+                  status.alternativeType!,
+                  arrivedAt: status.arrivedAt,
+                ),
+                child: Text(
+                  'Pointer ${(_motifLabels[status.alternativeType!] ?? status.alternativeType!).toLowerCase()}',
+                ),
+              ),
+            ],
             // L'horaire auquel le salarié est mesuré, sur l'écran même où il
             // pointe : être déclaré en retard sur une heure qu'on ne peut pas
             // consulter est un contrôle à l'aveugle. Masqué si le serveur ne le
