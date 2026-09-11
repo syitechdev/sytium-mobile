@@ -135,4 +135,25 @@ void main() {
     });
     expect(dto.joursOuvrables, 2);
   });
+
+  test('PermissionDto parses the refusal reason and the refusing level', () {
+    final dto = PermissionDto.fromJson({
+      'id': 'p1',
+      'statut': 'refusee',
+      'type': 'permission',
+      'n1_decision': 'refusee',
+      'motif_refus': 'Pas de remplaçant ce jour-là',
+      'refuse_par': 'N+1',
+    });
+
+    expect(dto.motifRefus, 'Pas de remplaçant ce jour-là');
+    expect(dto.refusePar, 'N+1');
+  });
+
+  test('PermissionDto tolerates the absence of the refusal fields', () {
+    final dto = PermissionDto.fromJson({'id': 'p1', 'statut': 'refusee'});
+
+    expect(dto.motifRefus, isNull);
+    expect(dto.refusePar, isNull);
+  });
 }

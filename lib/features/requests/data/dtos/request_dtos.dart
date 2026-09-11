@@ -6,8 +6,9 @@ part 'request_dtos.freezed.dart';
 part 'request_dtos.g.dart';
 
 /// Tolerant int parser: accepts JSON number OR decimal string (e.g. "16.00" → 16).
-int? _intFromJson(dynamic v) =>
-    v == null ? null : (v is num ? v.toInt() : num.tryParse(v.toString())?.toInt());
+int? _intFromJson(dynamic v) => v == null
+    ? null
+    : (v is num ? v.toInt() : num.tryParse(v.toString())?.toInt());
 
 /// Tolerant num parser: accepts JSON number OR decimal string (e.g. "0.00" → 0).
 num? _numFromJson(dynamic v) =>
@@ -24,7 +25,8 @@ class LeaveDto with _$LeaveDto {
     @JsonKey(name: 'date_fin') String? dateFin,
     @JsonKey(name: 'heure_debut') String? heureDebut,
     @JsonKey(name: 'heure_fin') String? heureFin,
-    @JsonKey(name: 'jours_ouvrables', fromJson: _intFromJson) int? joursOuvrables,
+    @JsonKey(name: 'jours_ouvrables', fromJson: _intFromJson)
+    int? joursOuvrables,
     String? motif,
     @JsonKey(name: 'commentaire_validation') String? commentaireValidation,
   }) = _LeaveDto;
@@ -56,6 +58,9 @@ class PermissionDto with _$PermissionDto {
     @JsonKey(name: 'n1_decision') String? n1Decision,
     @JsonKey(name: 'rh_decision') String? rhDecision,
     @JsonKey(name: 'direction_decision') String? directionDecision,
+    // Motif du refus, deja extrait par le serveur du palier qui a refuse.
+    @JsonKey(name: 'motif_refus') String? motifRefus,
+    @JsonKey(name: 'refuse_par') String? refusePar,
   }) = _PermissionDto;
 
   factory PermissionDto.fromJson(Map<String, dynamic> json) =>

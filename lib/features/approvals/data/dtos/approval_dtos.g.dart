@@ -56,6 +56,16 @@ _$ApprovalItemDtoImpl _$$ApprovalItemDtoImplFromJson(
   stage: json['stage'] == null
       ? null
       : ApprovalStageDto.fromJson(json['stage'] as Map<String, dynamic>),
+  details:
+      (json['details'] as List<dynamic>?)
+          ?.map((e) => ApprovalDetailDto.fromJson(e as Map<String, dynamic>))
+          .toList() ??
+      const <ApprovalDetailDto>[],
+  visas:
+      (json['visas'] as List<dynamic>?)
+          ?.map((e) => ApprovalVisaDto.fromJson(e as Map<String, dynamic>))
+          .toList() ??
+      const <ApprovalVisaDto>[],
 );
 
 Map<String, dynamic> _$$ApprovalItemDtoImplToJson(
@@ -69,6 +79,39 @@ Map<String, dynamic> _$$ApprovalItemDtoImplToJson(
   'summary': instance.summary,
   'submitted_at': instance.submittedAt,
   'stage': instance.stage,
+  'details': instance.details,
+  'visas': instance.visas,
+};
+
+_$ApprovalDetailDtoImpl _$$ApprovalDetailDtoImplFromJson(
+  Map<String, dynamic> json,
+) => _$ApprovalDetailDtoImpl(
+  label: json['label'] as String,
+  value: json['value'] as String,
+);
+
+Map<String, dynamic> _$$ApprovalDetailDtoImplToJson(
+  _$ApprovalDetailDtoImpl instance,
+) => <String, dynamic>{'label': instance.label, 'value': instance.value};
+
+_$ApprovalVisaDtoImpl _$$ApprovalVisaDtoImplFromJson(
+  Map<String, dynamic> json,
+) => _$ApprovalVisaDtoImpl(
+  palier: json['palier'] as String,
+  decision: json['decision'] as String,
+  libelle: json['libelle'] as String?,
+  commentaire: json['commentaire'] as String?,
+  date: json['date'] as String?,
+);
+
+Map<String, dynamic> _$$ApprovalVisaDtoImplToJson(
+  _$ApprovalVisaDtoImpl instance,
+) => <String, dynamic>{
+  'palier': instance.palier,
+  'decision': instance.decision,
+  'libelle': instance.libelle,
+  'commentaire': instance.commentaire,
+  'date': instance.date,
 };
 
 _$ApprovalRequesterDtoImpl _$$ApprovalRequesterDtoImplFromJson(

@@ -89,6 +89,19 @@ class ApprovalsRepositoryImpl implements ApprovalsRepository {
     title: d.title,
     summary: d.summary,
     submittedAt: d.submittedAt,
+    details: [
+      for (final l in d.details) ApprovalDetail(label: l.label, value: l.value),
+    ],
+    visas: [
+      for (final v in d.visas)
+        ApprovalVisa(
+          palier: v.palier,
+          libelle: v.libelle ?? v.palier,
+          decision: v.decision,
+          commentaire: v.commentaire,
+          date: v.date,
+        ),
+    ],
     stage: d.stage == null
         ? null
         : ApprovalStage(current: d.stage!.current, done: d.stage!.done),

@@ -452,7 +452,11 @@ mixin _$PermissionDto {
   @JsonKey(name: 'rh_decision')
   String? get rhDecision => throw _privateConstructorUsedError;
   @JsonKey(name: 'direction_decision')
-  String? get directionDecision => throw _privateConstructorUsedError;
+  String? get directionDecision => throw _privateConstructorUsedError; // Motif du refus, deja extrait par le serveur du palier qui a refuse.
+  @JsonKey(name: 'motif_refus')
+  String? get motifRefus => throw _privateConstructorUsedError;
+  @JsonKey(name: 'refuse_par')
+  String? get refusePar => throw _privateConstructorUsedError;
 
   /// Serializes this PermissionDto to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -489,6 +493,8 @@ abstract class $PermissionDtoCopyWith<$Res> {
     @JsonKey(name: 'n1_decision') String? n1Decision,
     @JsonKey(name: 'rh_decision') String? rhDecision,
     @JsonKey(name: 'direction_decision') String? directionDecision,
+    @JsonKey(name: 'motif_refus') String? motifRefus,
+    @JsonKey(name: 'refuse_par') String? refusePar,
   });
 }
 
@@ -524,6 +530,8 @@ class _$PermissionDtoCopyWithImpl<$Res, $Val extends PermissionDto>
     Object? n1Decision = freezed,
     Object? rhDecision = freezed,
     Object? directionDecision = freezed,
+    Object? motifRefus = freezed,
+    Object? refusePar = freezed,
   }) {
     return _then(
       _value.copyWith(
@@ -595,6 +603,14 @@ class _$PermissionDtoCopyWithImpl<$Res, $Val extends PermissionDto>
                 ? _value.directionDecision
                 : directionDecision // ignore: cast_nullable_to_non_nullable
                       as String?,
+            motifRefus: freezed == motifRefus
+                ? _value.motifRefus
+                : motifRefus // ignore: cast_nullable_to_non_nullable
+                      as String?,
+            refusePar: freezed == refusePar
+                ? _value.refusePar
+                : refusePar // ignore: cast_nullable_to_non_nullable
+                      as String?,
           )
           as $Val,
     );
@@ -628,6 +644,8 @@ abstract class _$$PermissionDtoImplCopyWith<$Res>
     @JsonKey(name: 'n1_decision') String? n1Decision,
     @JsonKey(name: 'rh_decision') String? rhDecision,
     @JsonKey(name: 'direction_decision') String? directionDecision,
+    @JsonKey(name: 'motif_refus') String? motifRefus,
+    @JsonKey(name: 'refuse_par') String? refusePar,
   });
 }
 
@@ -662,6 +680,8 @@ class __$$PermissionDtoImplCopyWithImpl<$Res>
     Object? n1Decision = freezed,
     Object? rhDecision = freezed,
     Object? directionDecision = freezed,
+    Object? motifRefus = freezed,
+    Object? refusePar = freezed,
   }) {
     return _then(
       _$PermissionDtoImpl(
@@ -733,6 +753,14 @@ class __$$PermissionDtoImplCopyWithImpl<$Res>
             ? _value.directionDecision
             : directionDecision // ignore: cast_nullable_to_non_nullable
                   as String?,
+        motifRefus: freezed == motifRefus
+            ? _value.motifRefus
+            : motifRefus // ignore: cast_nullable_to_non_nullable
+                  as String?,
+        refusePar: freezed == refusePar
+            ? _value.refusePar
+            : refusePar // ignore: cast_nullable_to_non_nullable
+                  as String?,
       ),
     );
   }
@@ -759,6 +787,8 @@ class _$PermissionDtoImpl implements _PermissionDto {
     @JsonKey(name: 'n1_decision') this.n1Decision,
     @JsonKey(name: 'rh_decision') this.rhDecision,
     @JsonKey(name: 'direction_decision') this.directionDecision,
+    @JsonKey(name: 'motif_refus') this.motifRefus,
+    @JsonKey(name: 'refuse_par') this.refusePar,
   });
 
   factory _$PermissionDtoImpl.fromJson(Map<String, dynamic> json) =>
@@ -812,10 +842,17 @@ class _$PermissionDtoImpl implements _PermissionDto {
   @override
   @JsonKey(name: 'direction_decision')
   final String? directionDecision;
+  // Motif du refus, deja extrait par le serveur du palier qui a refuse.
+  @override
+  @JsonKey(name: 'motif_refus')
+  final String? motifRefus;
+  @override
+  @JsonKey(name: 'refuse_par')
+  final String? refusePar;
 
   @override
   String toString() {
-    return 'PermissionDto(id: $id, statut: $statut, numero: $numero, type: $type, motif: $motif, destination: $destination, dateDebut: $dateDebut, dateFin: $dateFin, heureDebut: $heureDebut, heureFin: $heureFin, dureeJours: $dureeJours, moyenTransport: $moyenTransport, budgetEstime: $budgetEstime, isPaid: $isPaid, n1Decision: $n1Decision, rhDecision: $rhDecision, directionDecision: $directionDecision)';
+    return 'PermissionDto(id: $id, statut: $statut, numero: $numero, type: $type, motif: $motif, destination: $destination, dateDebut: $dateDebut, dateFin: $dateFin, heureDebut: $heureDebut, heureFin: $heureFin, dureeJours: $dureeJours, moyenTransport: $moyenTransport, budgetEstime: $budgetEstime, isPaid: $isPaid, n1Decision: $n1Decision, rhDecision: $rhDecision, directionDecision: $directionDecision, motifRefus: $motifRefus, refusePar: $refusePar)';
   }
 
   @override
@@ -849,12 +886,16 @@ class _$PermissionDtoImpl implements _PermissionDto {
             (identical(other.rhDecision, rhDecision) ||
                 other.rhDecision == rhDecision) &&
             (identical(other.directionDecision, directionDecision) ||
-                other.directionDecision == directionDecision));
+                other.directionDecision == directionDecision) &&
+            (identical(other.motifRefus, motifRefus) ||
+                other.motifRefus == motifRefus) &&
+            (identical(other.refusePar, refusePar) ||
+                other.refusePar == refusePar));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode => Object.hash(
+  int get hashCode => Object.hashAll([
     runtimeType,
     id,
     statut,
@@ -873,7 +914,9 @@ class _$PermissionDtoImpl implements _PermissionDto {
     n1Decision,
     rhDecision,
     directionDecision,
-  );
+    motifRefus,
+    refusePar,
+  ]);
 
   /// Create a copy of PermissionDto
   /// with the given fields replaced by the non-null parameter values.
@@ -909,6 +952,8 @@ abstract class _PermissionDto implements PermissionDto {
     @JsonKey(name: 'n1_decision') final String? n1Decision,
     @JsonKey(name: 'rh_decision') final String? rhDecision,
     @JsonKey(name: 'direction_decision') final String? directionDecision,
+    @JsonKey(name: 'motif_refus') final String? motifRefus,
+    @JsonKey(name: 'refuse_par') final String? refusePar,
   }) = _$PermissionDtoImpl;
 
   factory _PermissionDto.fromJson(Map<String, dynamic> json) =
@@ -960,7 +1005,13 @@ abstract class _PermissionDto implements PermissionDto {
   String? get rhDecision;
   @override
   @JsonKey(name: 'direction_decision')
-  String? get directionDecision;
+  String? get directionDecision; // Motif du refus, deja extrait par le serveur du palier qui a refuse.
+  @override
+  @JsonKey(name: 'motif_refus')
+  String? get motifRefus;
+  @override
+  @JsonKey(name: 'refuse_par')
+  String? get refusePar;
 
   /// Create a copy of PermissionDto
   /// with the given fields replaced by the non-null parameter values.

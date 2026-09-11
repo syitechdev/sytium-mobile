@@ -8,10 +8,9 @@ part 'approval_dtos.g.dart';
 /// Laravel serializes an empty associative array as `[]` rather than `{}`.
 /// This helper treats any non-Map (or empty Map) value as null so that the
 /// DTO parse never throws when `payload` is an empty list.
-ApprovalPayloadDto? _payloadFromJson(dynamic v) =>
-    (v is Map && v.isNotEmpty)
-        ? ApprovalPayloadDto.fromJson(Map<String, dynamic>.from(v))
-        : null;
+ApprovalPayloadDto? _payloadFromJson(dynamic v) => (v is Map && v.isNotEmpty)
+    ? ApprovalPayloadDto.fromJson(Map<String, dynamic>.from(v))
+    : null;
 
 @freezed
 class PendingApprovalsDto with _$PendingApprovalsDto {
@@ -48,10 +47,39 @@ class ApprovalItemDto with _$ApprovalItemDto {
     String? summary,
     @JsonKey(name: 'submitted_at') String? submittedAt,
     ApprovalStageDto? stage,
+    // Detail pret a afficher, mis en forme par le serveur, et visas deja
+    // poses. Absents d'une API plus ancienne : listes vides, jamais d'erreur.
+    @Default(<ApprovalDetailDto>[]) List<ApprovalDetailDto> details,
+    @Default(<ApprovalVisaDto>[]) List<ApprovalVisaDto> visas,
   }) = _ApprovalItemDto;
 
   factory ApprovalItemDto.fromJson(Map<String, dynamic> json) =>
       _$ApprovalItemDtoFromJson(json);
+}
+
+@freezed
+class ApprovalDetailDto with _$ApprovalDetailDto {
+  const factory ApprovalDetailDto({
+    required String label,
+    required String value,
+  }) = _ApprovalDetailDto;
+
+  factory ApprovalDetailDto.fromJson(Map<String, dynamic> json) =>
+      _$ApprovalDetailDtoFromJson(json);
+}
+
+@freezed
+class ApprovalVisaDto with _$ApprovalVisaDto {
+  const factory ApprovalVisaDto({
+    required String palier,
+    required String decision,
+    String? libelle,
+    String? commentaire,
+    String? date,
+  }) = _ApprovalVisaDto;
+
+  factory ApprovalVisaDto.fromJson(Map<String, dynamic> json) =>
+      _$ApprovalVisaDtoFromJson(json);
 }
 
 @freezed
@@ -84,7 +112,8 @@ class ApprovalActionDto with _$ApprovalActionDto {
   const factory ApprovalActionDto({
     @JsonKey(name: 'can_reject') @Default(true) bool canReject,
     @JsonKey(name: 'reject_requires_reason')
-    @Default(false) bool rejectRequiresReason,
+    @Default(false)
+    bool rejectRequiresReason,
     @JsonKey(fromJson: _payloadFromJson) ApprovalPayloadDto? payload,
   }) = _ApprovalActionDto;
 

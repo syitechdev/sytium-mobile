@@ -24,6 +24,7 @@ class ApprovalCard extends StatelessWidget {
     required this.item,
     required this.onApprove,
     required this.onReject,
+    this.onDetails,
     this.busy = false,
     super.key,
   });
@@ -31,6 +32,11 @@ class ApprovalCard extends StatelessWidget {
   final ApprovalItem item;
   final VoidCallback onApprove;
   final VoidCallback onReject;
+
+  /// Ouvre le detail complet. Declenche par le bouton « Détails » ET par un
+  /// tap sur la carte : un tap seul, sur une carte qui porte deux boutons
+  /// d'action, n'est pas decouvrable.
+  final VoidCallback? onDetails;
   final bool busy;
 
   @override
@@ -42,99 +48,114 @@ class ApprovalCard extends StatelessWidget {
     final isSite = item.type == ApprovalType.pointageSite;
     final approveLabel = isObjective || isSite ? 'Valider' : 'Approuver';
 
-    return Container(
-      decoration: BoxDecoration(
-        color: colors.card,
-        border: Border.all(color: colors.border),
-        borderRadius: BorderRadius.circular(Tokens.radiusMd),
-      ),
-      padding: const EdgeInsets.all(Tokens.space16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              AppAvatar(
-                name: item.requester.fullName.isEmpty
-                    ? '?'
-                    : item.requester.fullName,
-                imageUrl: item.requester.photoUrl,
-                radius: _kAvatarRadius,
-              ),
-              const SizedBox(width: Tokens.space12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      item.requester.fullName.isEmpty
-                          ? 'Demandeur'
-                          : item.requester.fullName,
-                      style: theme.titleSmall,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    if (item.requester.poste != null &&
-                        item.requester.poste!.isNotEmpty)
+    final ouvrirDetail = item.hasDetails ? onDetails : null;
+
+    return GestureDetector(
+      onTap: ouvrirDetail,
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        decoration: BoxDecoration(
+          color: colors.card,
+          border: Border.all(color: colors.border),
+          borderRadius: BorderRadius.circular(Tokens.radiusMd),
+        ),
+        padding: const EdgeInsets.all(Tokens.space16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                AppAvatar(
+                  name: item.requester.fullName.isEmpty
+                      ? '?'
+                      : item.requester.fullName,
+                  imageUrl: item.requester.photoUrl,
+                  radius: _kAvatarRadius,
+                ),
+                const SizedBox(width: Tokens.space12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
                       Text(
-                        item.requester.poste!,
-                        style: theme.bodySmall?.copyWith(
-                          color: colors.textMuted,
-                        ),
+                        item.requester.fullName.isEmpty
+                            ? 'Demandeur'
+                            : item.requester.fullName,
+                        style: theme.titleSmall,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
-                  ],
-                ),
-              ),
-              _TypePill(label: pill.label, color: pill.color),
-            ],
-          ),
-          const SizedBox(height: Tokens.space12),
-          if (item.title != null && item.title!.isNotEmpty)
-            Text(item.title!, style: theme.bodyMedium),
-          if (item.summary != null && item.summary!.isNotEmpty) ...[
-            const SizedBox(height: Tokens.space4),
-            Text(
-              item.summary!,
-              style: theme.bodySmall?.copyWith(color: colors.textMuted),
-            ),
-          ],
-          if (item.stage != null) ...[
-            const SizedBox(height: Tokens.space12),
-            ApprovalStageStepper(stage: item.stage!),
-          ],
-          const SizedBox(height: Tokens.space16),
-          Row(
-            children: [
-              if (item.action.canReject)
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: busy ? null : onReject,
-                    child: const Text('Refuser'),
+                      if (item.requester.poste != null &&
+                          item.requester.poste!.isNotEmpty)
+                        Text(
+                          item.requester.poste!,
+                          style: theme.bodySmall?.copyWith(
+                            color: colors.textMuted,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                    ],
                   ),
                 ),
-              if (item.action.canReject)
-                const SizedBox(width: Tokens.space12),
-              Expanded(
-                child: FilledButton(
-                  onPressed: busy ? null : onApprove,
-                  child: busy
-                      ? SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2.4,
-                            color: colors.onBrand,
-                          ),
-                        )
-                      : Text(approveLabel),
-                ),
+                _TypePill(label: pill.label, color: pill.color),
+              ],
+            ),
+            const SizedBox(height: Tokens.space12),
+            if (item.title != null && item.title!.isNotEmpty)
+              Text(item.title!, style: theme.bodyMedium),
+            if (item.summary != null && item.summary!.isNotEmpty) ...[
+              const SizedBox(height: Tokens.space4),
+              Text(
+                item.summary!,
+                style: theme.bodySmall?.copyWith(color: colors.textMuted),
               ),
             ],
-          ),
-        ],
+            if (ouvrirDetail != null)
+              Align(
+                alignment: Alignment.centerLeft,
+                child: TextButton.icon(
+                  onPressed: ouvrirDetail,
+                  icon: const Icon(Icons.info_outline, size: 18),
+                  label: const Text('Détails'),
+                ),
+              ),
+            if (item.stage != null) ...[
+              const SizedBox(height: Tokens.space12),
+              ApprovalStageStepper(stage: item.stage!),
+            ],
+            const SizedBox(height: Tokens.space16),
+            Row(
+              children: [
+                if (item.action.canReject)
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: busy ? null : onReject,
+                      child: const Text('Refuser'),
+                    ),
+                  ),
+                if (item.action.canReject)
+                  const SizedBox(width: Tokens.space12),
+                Expanded(
+                  child: FilledButton(
+                    onPressed: busy ? null : onApprove,
+                    child: busy
+                        ? SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2.4,
+                              color: colors.onBrand,
+                            ),
+                          )
+                        : Text(approveLabel),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }

@@ -6,6 +6,7 @@ enum ApprovalType {
   leave('leave'),
   permission('permission'),
   objective('objective'),
+
   /// Site de pointage propose par le RH, en attente du visa de la direction.
   pointageSite('pointage_site'),
   unknown('');
@@ -45,8 +46,10 @@ class ApprovalRequester {
   final String? poste;
   final String? photoUrl;
 
-  String get fullName =>
-      [prenoms, nom].whereType<String>().where((p) => p.isNotEmpty).join(' ').trim();
+  String get fullName => [
+    prenoms,
+    nom,
+  ].whereType<String>().where((p) => p.isNotEmpty).join(' ').trim();
 }
 
 @immutable
@@ -96,6 +99,37 @@ class ApprovalAction {
   final ApprovalPayload? payload;
 }
 
+/// Une ligne du detail d'une demande, deja mise en forme par le serveur.
+@immutable
+class ApprovalDetail {
+  const ApprovalDetail({required this.label, required this.value});
+
+  final String label;
+  final String value;
+}
+
+/// Un visa deja pose sur la demande (N+1, RH, Direction).
+@immutable
+class ApprovalVisa {
+  const ApprovalVisa({
+    required this.palier,
+    required this.libelle,
+    required this.decision,
+    this.commentaire,
+    this.date,
+  });
+
+  final String palier;
+  final String libelle;
+  final String decision;
+  final String? commentaire;
+
+  /// Horodatage ISO-8601 du visa.
+  final String? date;
+
+  bool get approuve => decision == 'approuvee';
+}
+
 @immutable
 class ApprovalItem {
   const ApprovalItem({
@@ -107,6 +141,8 @@ class ApprovalItem {
     this.summary,
     this.submittedAt,
     this.stage,
+    this.details = const [],
+    this.visas = const [],
   });
 
   final String id;
@@ -117,6 +153,16 @@ class ApprovalItem {
   final String? summary;
   final String? submittedAt;
   final ApprovalStage? stage;
+
+  /// Detail complet de la demande. La carte n'en montrait qu'un titre et une
+  /// ligne : le validateur approuvait sans voir la duree ni le budget.
+  final List<ApprovalDetail> details;
+
+  /// Visas deja poses, avec leur commentaire : le RH doit lire ce qu'a ecrit
+  /// le N+1 avant de trancher.
+  final List<ApprovalVisa> visas;
+
+  bool get hasDetails => details.isNotEmpty || visas.isNotEmpty;
 
   /// Palier courant (`n1` | `rh` | `direction`), pris du payload d'action et,
   /// à défaut, de l'étape courante.
@@ -129,7 +175,9 @@ class ApprovalItem {
   bool get isMissionOrder {
     if (type != ApprovalType.permission) return false;
     final requestType = action.payload?.requestType;
-    if (requestType != null && requestType.isNotEmpty) return requestType == 'mission';
+    if (requestType != null && requestType.isNotEmpty) {
+      return requestType == 'mission';
+    }
     return (title ?? '').trim().toLowerCase().startsWith('ordre de mission');
   }
 

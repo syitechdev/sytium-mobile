@@ -6,6 +6,7 @@ import 'package:sytium_mobile/core/result/result.dart';
 import 'package:sytium_mobile/core/upload/uploaded_file.dart';
 import 'package:sytium_mobile/features/approvals/application/approvals_providers.dart';
 import 'package:sytium_mobile/features/approvals/domain/approval_models.dart';
+import 'package:sytium_mobile/features/approvals/presentation/approval_detail_sheet.dart';
 import 'package:sytium_mobile/features/approvals/presentation/mission_proof_sheet.dart';
 import 'package:sytium_mobile/features/approvals/presentation/permission_pay_sheet.dart';
 import 'package:sytium_mobile/features/approvals/presentation/reject_reason_sheet.dart';
@@ -244,6 +245,7 @@ class _ApprovalsScreenState extends ConsumerState<ApprovalsScreen> {
                       busy: _busy.contains(item.id),
                       onApprove: () => _approve(item),
                       onReject: () => _reject(item),
+                      onDetails: () => showApprovalDetailSheet(context, item),
                     ),
                     const SizedBox(height: Tokens.space12),
                   ],

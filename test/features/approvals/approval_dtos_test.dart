@@ -101,4 +101,56 @@ void main() {
     expect(i.action.payload, isNull); // empty [] becomes null
     expect(dto.counts.leave, 1);
   });
+
+  test('parses the detail lines and the visas of an item', () {
+    final dto = PendingApprovalsDto.fromJson({
+      'items': [
+        {
+          'id': 'p2',
+          'type': 'permission',
+          'requester': {'id': 'e1'},
+          'action': {'can_reject': true, 'reject_requires_reason': true},
+          'details': [
+            {'label': 'Période', 'value': '05/10/2026 → 07/10/2026'},
+            {'label': 'Durée', 'value': '3 j'},
+          ],
+          'visas': [
+            {
+              'palier': 'n1',
+              'libelle': 'N+1',
+              'decision': 'approuvee',
+              'commentaire': 'OK sous réserve',
+              'date': '2026-09-11T08:30:00Z',
+            },
+          ],
+        },
+      ],
+      'counts': {'permission': 1},
+    });
+
+    final item = dto.items.single;
+    expect(item.action.rejectRequiresReason, isTrue);
+    expect(item.details.map((l) => l.label), ['Période', 'Durée']);
+    expect(item.details.last.value, '3 j');
+    expect(item.visas.single.libelle, 'N+1');
+    expect(item.visas.single.commentaire, 'OK sous réserve');
+  });
+
+  test('an older API without details or visas parses to empty lists', () {
+    // Un build mobile plus recent qu'une API deployee : jamais d'erreur, juste
+    // pas de bouton « Détails ».
+    final dto = PendingApprovalsDto.fromJson({
+      'items': [
+        {
+          'id': 'l1',
+          'type': 'leave',
+          'requester': {'id': 'e1'},
+          'action': {'can_reject': true},
+        },
+      ],
+    });
+
+    expect(dto.items.single.details, isEmpty);
+    expect(dto.items.single.visas, isEmpty);
+  });
 }

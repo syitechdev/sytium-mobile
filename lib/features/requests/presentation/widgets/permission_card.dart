@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:sytium_mobile/features/requests/domain/request_models.dart';
+import 'package:sytium_mobile/features/requests/presentation/widgets/refusal_reason.dart';
 import 'package:sytium_mobile/features/requests/presentation/widgets/request_status_badge.dart';
 import 'package:sytium_mobile/theme/sytium_colors.dart';
 import 'package:sytium_mobile/theme/tokens.dart';
@@ -20,8 +21,7 @@ class PermissionCard extends StatelessWidget {
     final period = (permission.dateDebut != null && permission.dateFin != null)
         ? '${permission.dateDebut} → ${permission.dateFin}'
         : null;
-    final hours =
-        (permission.heureDebut != null && permission.heureFin != null)
+    final hours = (permission.heureDebut != null && permission.heureFin != null)
         ? '${permission.heureDebut} – ${permission.heureFin}'
         : null;
 
@@ -74,6 +74,13 @@ class PermissionCard extends StatelessWidget {
             Text(
               'Destination : ${permission.destination}',
               style: theme.bodySmall?.copyWith(color: colors.textMuted),
+            ),
+          ],
+          if (permission.statut == PermissionStatus.refusee) ...[
+            const SizedBox(height: Tokens.space12),
+            RefusalReason(
+              motif: permission.motifRefus,
+              par: permission.refusePar,
             ),
           ],
         ],

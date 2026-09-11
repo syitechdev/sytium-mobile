@@ -55,6 +55,8 @@ _$PermissionDtoImpl _$$PermissionDtoImplFromJson(Map<String, dynamic> json) =>
       n1Decision: json['n1_decision'] as String?,
       rhDecision: json['rh_decision'] as String?,
       directionDecision: json['direction_decision'] as String?,
+      motifRefus: json['motif_refus'] as String?,
+      refusePar: json['refuse_par'] as String?,
     );
 
 Map<String, dynamic> _$$PermissionDtoImplToJson(_$PermissionDtoImpl instance) =>
@@ -76,6 +78,8 @@ Map<String, dynamic> _$$PermissionDtoImplToJson(_$PermissionDtoImpl instance) =>
       'n1_decision': instance.n1Decision,
       'rh_decision': instance.rhDecision,
       'direction_decision': instance.directionDecision,
+      'motif_refus': instance.motifRefus,
+      'refuse_par': instance.refusePar,
     };
 
 _$LeaveCreateRequestDtoImpl _$$LeaveCreateRequestDtoImplFromJson(

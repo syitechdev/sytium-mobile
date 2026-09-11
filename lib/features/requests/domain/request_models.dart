@@ -180,6 +180,8 @@ class PermissionRequest {
     this.n1Decision,
     this.rhDecision,
     this.directionDecision,
+    this.motifRefus,
+    this.refusePar,
   });
 
   final String id;
@@ -201,6 +203,11 @@ class PermissionRequest {
   final String? n1Decision;
   final String? rhDecision;
   final String? directionDecision;
+
+  /// Pourquoi la demande a ete refusee, et par quel palier (« N+1 », « RH »,
+  /// « Direction »). `null` tant que rien n'a ete refuse.
+  final String? motifRefus;
+  final String? refusePar;
 
   /// Badge « rémunération » d'une permission, aligné sur le web
   /// (`PermissionsMissions.tsx`) : tant que le N+1 n'a pas visé, la

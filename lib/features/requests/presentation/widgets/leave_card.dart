@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:sytium_mobile/features/requests/domain/request_models.dart';
+import 'package:sytium_mobile/features/requests/presentation/widgets/refusal_reason.dart';
 import 'package:sytium_mobile/features/requests/presentation/widgets/request_status_badge.dart';
 import 'package:sytium_mobile/theme/sytium_colors.dart';
 import 'package:sytium_mobile/theme/tokens.dart';
@@ -60,6 +61,10 @@ class LeaveCard extends StatelessWidget {
             const SizedBox(height: Tokens.space8),
             Text(leave.motif!, style: theme.bodySmall),
           ],
+          if (leave.statut == LeaveStatus.refuse) ...[
+            const SizedBox(height: Tokens.space12),
+            RefusalReason(motif: leave.commentaireValidation),
+          ],
           if (onCancel != null) ...[
             const SizedBox(height: Tokens.space12),
             Align(
@@ -67,10 +72,7 @@ class LeaveCard extends StatelessWidget {
               child: OutlinedButton.icon(
                 onPressed: onCancel,
                 icon: Icon(Icons.close, size: 18, color: colors.danger),
-                label: Text(
-                  'Annuler',
-                  style: TextStyle(color: colors.danger),
-                ),
+                label: Text('Annuler', style: TextStyle(color: colors.danger)),
               ),
             ),
           ],

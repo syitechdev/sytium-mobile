@@ -55,9 +55,7 @@ class RequestsRepositoryImpl implements RequestsRepository {
             motif: draft.motif,
             dateDebut: draft.dateDebut,
             dateFin: draft.dateFin,
-            type: draft.type == PermissionType.unknown
-                ? null
-                : draft.type.wire,
+            type: draft.type == PermissionType.unknown ? null : draft.type.wire,
             destination: draft.destination,
             heureDebut: draft.heureDebut,
             heureFin: draft.heureFin,
@@ -109,6 +107,8 @@ class RequestsRepositoryImpl implements RequestsRepository {
     n1Decision: d.n1Decision,
     rhDecision: d.rhDecision,
     directionDecision: d.directionDecision,
+    motifRefus: d.motifRefus,
+    refusePar: d.refusePar,
   );
 
   Future<Result<T>> _guard<T>(Future<T> Function() run) async {

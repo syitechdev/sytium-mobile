@@ -466,7 +466,11 @@ mixin _$ApprovalItemDto {
   String? get summary => throw _privateConstructorUsedError;
   @JsonKey(name: 'submitted_at')
   String? get submittedAt => throw _privateConstructorUsedError;
-  ApprovalStageDto? get stage => throw _privateConstructorUsedError;
+  ApprovalStageDto? get stage =>
+      throw _privateConstructorUsedError; // Detail pret a afficher, mis en forme par le serveur, et visas deja
+  // poses. Absents d'une API plus ancienne : listes vides, jamais d'erreur.
+  List<ApprovalDetailDto> get details => throw _privateConstructorUsedError;
+  List<ApprovalVisaDto> get visas => throw _privateConstructorUsedError;
 
   /// Serializes this ApprovalItemDto to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -494,6 +498,8 @@ abstract class $ApprovalItemDtoCopyWith<$Res> {
     String? summary,
     @JsonKey(name: 'submitted_at') String? submittedAt,
     ApprovalStageDto? stage,
+    List<ApprovalDetailDto> details,
+    List<ApprovalVisaDto> visas,
   });
 
   $ApprovalRequesterDtoCopyWith<$Res> get requester;
@@ -524,6 +530,8 @@ class _$ApprovalItemDtoCopyWithImpl<$Res, $Val extends ApprovalItemDto>
     Object? summary = freezed,
     Object? submittedAt = freezed,
     Object? stage = freezed,
+    Object? details = null,
+    Object? visas = null,
   }) {
     return _then(
       _value.copyWith(
@@ -559,6 +567,14 @@ class _$ApprovalItemDtoCopyWithImpl<$Res, $Val extends ApprovalItemDto>
                 ? _value.stage
                 : stage // ignore: cast_nullable_to_non_nullable
                       as ApprovalStageDto?,
+            details: null == details
+                ? _value.details
+                : details // ignore: cast_nullable_to_non_nullable
+                      as List<ApprovalDetailDto>,
+            visas: null == visas
+                ? _value.visas
+                : visas // ignore: cast_nullable_to_non_nullable
+                      as List<ApprovalVisaDto>,
           )
           as $Val,
     );
@@ -617,6 +633,8 @@ abstract class _$$ApprovalItemDtoImplCopyWith<$Res>
     String? summary,
     @JsonKey(name: 'submitted_at') String? submittedAt,
     ApprovalStageDto? stage,
+    List<ApprovalDetailDto> details,
+    List<ApprovalVisaDto> visas,
   });
 
   @override
@@ -649,6 +667,8 @@ class __$$ApprovalItemDtoImplCopyWithImpl<$Res>
     Object? summary = freezed,
     Object? submittedAt = freezed,
     Object? stage = freezed,
+    Object? details = null,
+    Object? visas = null,
   }) {
     return _then(
       _$ApprovalItemDtoImpl(
@@ -684,6 +704,14 @@ class __$$ApprovalItemDtoImplCopyWithImpl<$Res>
             ? _value.stage
             : stage // ignore: cast_nullable_to_non_nullable
                   as ApprovalStageDto?,
+        details: null == details
+            ? _value._details
+            : details // ignore: cast_nullable_to_non_nullable
+                  as List<ApprovalDetailDto>,
+        visas: null == visas
+            ? _value._visas
+            : visas // ignore: cast_nullable_to_non_nullable
+                  as List<ApprovalVisaDto>,
       ),
     );
   }
@@ -701,7 +729,10 @@ class _$ApprovalItemDtoImpl implements _ApprovalItemDto {
     this.summary,
     @JsonKey(name: 'submitted_at') this.submittedAt,
     this.stage,
-  });
+    final List<ApprovalDetailDto> details = const <ApprovalDetailDto>[],
+    final List<ApprovalVisaDto> visas = const <ApprovalVisaDto>[],
+  }) : _details = details,
+       _visas = visas;
 
   factory _$ApprovalItemDtoImpl.fromJson(Map<String, dynamic> json) =>
       _$$ApprovalItemDtoImplFromJson(json);
@@ -723,10 +754,31 @@ class _$ApprovalItemDtoImpl implements _ApprovalItemDto {
   final String? submittedAt;
   @override
   final ApprovalStageDto? stage;
+  // Detail pret a afficher, mis en forme par le serveur, et visas deja
+  // poses. Absents d'une API plus ancienne : listes vides, jamais d'erreur.
+  final List<ApprovalDetailDto> _details;
+  // Detail pret a afficher, mis en forme par le serveur, et visas deja
+  // poses. Absents d'une API plus ancienne : listes vides, jamais d'erreur.
+  @override
+  @JsonKey()
+  List<ApprovalDetailDto> get details {
+    if (_details is EqualUnmodifiableListView) return _details;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(_details);
+  }
+
+  final List<ApprovalVisaDto> _visas;
+  @override
+  @JsonKey()
+  List<ApprovalVisaDto> get visas {
+    if (_visas is EqualUnmodifiableListView) return _visas;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(_visas);
+  }
 
   @override
   String toString() {
-    return 'ApprovalItemDto(id: $id, type: $type, requester: $requester, action: $action, title: $title, summary: $summary, submittedAt: $submittedAt, stage: $stage)';
+    return 'ApprovalItemDto(id: $id, type: $type, requester: $requester, action: $action, title: $title, summary: $summary, submittedAt: $submittedAt, stage: $stage, details: $details, visas: $visas)';
   }
 
   @override
@@ -743,7 +795,9 @@ class _$ApprovalItemDtoImpl implements _ApprovalItemDto {
             (identical(other.summary, summary) || other.summary == summary) &&
             (identical(other.submittedAt, submittedAt) ||
                 other.submittedAt == submittedAt) &&
-            (identical(other.stage, stage) || other.stage == stage));
+            (identical(other.stage, stage) || other.stage == stage) &&
+            const DeepCollectionEquality().equals(other._details, _details) &&
+            const DeepCollectionEquality().equals(other._visas, _visas));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
@@ -758,6 +812,8 @@ class _$ApprovalItemDtoImpl implements _ApprovalItemDto {
     summary,
     submittedAt,
     stage,
+    const DeepCollectionEquality().hash(_details),
+    const DeepCollectionEquality().hash(_visas),
   );
 
   /// Create a copy of ApprovalItemDto
@@ -787,6 +843,8 @@ abstract class _ApprovalItemDto implements ApprovalItemDto {
     final String? summary,
     @JsonKey(name: 'submitted_at') final String? submittedAt,
     final ApprovalStageDto? stage,
+    final List<ApprovalDetailDto> details,
+    final List<ApprovalVisaDto> visas,
   }) = _$ApprovalItemDtoImpl;
 
   factory _ApprovalItemDto.fromJson(Map<String, dynamic> json) =
@@ -808,13 +866,438 @@ abstract class _ApprovalItemDto implements ApprovalItemDto {
   @JsonKey(name: 'submitted_at')
   String? get submittedAt;
   @override
-  ApprovalStageDto? get stage;
+  ApprovalStageDto? get stage; // Detail pret a afficher, mis en forme par le serveur, et visas deja
+  // poses. Absents d'une API plus ancienne : listes vides, jamais d'erreur.
+  @override
+  List<ApprovalDetailDto> get details;
+  @override
+  List<ApprovalVisaDto> get visas;
 
   /// Create a copy of ApprovalItemDto
   /// with the given fields replaced by the non-null parameter values.
   @override
   @JsonKey(includeFromJson: false, includeToJson: false)
   _$$ApprovalItemDtoImplCopyWith<_$ApprovalItemDtoImpl> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+ApprovalDetailDto _$ApprovalDetailDtoFromJson(Map<String, dynamic> json) {
+  return _ApprovalDetailDto.fromJson(json);
+}
+
+/// @nodoc
+mixin _$ApprovalDetailDto {
+  String get label => throw _privateConstructorUsedError;
+  String get value => throw _privateConstructorUsedError;
+
+  /// Serializes this ApprovalDetailDto to a JSON map.
+  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
+
+  /// Create a copy of ApprovalDetailDto
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  $ApprovalDetailDtoCopyWith<ApprovalDetailDto> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+abstract class $ApprovalDetailDtoCopyWith<$Res> {
+  factory $ApprovalDetailDtoCopyWith(
+    ApprovalDetailDto value,
+    $Res Function(ApprovalDetailDto) then,
+  ) = _$ApprovalDetailDtoCopyWithImpl<$Res, ApprovalDetailDto>;
+  @useResult
+  $Res call({String label, String value});
+}
+
+/// @nodoc
+class _$ApprovalDetailDtoCopyWithImpl<$Res, $Val extends ApprovalDetailDto>
+    implements $ApprovalDetailDtoCopyWith<$Res> {
+  _$ApprovalDetailDtoCopyWithImpl(this._value, this._then);
+
+  // ignore: unused_field
+  final $Val _value;
+  // ignore: unused_field
+  final $Res Function($Val) _then;
+
+  /// Create a copy of ApprovalDetailDto
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({Object? label = null, Object? value = null}) {
+    return _then(
+      _value.copyWith(
+            label: null == label
+                ? _value.label
+                : label // ignore: cast_nullable_to_non_nullable
+                      as String,
+            value: null == value
+                ? _value.value
+                : value // ignore: cast_nullable_to_non_nullable
+                      as String,
+          )
+          as $Val,
+    );
+  }
+}
+
+/// @nodoc
+abstract class _$$ApprovalDetailDtoImplCopyWith<$Res>
+    implements $ApprovalDetailDtoCopyWith<$Res> {
+  factory _$$ApprovalDetailDtoImplCopyWith(
+    _$ApprovalDetailDtoImpl value,
+    $Res Function(_$ApprovalDetailDtoImpl) then,
+  ) = __$$ApprovalDetailDtoImplCopyWithImpl<$Res>;
+  @override
+  @useResult
+  $Res call({String label, String value});
+}
+
+/// @nodoc
+class __$$ApprovalDetailDtoImplCopyWithImpl<$Res>
+    extends _$ApprovalDetailDtoCopyWithImpl<$Res, _$ApprovalDetailDtoImpl>
+    implements _$$ApprovalDetailDtoImplCopyWith<$Res> {
+  __$$ApprovalDetailDtoImplCopyWithImpl(
+    _$ApprovalDetailDtoImpl _value,
+    $Res Function(_$ApprovalDetailDtoImpl) _then,
+  ) : super(_value, _then);
+
+  /// Create a copy of ApprovalDetailDto
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({Object? label = null, Object? value = null}) {
+    return _then(
+      _$ApprovalDetailDtoImpl(
+        label: null == label
+            ? _value.label
+            : label // ignore: cast_nullable_to_non_nullable
+                  as String,
+        value: null == value
+            ? _value.value
+            : value // ignore: cast_nullable_to_non_nullable
+                  as String,
+      ),
+    );
+  }
+}
+
+/// @nodoc
+@JsonSerializable()
+class _$ApprovalDetailDtoImpl implements _ApprovalDetailDto {
+  const _$ApprovalDetailDtoImpl({required this.label, required this.value});
+
+  factory _$ApprovalDetailDtoImpl.fromJson(Map<String, dynamic> json) =>
+      _$$ApprovalDetailDtoImplFromJson(json);
+
+  @override
+  final String label;
+  @override
+  final String value;
+
+  @override
+  String toString() {
+    return 'ApprovalDetailDto(label: $label, value: $value)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$ApprovalDetailDtoImpl &&
+            (identical(other.label, label) || other.label == label) &&
+            (identical(other.value, value) || other.value == value));
+  }
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  int get hashCode => Object.hash(runtimeType, label, value);
+
+  /// Create a copy of ApprovalDetailDto
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$ApprovalDetailDtoImplCopyWith<_$ApprovalDetailDtoImpl> get copyWith =>
+      __$$ApprovalDetailDtoImplCopyWithImpl<_$ApprovalDetailDtoImpl>(
+        this,
+        _$identity,
+      );
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$$ApprovalDetailDtoImplToJson(this);
+  }
+}
+
+abstract class _ApprovalDetailDto implements ApprovalDetailDto {
+  const factory _ApprovalDetailDto({
+    required final String label,
+    required final String value,
+  }) = _$ApprovalDetailDtoImpl;
+
+  factory _ApprovalDetailDto.fromJson(Map<String, dynamic> json) =
+      _$ApprovalDetailDtoImpl.fromJson;
+
+  @override
+  String get label;
+  @override
+  String get value;
+
+  /// Create a copy of ApprovalDetailDto
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  _$$ApprovalDetailDtoImplCopyWith<_$ApprovalDetailDtoImpl> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+ApprovalVisaDto _$ApprovalVisaDtoFromJson(Map<String, dynamic> json) {
+  return _ApprovalVisaDto.fromJson(json);
+}
+
+/// @nodoc
+mixin _$ApprovalVisaDto {
+  String get palier => throw _privateConstructorUsedError;
+  String get decision => throw _privateConstructorUsedError;
+  String? get libelle => throw _privateConstructorUsedError;
+  String? get commentaire => throw _privateConstructorUsedError;
+  String? get date => throw _privateConstructorUsedError;
+
+  /// Serializes this ApprovalVisaDto to a JSON map.
+  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
+
+  /// Create a copy of ApprovalVisaDto
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  $ApprovalVisaDtoCopyWith<ApprovalVisaDto> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+abstract class $ApprovalVisaDtoCopyWith<$Res> {
+  factory $ApprovalVisaDtoCopyWith(
+    ApprovalVisaDto value,
+    $Res Function(ApprovalVisaDto) then,
+  ) = _$ApprovalVisaDtoCopyWithImpl<$Res, ApprovalVisaDto>;
+  @useResult
+  $Res call({
+    String palier,
+    String decision,
+    String? libelle,
+    String? commentaire,
+    String? date,
+  });
+}
+
+/// @nodoc
+class _$ApprovalVisaDtoCopyWithImpl<$Res, $Val extends ApprovalVisaDto>
+    implements $ApprovalVisaDtoCopyWith<$Res> {
+  _$ApprovalVisaDtoCopyWithImpl(this._value, this._then);
+
+  // ignore: unused_field
+  final $Val _value;
+  // ignore: unused_field
+  final $Res Function($Val) _then;
+
+  /// Create a copy of ApprovalVisaDto
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? palier = null,
+    Object? decision = null,
+    Object? libelle = freezed,
+    Object? commentaire = freezed,
+    Object? date = freezed,
+  }) {
+    return _then(
+      _value.copyWith(
+            palier: null == palier
+                ? _value.palier
+                : palier // ignore: cast_nullable_to_non_nullable
+                      as String,
+            decision: null == decision
+                ? _value.decision
+                : decision // ignore: cast_nullable_to_non_nullable
+                      as String,
+            libelle: freezed == libelle
+                ? _value.libelle
+                : libelle // ignore: cast_nullable_to_non_nullable
+                      as String?,
+            commentaire: freezed == commentaire
+                ? _value.commentaire
+                : commentaire // ignore: cast_nullable_to_non_nullable
+                      as String?,
+            date: freezed == date
+                ? _value.date
+                : date // ignore: cast_nullable_to_non_nullable
+                      as String?,
+          )
+          as $Val,
+    );
+  }
+}
+
+/// @nodoc
+abstract class _$$ApprovalVisaDtoImplCopyWith<$Res>
+    implements $ApprovalVisaDtoCopyWith<$Res> {
+  factory _$$ApprovalVisaDtoImplCopyWith(
+    _$ApprovalVisaDtoImpl value,
+    $Res Function(_$ApprovalVisaDtoImpl) then,
+  ) = __$$ApprovalVisaDtoImplCopyWithImpl<$Res>;
+  @override
+  @useResult
+  $Res call({
+    String palier,
+    String decision,
+    String? libelle,
+    String? commentaire,
+    String? date,
+  });
+}
+
+/// @nodoc
+class __$$ApprovalVisaDtoImplCopyWithImpl<$Res>
+    extends _$ApprovalVisaDtoCopyWithImpl<$Res, _$ApprovalVisaDtoImpl>
+    implements _$$ApprovalVisaDtoImplCopyWith<$Res> {
+  __$$ApprovalVisaDtoImplCopyWithImpl(
+    _$ApprovalVisaDtoImpl _value,
+    $Res Function(_$ApprovalVisaDtoImpl) _then,
+  ) : super(_value, _then);
+
+  /// Create a copy of ApprovalVisaDto
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? palier = null,
+    Object? decision = null,
+    Object? libelle = freezed,
+    Object? commentaire = freezed,
+    Object? date = freezed,
+  }) {
+    return _then(
+      _$ApprovalVisaDtoImpl(
+        palier: null == palier
+            ? _value.palier
+            : palier // ignore: cast_nullable_to_non_nullable
+                  as String,
+        decision: null == decision
+            ? _value.decision
+            : decision // ignore: cast_nullable_to_non_nullable
+                  as String,
+        libelle: freezed == libelle
+            ? _value.libelle
+            : libelle // ignore: cast_nullable_to_non_nullable
+                  as String?,
+        commentaire: freezed == commentaire
+            ? _value.commentaire
+            : commentaire // ignore: cast_nullable_to_non_nullable
+                  as String?,
+        date: freezed == date
+            ? _value.date
+            : date // ignore: cast_nullable_to_non_nullable
+                  as String?,
+      ),
+    );
+  }
+}
+
+/// @nodoc
+@JsonSerializable()
+class _$ApprovalVisaDtoImpl implements _ApprovalVisaDto {
+  const _$ApprovalVisaDtoImpl({
+    required this.palier,
+    required this.decision,
+    this.libelle,
+    this.commentaire,
+    this.date,
+  });
+
+  factory _$ApprovalVisaDtoImpl.fromJson(Map<String, dynamic> json) =>
+      _$$ApprovalVisaDtoImplFromJson(json);
+
+  @override
+  final String palier;
+  @override
+  final String decision;
+  @override
+  final String? libelle;
+  @override
+  final String? commentaire;
+  @override
+  final String? date;
+
+  @override
+  String toString() {
+    return 'ApprovalVisaDto(palier: $palier, decision: $decision, libelle: $libelle, commentaire: $commentaire, date: $date)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$ApprovalVisaDtoImpl &&
+            (identical(other.palier, palier) || other.palier == palier) &&
+            (identical(other.decision, decision) ||
+                other.decision == decision) &&
+            (identical(other.libelle, libelle) || other.libelle == libelle) &&
+            (identical(other.commentaire, commentaire) ||
+                other.commentaire == commentaire) &&
+            (identical(other.date, date) || other.date == date));
+  }
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  int get hashCode =>
+      Object.hash(runtimeType, palier, decision, libelle, commentaire, date);
+
+  /// Create a copy of ApprovalVisaDto
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$ApprovalVisaDtoImplCopyWith<_$ApprovalVisaDtoImpl> get copyWith =>
+      __$$ApprovalVisaDtoImplCopyWithImpl<_$ApprovalVisaDtoImpl>(
+        this,
+        _$identity,
+      );
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$$ApprovalVisaDtoImplToJson(this);
+  }
+}
+
+abstract class _ApprovalVisaDto implements ApprovalVisaDto {
+  const factory _ApprovalVisaDto({
+    required final String palier,
+    required final String decision,
+    final String? libelle,
+    final String? commentaire,
+    final String? date,
+  }) = _$ApprovalVisaDtoImpl;
+
+  factory _ApprovalVisaDto.fromJson(Map<String, dynamic> json) =
+      _$ApprovalVisaDtoImpl.fromJson;
+
+  @override
+  String get palier;
+  @override
+  String get decision;
+  @override
+  String? get libelle;
+  @override
+  String? get commentaire;
+  @override
+  String? get date;
+
+  /// Create a copy of ApprovalVisaDto
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  _$$ApprovalVisaDtoImplCopyWith<_$ApprovalVisaDtoImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }
 
