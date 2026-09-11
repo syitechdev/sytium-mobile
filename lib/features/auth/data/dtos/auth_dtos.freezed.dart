@@ -594,6 +594,9 @@ mixin _$ApiUserDto {
   bool get active => throw _privateConstructorUsedError;
   List<ApiUserRoleDto> get roles => throw _privateConstructorUsedError;
   OrganizationDto? get organization => throw _privateConstructorUsedError;
+  @JsonKey(name: 'subscription_access')
+  UserSubscriptionAccessDto? get subscriptionAccess =>
+      throw _privateConstructorUsedError;
 
   /// Serializes this ApiUserDto to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -621,9 +624,12 @@ abstract class $ApiUserDtoCopyWith<$Res> {
     bool active,
     List<ApiUserRoleDto> roles,
     OrganizationDto? organization,
+    @JsonKey(name: 'subscription_access')
+    UserSubscriptionAccessDto? subscriptionAccess,
   });
 
   $OrganizationDtoCopyWith<$Res>? get organization;
+  $UserSubscriptionAccessDtoCopyWith<$Res>? get subscriptionAccess;
 }
 
 /// @nodoc
@@ -649,6 +655,7 @@ class _$ApiUserDtoCopyWithImpl<$Res, $Val extends ApiUserDto>
     Object? active = null,
     Object? roles = null,
     Object? organization = freezed,
+    Object? subscriptionAccess = freezed,
   }) {
     return _then(
       _value.copyWith(
@@ -684,6 +691,10 @@ class _$ApiUserDtoCopyWithImpl<$Res, $Val extends ApiUserDto>
                 ? _value.organization
                 : organization // ignore: cast_nullable_to_non_nullable
                       as OrganizationDto?,
+            subscriptionAccess: freezed == subscriptionAccess
+                ? _value.subscriptionAccess
+                : subscriptionAccess // ignore: cast_nullable_to_non_nullable
+                      as UserSubscriptionAccessDto?,
           )
           as $Val,
     );
@@ -701,6 +712,23 @@ class _$ApiUserDtoCopyWithImpl<$Res, $Val extends ApiUserDto>
     return $OrganizationDtoCopyWith<$Res>(_value.organization!, (value) {
       return _then(_value.copyWith(organization: value) as $Val);
     });
+  }
+
+  /// Create a copy of ApiUserDto
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @pragma('vm:prefer-inline')
+  $UserSubscriptionAccessDtoCopyWith<$Res>? get subscriptionAccess {
+    if (_value.subscriptionAccess == null) {
+      return null;
+    }
+
+    return $UserSubscriptionAccessDtoCopyWith<$Res>(
+      _value.subscriptionAccess!,
+      (value) {
+        return _then(_value.copyWith(subscriptionAccess: value) as $Val);
+      },
+    );
   }
 }
 
@@ -722,10 +750,14 @@ abstract class _$$ApiUserDtoImplCopyWith<$Res>
     bool active,
     List<ApiUserRoleDto> roles,
     OrganizationDto? organization,
+    @JsonKey(name: 'subscription_access')
+    UserSubscriptionAccessDto? subscriptionAccess,
   });
 
   @override
   $OrganizationDtoCopyWith<$Res>? get organization;
+  @override
+  $UserSubscriptionAccessDtoCopyWith<$Res>? get subscriptionAccess;
 }
 
 /// @nodoc
@@ -750,6 +782,7 @@ class __$$ApiUserDtoImplCopyWithImpl<$Res>
     Object? active = null,
     Object? roles = null,
     Object? organization = freezed,
+    Object? subscriptionAccess = freezed,
   }) {
     return _then(
       _$ApiUserDtoImpl(
@@ -785,6 +818,10 @@ class __$$ApiUserDtoImplCopyWithImpl<$Res>
             ? _value.organization
             : organization // ignore: cast_nullable_to_non_nullable
                   as OrganizationDto?,
+        subscriptionAccess: freezed == subscriptionAccess
+            ? _value.subscriptionAccess
+            : subscriptionAccess // ignore: cast_nullable_to_non_nullable
+                  as UserSubscriptionAccessDto?,
       ),
     );
   }
@@ -802,6 +839,7 @@ class _$ApiUserDtoImpl implements _ApiUserDto {
     this.active = true,
     final List<ApiUserRoleDto> roles = const <ApiUserRoleDto>[],
     this.organization,
+    @JsonKey(name: 'subscription_access') this.subscriptionAccess,
   }) : _roles = roles;
 
   factory _$ApiUserDtoImpl.fromJson(Map<String, dynamic> json) =>
@@ -833,10 +871,13 @@ class _$ApiUserDtoImpl implements _ApiUserDto {
 
   @override
   final OrganizationDto? organization;
+  @override
+  @JsonKey(name: 'subscription_access')
+  final UserSubscriptionAccessDto? subscriptionAccess;
 
   @override
   String toString() {
-    return 'ApiUserDto(id: $id, name: $name, email: $email, organizationId: $organizationId, currentFilialeId: $currentFilialeId, active: $active, roles: $roles, organization: $organization)';
+    return 'ApiUserDto(id: $id, name: $name, email: $email, organizationId: $organizationId, currentFilialeId: $currentFilialeId, active: $active, roles: $roles, organization: $organization, subscriptionAccess: $subscriptionAccess)';
   }
 
   @override
@@ -854,7 +895,9 @@ class _$ApiUserDtoImpl implements _ApiUserDto {
             (identical(other.active, active) || other.active == active) &&
             const DeepCollectionEquality().equals(other._roles, _roles) &&
             (identical(other.organization, organization) ||
-                other.organization == organization));
+                other.organization == organization) &&
+            (identical(other.subscriptionAccess, subscriptionAccess) ||
+                other.subscriptionAccess == subscriptionAccess));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
@@ -869,6 +912,7 @@ class _$ApiUserDtoImpl implements _ApiUserDto {
     active,
     const DeepCollectionEquality().hash(_roles),
     organization,
+    subscriptionAccess,
   );
 
   /// Create a copy of ApiUserDto
@@ -895,6 +939,8 @@ abstract class _ApiUserDto implements ApiUserDto {
     final bool active,
     final List<ApiUserRoleDto> roles,
     final OrganizationDto? organization,
+    @JsonKey(name: 'subscription_access')
+    final UserSubscriptionAccessDto? subscriptionAccess,
   }) = _$ApiUserDtoImpl;
 
   factory _ApiUserDto.fromJson(Map<String, dynamic> json) =
@@ -918,6 +964,9 @@ abstract class _ApiUserDto implements ApiUserDto {
   List<ApiUserRoleDto> get roles;
   @override
   OrganizationDto? get organization;
+  @override
+  @JsonKey(name: 'subscription_access')
+  UserSubscriptionAccessDto? get subscriptionAccess;
 
   /// Create a copy of ApiUserDto
   /// with the given fields replaced by the non-null parameter values.
@@ -925,6 +974,199 @@ abstract class _ApiUserDto implements ApiUserDto {
   @JsonKey(includeFromJson: false, includeToJson: false)
   _$$ApiUserDtoImplCopyWith<_$ApiUserDtoImpl> get copyWith =>
       throw _privateConstructorUsedError;
+}
+
+UserSubscriptionAccessDto _$UserSubscriptionAccessDtoFromJson(
+  Map<String, dynamic> json,
+) {
+  return _UserSubscriptionAccessDto.fromJson(json);
+}
+
+/// @nodoc
+mixin _$UserSubscriptionAccessDto {
+  String? get status => throw _privateConstructorUsedError;
+  @JsonKey(name: 'subscription_ends_at')
+  String? get subscriptionEndsAt => throw _privateConstructorUsedError;
+
+  /// Serializes this UserSubscriptionAccessDto to a JSON map.
+  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
+
+  /// Create a copy of UserSubscriptionAccessDto
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  $UserSubscriptionAccessDtoCopyWith<UserSubscriptionAccessDto> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+abstract class $UserSubscriptionAccessDtoCopyWith<$Res> {
+  factory $UserSubscriptionAccessDtoCopyWith(
+    UserSubscriptionAccessDto value,
+    $Res Function(UserSubscriptionAccessDto) then,
+  ) = _$UserSubscriptionAccessDtoCopyWithImpl<$Res, UserSubscriptionAccessDto>;
+  @useResult
+  $Res call({
+    String? status,
+    @JsonKey(name: 'subscription_ends_at') String? subscriptionEndsAt,
+  });
+}
+
+/// @nodoc
+class _$UserSubscriptionAccessDtoCopyWithImpl<
+  $Res,
+  $Val extends UserSubscriptionAccessDto
+>
+    implements $UserSubscriptionAccessDtoCopyWith<$Res> {
+  _$UserSubscriptionAccessDtoCopyWithImpl(this._value, this._then);
+
+  // ignore: unused_field
+  final $Val _value;
+  // ignore: unused_field
+  final $Res Function($Val) _then;
+
+  /// Create a copy of UserSubscriptionAccessDto
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({Object? status = freezed, Object? subscriptionEndsAt = freezed}) {
+    return _then(
+      _value.copyWith(
+            status: freezed == status
+                ? _value.status
+                : status // ignore: cast_nullable_to_non_nullable
+                      as String?,
+            subscriptionEndsAt: freezed == subscriptionEndsAt
+                ? _value.subscriptionEndsAt
+                : subscriptionEndsAt // ignore: cast_nullable_to_non_nullable
+                      as String?,
+          )
+          as $Val,
+    );
+  }
+}
+
+/// @nodoc
+abstract class _$$UserSubscriptionAccessDtoImplCopyWith<$Res>
+    implements $UserSubscriptionAccessDtoCopyWith<$Res> {
+  factory _$$UserSubscriptionAccessDtoImplCopyWith(
+    _$UserSubscriptionAccessDtoImpl value,
+    $Res Function(_$UserSubscriptionAccessDtoImpl) then,
+  ) = __$$UserSubscriptionAccessDtoImplCopyWithImpl<$Res>;
+  @override
+  @useResult
+  $Res call({
+    String? status,
+    @JsonKey(name: 'subscription_ends_at') String? subscriptionEndsAt,
+  });
+}
+
+/// @nodoc
+class __$$UserSubscriptionAccessDtoImplCopyWithImpl<$Res>
+    extends
+        _$UserSubscriptionAccessDtoCopyWithImpl<
+          $Res,
+          _$UserSubscriptionAccessDtoImpl
+        >
+    implements _$$UserSubscriptionAccessDtoImplCopyWith<$Res> {
+  __$$UserSubscriptionAccessDtoImplCopyWithImpl(
+    _$UserSubscriptionAccessDtoImpl _value,
+    $Res Function(_$UserSubscriptionAccessDtoImpl) _then,
+  ) : super(_value, _then);
+
+  /// Create a copy of UserSubscriptionAccessDto
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({Object? status = freezed, Object? subscriptionEndsAt = freezed}) {
+    return _then(
+      _$UserSubscriptionAccessDtoImpl(
+        status: freezed == status
+            ? _value.status
+            : status // ignore: cast_nullable_to_non_nullable
+                  as String?,
+        subscriptionEndsAt: freezed == subscriptionEndsAt
+            ? _value.subscriptionEndsAt
+            : subscriptionEndsAt // ignore: cast_nullable_to_non_nullable
+                  as String?,
+      ),
+    );
+  }
+}
+
+/// @nodoc
+@JsonSerializable()
+class _$UserSubscriptionAccessDtoImpl implements _UserSubscriptionAccessDto {
+  const _$UserSubscriptionAccessDtoImpl({
+    this.status,
+    @JsonKey(name: 'subscription_ends_at') this.subscriptionEndsAt,
+  });
+
+  factory _$UserSubscriptionAccessDtoImpl.fromJson(Map<String, dynamic> json) =>
+      _$$UserSubscriptionAccessDtoImplFromJson(json);
+
+  @override
+  final String? status;
+  @override
+  @JsonKey(name: 'subscription_ends_at')
+  final String? subscriptionEndsAt;
+
+  @override
+  String toString() {
+    return 'UserSubscriptionAccessDto(status: $status, subscriptionEndsAt: $subscriptionEndsAt)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$UserSubscriptionAccessDtoImpl &&
+            (identical(other.status, status) || other.status == status) &&
+            (identical(other.subscriptionEndsAt, subscriptionEndsAt) ||
+                other.subscriptionEndsAt == subscriptionEndsAt));
+  }
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  int get hashCode => Object.hash(runtimeType, status, subscriptionEndsAt);
+
+  /// Create a copy of UserSubscriptionAccessDto
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$UserSubscriptionAccessDtoImplCopyWith<_$UserSubscriptionAccessDtoImpl>
+  get copyWith =>
+      __$$UserSubscriptionAccessDtoImplCopyWithImpl<
+        _$UserSubscriptionAccessDtoImpl
+      >(this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$$UserSubscriptionAccessDtoImplToJson(this);
+  }
+}
+
+abstract class _UserSubscriptionAccessDto implements UserSubscriptionAccessDto {
+  const factory _UserSubscriptionAccessDto({
+    final String? status,
+    @JsonKey(name: 'subscription_ends_at') final String? subscriptionEndsAt,
+  }) = _$UserSubscriptionAccessDtoImpl;
+
+  factory _UserSubscriptionAccessDto.fromJson(Map<String, dynamic> json) =
+      _$UserSubscriptionAccessDtoImpl.fromJson;
+
+  @override
+  String? get status;
+  @override
+  @JsonKey(name: 'subscription_ends_at')
+  String? get subscriptionEndsAt;
+
+  /// Create a copy of UserSubscriptionAccessDto
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  _$$UserSubscriptionAccessDtoImplCopyWith<_$UserSubscriptionAccessDtoImpl>
+  get copyWith => throw _privateConstructorUsedError;
 }
 
 OrganizationDto _$OrganizationDtoFromJson(Map<String, dynamic> json) {
@@ -945,7 +1187,10 @@ mixin _$OrganizationDto {
   @JsonKey(name: 'accent_color')
   String? get accentColor => throw _privateConstructorUsedError;
   @JsonKey(name: 'font_family')
-  String? get fontFamily => throw _privateConstructorUsedError;
+  String? get fontFamily => throw _privateConstructorUsedError; // Offre souscrite : code (« pme ») et nom lisible, pour le badge du profil.
+  String? get pack => throw _privateConstructorUsedError;
+  @JsonKey(name: 'pack_name')
+  String? get packName => throw _privateConstructorUsedError;
 
   /// Serializes this OrganizationDto to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -973,6 +1218,8 @@ abstract class $OrganizationDtoCopyWith<$Res> {
     @JsonKey(name: 'secondary_color') String? secondaryColor,
     @JsonKey(name: 'accent_color') String? accentColor,
     @JsonKey(name: 'font_family') String? fontFamily,
+    String? pack,
+    @JsonKey(name: 'pack_name') String? packName,
   });
 }
 
@@ -999,6 +1246,8 @@ class _$OrganizationDtoCopyWithImpl<$Res, $Val extends OrganizationDto>
     Object? secondaryColor = freezed,
     Object? accentColor = freezed,
     Object? fontFamily = freezed,
+    Object? pack = freezed,
+    Object? packName = freezed,
   }) {
     return _then(
       _value.copyWith(
@@ -1034,6 +1283,14 @@ class _$OrganizationDtoCopyWithImpl<$Res, $Val extends OrganizationDto>
                 ? _value.fontFamily
                 : fontFamily // ignore: cast_nullable_to_non_nullable
                       as String?,
+            pack: freezed == pack
+                ? _value.pack
+                : pack // ignore: cast_nullable_to_non_nullable
+                      as String?,
+            packName: freezed == packName
+                ? _value.packName
+                : packName // ignore: cast_nullable_to_non_nullable
+                      as String?,
           )
           as $Val,
     );
@@ -1058,6 +1315,8 @@ abstract class _$$OrganizationDtoImplCopyWith<$Res>
     @JsonKey(name: 'secondary_color') String? secondaryColor,
     @JsonKey(name: 'accent_color') String? accentColor,
     @JsonKey(name: 'font_family') String? fontFamily,
+    String? pack,
+    @JsonKey(name: 'pack_name') String? packName,
   });
 }
 
@@ -1083,6 +1342,8 @@ class __$$OrganizationDtoImplCopyWithImpl<$Res>
     Object? secondaryColor = freezed,
     Object? accentColor = freezed,
     Object? fontFamily = freezed,
+    Object? pack = freezed,
+    Object? packName = freezed,
   }) {
     return _then(
       _$OrganizationDtoImpl(
@@ -1118,6 +1379,14 @@ class __$$OrganizationDtoImplCopyWithImpl<$Res>
             ? _value.fontFamily
             : fontFamily // ignore: cast_nullable_to_non_nullable
                   as String?,
+        pack: freezed == pack
+            ? _value.pack
+            : pack // ignore: cast_nullable_to_non_nullable
+                  as String?,
+        packName: freezed == packName
+            ? _value.packName
+            : packName // ignore: cast_nullable_to_non_nullable
+                  as String?,
       ),
     );
   }
@@ -1135,6 +1404,8 @@ class _$OrganizationDtoImpl implements _OrganizationDto {
     @JsonKey(name: 'secondary_color') this.secondaryColor,
     @JsonKey(name: 'accent_color') this.accentColor,
     @JsonKey(name: 'font_family') this.fontFamily,
+    this.pack,
+    @JsonKey(name: 'pack_name') this.packName,
   });
 
   factory _$OrganizationDtoImpl.fromJson(Map<String, dynamic> json) =>
@@ -1161,10 +1432,16 @@ class _$OrganizationDtoImpl implements _OrganizationDto {
   @override
   @JsonKey(name: 'font_family')
   final String? fontFamily;
+  // Offre souscrite : code (« pme ») et nom lisible, pour le badge du profil.
+  @override
+  final String? pack;
+  @override
+  @JsonKey(name: 'pack_name')
+  final String? packName;
 
   @override
   String toString() {
-    return 'OrganizationDto(id: $id, name: $name, slug: $slug, logoUrl: $logoUrl, primaryColor: $primaryColor, secondaryColor: $secondaryColor, accentColor: $accentColor, fontFamily: $fontFamily)';
+    return 'OrganizationDto(id: $id, name: $name, slug: $slug, logoUrl: $logoUrl, primaryColor: $primaryColor, secondaryColor: $secondaryColor, accentColor: $accentColor, fontFamily: $fontFamily, pack: $pack, packName: $packName)';
   }
 
   @override
@@ -1183,7 +1460,10 @@ class _$OrganizationDtoImpl implements _OrganizationDto {
             (identical(other.accentColor, accentColor) ||
                 other.accentColor == accentColor) &&
             (identical(other.fontFamily, fontFamily) ||
-                other.fontFamily == fontFamily));
+                other.fontFamily == fontFamily) &&
+            (identical(other.pack, pack) || other.pack == pack) &&
+            (identical(other.packName, packName) ||
+                other.packName == packName));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
@@ -1198,6 +1478,8 @@ class _$OrganizationDtoImpl implements _OrganizationDto {
     secondaryColor,
     accentColor,
     fontFamily,
+    pack,
+    packName,
   );
 
   /// Create a copy of OrganizationDto
@@ -1227,6 +1509,8 @@ abstract class _OrganizationDto implements OrganizationDto {
     @JsonKey(name: 'secondary_color') final String? secondaryColor,
     @JsonKey(name: 'accent_color') final String? accentColor,
     @JsonKey(name: 'font_family') final String? fontFamily,
+    final String? pack,
+    @JsonKey(name: 'pack_name') final String? packName,
   }) = _$OrganizationDtoImpl;
 
   factory _OrganizationDto.fromJson(Map<String, dynamic> json) =
@@ -1252,7 +1536,12 @@ abstract class _OrganizationDto implements OrganizationDto {
   String? get accentColor;
   @override
   @JsonKey(name: 'font_family')
-  String? get fontFamily;
+  String? get fontFamily; // Offre souscrite : code (« pme ») et nom lisible, pour le badge du profil.
+  @override
+  String? get pack;
+  @override
+  @JsonKey(name: 'pack_name')
+  String? get packName;
 
   /// Create a copy of OrganizationDto
   /// with the given fields replaced by the non-null parameter values.

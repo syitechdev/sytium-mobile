@@ -64,6 +64,11 @@ _$ApiUserDtoImpl _$$ApiUserDtoImplFromJson(Map<String, dynamic> json) =>
           : OrganizationDto.fromJson(
               json['organization'] as Map<String, dynamic>,
             ),
+      subscriptionAccess: json['subscription_access'] == null
+          ? null
+          : UserSubscriptionAccessDto.fromJson(
+              json['subscription_access'] as Map<String, dynamic>,
+            ),
     );
 
 Map<String, dynamic> _$$ApiUserDtoImplToJson(_$ApiUserDtoImpl instance) =>
@@ -76,7 +81,22 @@ Map<String, dynamic> _$$ApiUserDtoImplToJson(_$ApiUserDtoImpl instance) =>
       'active': instance.active,
       'roles': instance.roles,
       'organization': instance.organization,
+      'subscription_access': instance.subscriptionAccess,
     };
+
+_$UserSubscriptionAccessDtoImpl _$$UserSubscriptionAccessDtoImplFromJson(
+  Map<String, dynamic> json,
+) => _$UserSubscriptionAccessDtoImpl(
+  status: json['status'] as String?,
+  subscriptionEndsAt: json['subscription_ends_at'] as String?,
+);
+
+Map<String, dynamic> _$$UserSubscriptionAccessDtoImplToJson(
+  _$UserSubscriptionAccessDtoImpl instance,
+) => <String, dynamic>{
+  'status': instance.status,
+  'subscription_ends_at': instance.subscriptionEndsAt,
+};
 
 _$OrganizationDtoImpl _$$OrganizationDtoImplFromJson(
   Map<String, dynamic> json,
@@ -89,6 +109,8 @@ _$OrganizationDtoImpl _$$OrganizationDtoImplFromJson(
   secondaryColor: json['secondary_color'] as String?,
   accentColor: json['accent_color'] as String?,
   fontFamily: json['font_family'] as String?,
+  pack: json['pack'] as String?,
+  packName: json['pack_name'] as String?,
 );
 
 Map<String, dynamic> _$$OrganizationDtoImplToJson(
@@ -102,6 +124,8 @@ Map<String, dynamic> _$$OrganizationDtoImplToJson(
   'secondary_color': instance.secondaryColor,
   'accent_color': instance.accentColor,
   'font_family': instance.fontFamily,
+  'pack': instance.pack,
+  'pack_name': instance.packName,
 };
 
 _$ApiUserRoleDtoImpl _$$ApiUserRoleDtoImplFromJson(Map<String, dynamic> json) =>

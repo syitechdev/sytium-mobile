@@ -17,6 +17,10 @@ class AuthUser {
     this.fonction,
     this.roleLabel = 'Utilisateur',
     this.roles = const [],
+    this.organizationPack,
+    this.organizationPackName,
+    this.subscriptionStatus,
+    this.subscriptionEndsAt,
   });
 
   final String id;
@@ -44,4 +48,14 @@ class AuthUser {
   /// French label of the user's primary role (e.g. "Employé").
   final String roleLabel;
   final List<String> roles;
+
+  /// Offre souscrite par l'organisation (code et nom lisible). `null` sur une
+  /// API qui ne la sert pas encore : le badge du profil ne s'affiche pas.
+  final String? organizationPack;
+  final String? organizationPackName;
+
+  /// Etat de l'abonnement (`en_cours`, `en_grace`...) et fin de la periode
+  /// payee, c'est-a-dire la date du prochain renouvellement.
+  final String? subscriptionStatus;
+  final DateTime? subscriptionEndsAt;
 }

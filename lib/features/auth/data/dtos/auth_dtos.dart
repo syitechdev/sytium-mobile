@@ -48,10 +48,25 @@ class ApiUserDto with _$ApiUserDto {
     @Default(true) bool active,
     @Default(<ApiUserRoleDto>[]) List<ApiUserRoleDto> roles,
     OrganizationDto? organization,
+    @JsonKey(name: 'subscription_access')
+    UserSubscriptionAccessDto? subscriptionAccess,
   }) = _ApiUserDto;
 
   factory ApiUserDto.fromJson(Map<String, dynamic> json) =>
       _$ApiUserDtoFromJson(json);
+}
+
+/// Etat de l'abonnement de l'organisation, deja servi par `/me` : suffit a la
+/// ligne « Abonnement » du profil, sans appel supplementaire.
+@freezed
+class UserSubscriptionAccessDto with _$UserSubscriptionAccessDto {
+  const factory UserSubscriptionAccessDto({
+    String? status,
+    @JsonKey(name: 'subscription_ends_at') String? subscriptionEndsAt,
+  }) = _UserSubscriptionAccessDto;
+
+  factory UserSubscriptionAccessDto.fromJson(Map<String, dynamic> json) =>
+      _$UserSubscriptionAccessDtoFromJson(json);
 }
 
 @freezed
@@ -65,6 +80,9 @@ class OrganizationDto with _$OrganizationDto {
     @JsonKey(name: 'secondary_color') String? secondaryColor,
     @JsonKey(name: 'accent_color') String? accentColor,
     @JsonKey(name: 'font_family') String? fontFamily,
+    // Offre souscrite : code (« pme ») et nom lisible, pour le badge du profil.
+    String? pack,
+    @JsonKey(name: 'pack_name') String? packName,
   }) = _OrganizationDto;
 
   factory OrganizationDto.fromJson(Map<String, dynamic> json) =>

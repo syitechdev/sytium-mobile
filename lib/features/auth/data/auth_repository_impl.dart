@@ -139,6 +139,15 @@ class AuthRepositoryImpl implements AuthRepository {
         fonction: boot.employee?.fonction,
         roleLabel: roleLabel(primaryRole),
         roles: boot.user.roles.map((r) => r.role).toList(),
+        organizationPack: org?.pack,
+        organizationPackName: org?.packName,
+        subscriptionStatus: boot.user.subscriptionAccess?.status,
+        subscriptionEndsAt: boot.user.subscriptionAccess?.subscriptionEndsAt ==
+                null
+            ? null
+            : DateTime.tryParse(
+                boot.user.subscriptionAccess!.subscriptionEndsAt!,
+              )?.toLocal(),
       ),
       capabilities: MobileCapabilities(
         dashboard: boot.capabilities.dashboard,
