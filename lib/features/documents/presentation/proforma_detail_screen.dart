@@ -3,8 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:sytium_mobile/core/utils/money.dart';
 import 'package:sytium_mobile/features/documents/application/documents_providers.dart';
+import 'package:sytium_mobile/features/documents/domain/document_file.dart';
 import 'package:sytium_mobile/features/documents/domain/document_models.dart';
+import 'package:sytium_mobile/features/documents/presentation/document_viewer_screen.dart';
 import 'package:sytium_mobile/features/documents/presentation/widgets/detail_blocks.dart';
+import 'package:sytium_mobile/features/documents/presentation/widgets/open_pdf_button.dart';
 import 'package:sytium_mobile/features/invoicing/presentation/accept_proforma_sheet.dart';
 import 'package:sytium_mobile/features/invoicing/presentation/sales_doc_form_sheet.dart';
 import 'package:sytium_mobile/shared/widgets/error_state.dart';
@@ -78,6 +81,16 @@ class _Body extends ConsumerWidget {
             Expanded(child: Text(detail.numero, style: theme.titleLarge)),
             if (detail.statut != null) StatusPill(statut: detail.statut!),
           ],
+        ),
+        const SizedBox(height: Tokens.space16),
+        OpenDocumentButton(
+          onPressed: () => openDocumentViewer(
+            context,
+            DocumentRequest.proforma(
+              id: detail.id,
+              title: 'Proforma ${detail.numero}',
+            ),
+          ),
         ),
         const SizedBox(height: Tokens.space16),
         DetailCard(

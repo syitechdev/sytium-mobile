@@ -1,87 +1,63 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-import 'package:sytium_mobile/core/upload/upload_providers.dart';
 import 'package:sytium_mobile/features/documents/application/documents_providers.dart';
+import 'package:sytium_mobile/features/documents/domain/document_file.dart';
 import 'package:sytium_mobile/features/documents/domain/document_models.dart';
+import 'package:sytium_mobile/features/documents/presentation/document_viewer_screen.dart';
 import 'package:sytium_mobile/features/documents/presentation/widgets/detail_blocks.dart';
+import 'package:sytium_mobile/features/documents/presentation/widgets/open_pdf_button.dart';
 import 'package:sytium_mobile/shared/widgets/error_state.dart';
 import 'package:sytium_mobile/theme/sytium_colors.dart';
 import 'package:sytium_mobile/theme/tokens.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 /// Fiche d'un document légal : ses références, et de quoi l'ouvrir.
-class LegalDocDetailScreen extends ConsumerStatefulWidget {
+class LegalDocDetailScreen extends ConsumerWidget {
   const LegalDocDetailScreen({required this.id, super.key});
 
   final String id;
 
-  @override
-  ConsumerState<LegalDocDetailScreen> createState() =>
-      _LegalDocDetailScreenState();
-}
-
-class _LegalDocDetailScreenState extends ConsumerState<LegalDocDetailScreen> {
-  bool _opening = false;
-
   /// Ouvre le document.
   ///
-  /// Un fichier de la plateforme est PRIVÉ : on redemande au serveur un accès
-  /// signé de courte durée, à chaque ouverture. C'est aussi ce que fait le web.
+  /// Un fichier de la plateforme s'ouvre dans le lecteur de l'application
+  /// (lien signé redemandé à chaque récupération, comme sur le web).
   ///
   /// Le chemin passe AVANT le lien : la colonne `url` d'un document téléversé
   /// porte la signature figée au moment du dépôt, périmée quelques minutes
-  /// plus tard. L'ouvrir telle quelle donnait un 404 — le défaut signalé. Le
-  /// lien ne sert donc que lorsqu'il n'y a rien à signer : un document hébergé
-  /// ailleurs.
-  Future<void> _open(LegalDocDetail d) async {
+  /// plus tard. Le lien ne sert donc que lorsqu'il n'y a rien à signer : un
+  /// document hébergé ailleurs, ouvert dans le navigateur.
+  Future<void> _open(BuildContext context, LegalDocDetail d) async {
     final path = d.storagePath;
-    if (path == null || path.isEmpty) {
-      final external = d.url;
-      if (external != null && external.isNotEmpty) {
-        await _launch(external);
-      } else {
-        _say("Ce document n'a pas de fichier consultable.");
-      }
-      return;
-    }
-
-    setState(() => _opening = true);
-    final signed = await ref
-        .read(uploadRepositoryProvider)
-        .signedUrl(path: path, bucket: d.storageBucket ?? 'legal-documents');
-    if (!mounted) return;
-    setState(() => _opening = false);
-
-    final url = signed.valueOrNull;
-    if (url == null || url.isEmpty) {
-      // Dernier recours : un lien que le serveur nous aurait transmis parce
-      // qu'il pointe VRAIMENT ailleurs. Mieux vaut l'essayer que de renvoyer
-      // l'utilisateur sans rien.
-      final external = d.url;
-      if (external != null && external.isNotEmpty) {
-        await _launch(external);
-        return;
-      }
-
-      _say(
-        signed.failureOrNull?.message ??
-            "Ce document n'est pas consultable pour le moment.",
+    if (path != null && path.isNotEmpty) {
+      await openDocumentViewer(
+        context,
+        DocumentRequest.legal(
+          id: id,
+          title: d.libelle,
+          storagePath: path,
+          storageBucket: d.storageBucket,
+          mimeType: d.mimeType,
+        ),
       );
       return;
     }
-    await _launch(url);
-  }
 
-  Future<void> _launch(String url) async {
+    final external = d.url;
+    if (external == null || external.isEmpty) {
+      _say(context, "Ce document n'a pas de fichier consultable.");
+      return;
+    }
     final opened = await launchUrl(
-      Uri.parse(url),
+      Uri.parse(external),
       mode: LaunchMode.externalApplication,
     );
-    if (!opened && mounted) _say("Aucune application ne peut l'ouvrir.");
+    if (!opened && context.mounted) {
+      _say(context, "Aucune application ne peut l'ouvrir.");
+    }
   }
 
-  void _say(String message) => ScaffoldMessenger.of(
+  void _say(BuildContext context, String message) => ScaffoldMessenger.of(
     context,
   ).showSnackBar(SnackBar(content: Text(message)));
 
@@ -94,10 +70,10 @@ class _LegalDocDetailScreenState extends ConsumerState<LegalDocDetailScreen> {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final colors = context.colors;
     final theme = Theme.of(context).textTheme;
-    final async = ref.watch(legalDocDetailProvider(widget.id));
+    final async = ref.watch(legalDocDetailProvider(id));
 
     return Scaffold(
       appBar: AppBar(title: const Text('Document')),
@@ -105,7 +81,7 @@ class _LegalDocDetailScreenState extends ConsumerState<LegalDocDetailScreen> {
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => ErrorState(
           message: 'Document indisponible.',
-          onRetry: () => ref.invalidate(legalDocDetailProvider(widget.id)),
+          onRetry: () => ref.invalidate(legalDocDetailProvider(id)),
         ),
         data: (d) {
           return ListView(
@@ -113,6 +89,14 @@ class _LegalDocDetailScreenState extends ConsumerState<LegalDocDetailScreen> {
             children: [
               Text(d.libelle, style: theme.titleLarge),
               const SizedBox(height: Tokens.space16),
+              if (d.hasFile) ...[
+                OpenDocumentButton(
+                  label: 'Ouvrir le document',
+                  icon: Icons.description_outlined,
+                  onPressed: () => _open(context, d),
+                ),
+                const SizedBox(height: Tokens.space16),
+              ],
               DetailCard(
                 title: 'Références',
                 children: [
@@ -145,25 +129,7 @@ class _LegalDocDetailScreenState extends ConsumerState<LegalDocDetailScreen> {
                   title: 'Notes',
                   children: [Text(d.notes!, style: theme.bodyMedium)],
                 ),
-              if (d.hasFile)
-                FilledButton.icon(
-                  onPressed: _opening ? null : () => _open(d),
-                  icon: _opening
-                      ? const SizedBox.square(
-                          dimension: 18,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Icon(Icons.open_in_new),
-                  label: Text(
-                    _opening ? 'Préparation…' : 'Ouvrir le document',
-                  ),
-                  style: FilledButton.styleFrom(
-                    backgroundColor: colors.brand,
-                    foregroundColor: colors.onBrand,
-                    minimumSize: const Size.fromHeight(52),
-                  ),
-                )
-              else
+              if (!d.hasFile)
                 Text(
                   'Aucun fichier joint à ce document.',
                   style: theme.bodySmall?.copyWith(color: colors.textMuted),

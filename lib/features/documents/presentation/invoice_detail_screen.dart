@@ -3,7 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:sytium_mobile/core/utils/money.dart';
 import 'package:sytium_mobile/features/documents/application/documents_providers.dart';
+import 'package:sytium_mobile/features/documents/domain/document_file.dart';
+import 'package:sytium_mobile/features/documents/presentation/document_viewer_screen.dart';
 import 'package:sytium_mobile/features/documents/presentation/widgets/detail_blocks.dart';
+import 'package:sytium_mobile/features/documents/presentation/widgets/open_pdf_button.dart';
 import 'package:sytium_mobile/shared/widgets/error_state.dart';
 import 'package:sytium_mobile/theme/sytium_colors.dart';
 import 'package:sytium_mobile/theme/tokens.dart';
@@ -41,6 +44,13 @@ class InvoiceDetailScreen extends ConsumerWidget {
                 else if (f.statut != null)
                   StatusPill(statut: f.statut!),
               ],
+            ),
+            const SizedBox(height: Tokens.space16),
+            OpenDocumentButton(
+              onPressed: () => openDocumentViewer(
+                context,
+                DocumentRequest.invoice(id: id, title: 'Facture ${f.numero}'),
+              ),
             ),
             const SizedBox(height: Tokens.space16),
             DetailCard(
