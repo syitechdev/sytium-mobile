@@ -232,6 +232,29 @@ void main() {
     });
   });
 
+  testWidgets('la famille « rappels » a un libellé lisible et se coupe', (
+    tester,
+  ) async {
+    final repo = _FakeRepo(
+      initial: const NotificationPreferences(
+        categories: [
+          NotificationCategoryPreference(categorie: 'pointage', actif: true),
+          NotificationCategoryPreference(categorie: 'rappels', actif: true),
+        ],
+      ),
+    );
+    await tester.pumpWidget(_screen(repo));
+    await tester.pumpAndSettle();
+
+    // Sans libellé, l'écran afficherait la clé brute « rappels ».
+    expect(find.text('Rappels et échéances'), findsOneWidget);
+    expect(find.text('rappels'), findsNothing);
+
+    await tester.tap(find.text('Rappels et échéances'));
+    await tester.pumpAndSettle();
+    expect(repo.categoryCalls, [('rappels', false)]);
+  });
+
   group('Écran · interactions', () {
     testWidgets('couper les rappels de pointage', (tester) async {
       final repo = _FakeRepo();

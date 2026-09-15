@@ -19,6 +19,12 @@ const _kSkeletonBlocks = [96.0, 72.0, 128.0];
             'Arrivée, pause, reprise et départ quand vous n’avez pas encore '
             'pointé, et alertes d’absence de votre équipe.',
       ),
+      'rappels' => (
+        titre: 'Rappels et échéances',
+        description:
+            'Agenda, objectifs de la semaine, factures impayées, échéances '
+            'fiscales et anniversaires.',
+      ),
       _ => (titre: categorie, description: ''),
     };
 
