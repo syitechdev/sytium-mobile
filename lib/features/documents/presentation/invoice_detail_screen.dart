@@ -52,6 +52,21 @@ class InvoiceDetailScreen extends ConsumerWidget {
                 DocumentRequest.invoice(id: id, title: 'Facture ${f.numero}'),
               ),
             ),
+            const SizedBox(height: Tokens.space8),
+            // Le livreur part avec son telephone : il doit pouvoir sortir le
+            // bon sans repasser par le bureau. C'est le meme document que
+            // celui du web, fabrique par le serveur.
+            OpenDocumentButton(
+              label: 'Bon de livraison',
+              icon: Icons.local_shipping_outlined,
+              onPressed: () => openDocumentViewer(
+                context,
+                DocumentRequest.deliveryNote(
+                  id: id,
+                  title: 'Bon de livraison ${f.numero}',
+                ),
+              ),
+            ),
             const SizedBox(height: Tokens.space16),
             DetailCard(
               title: 'Facture',

@@ -76,6 +76,22 @@ void main() {
 
   const facture = DocumentRequest.invoice(id: 'i1', title: 'Facture FAC-2026-001');
 
+  test('un bon de livraison : le PDF du serveur, celui que le client connait', () async {
+    // Le livreur part avec son telephone : sans cette route, il devait faire
+    // imprimer le bon au bureau avant de partir.
+    final (src, adapter) = source(
+      (_) => _pdfResponse(disposition: 'inline; filename="BonLivraison_BL-2026-0001.pdf"'),
+    );
+
+    final file = (await src.fetch(
+      const DocumentRequest.deliveryNote(id: 'i1', title: 'Bon de livraison FAC-2026-001'),
+    )).valueOrNull!;
+
+    expect(adapter.requests.single.path, '/mobile/invoices/i1/delivery-note/pdf');
+    expect(file.fileName, 'BonLivraison_BL-2026-0001.pdf');
+    expect(file.isPdf, isTrue);
+  });
+
   test('une facture : PDF serveur, nom de fichier du serveur, fichier local', () async {
     final (src, adapter) = source(
       (_) => _pdfResponse(disposition: 'inline; filename="Facture_FAC-2026-001.pdf"'),

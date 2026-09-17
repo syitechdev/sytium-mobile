@@ -51,6 +51,8 @@ class DocumentFileSource {
       final url = switch (request.kind) {
         DocumentKind.invoice => '/mobile/invoices/${request.id}/pdf',
         DocumentKind.proforma => '/mobile/proforma-invoices/${request.id}/pdf',
+        DocumentKind.deliveryNote =>
+          '/mobile/invoices/${request.id}/delivery-note/pdf',
         DocumentKind.legal => await _signed(request),
       };
 

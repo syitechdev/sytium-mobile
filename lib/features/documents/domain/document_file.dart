@@ -1,6 +1,6 @@
 import 'package:flutter/foundation.dart';
 
-enum DocumentKind { invoice, proforma, legal }
+enum DocumentKind { invoice, proforma, deliveryNote, legal }
 
 /// Ce que l'utilisateur veut ouvrir : une pièce commerciale (PDF fabriqué par
 /// le serveur) ou un document stocké (fichier privé, ouvert par lien signé).
@@ -17,6 +17,14 @@ class DocumentRequest {
 
   const DocumentRequest.proforma({required this.id, required this.title})
     : kind = DocumentKind.proforma,
+      storagePath = null,
+      storageBucket = null,
+      mimeType = 'application/pdf';
+
+  /// Bon de livraison d'une facture : `id` est celui de la FACTURE, comme pour
+  /// son PDF — le serveur retrouve le suivi de commande tout seul.
+  const DocumentRequest.deliveryNote({required this.id, required this.title})
+    : kind = DocumentKind.deliveryNote,
       storagePath = null,
       storageBucket = null,
       mimeType = 'application/pdf';
