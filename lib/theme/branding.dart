@@ -58,9 +58,63 @@ class Branding {
   int get hashCode => Object.hash(brand, chrome, onBrand, onChrome);
 
   /// Near-black on light brand colors, white on dark ones (WCAG-ish contrast).
-  static Color _readableOn(Color c) => c.computeLuminance() > 0.5
-      ? const Color(0xFF0F172A)
-      : const Color(0xFFFFFFFF);
+  static Color _readableOn(Color c) => readableOn(c);
+
+  /// La meme marque, avec un accent LISIBLE sur [surface].
+  ///
+  /// L'accent de l'organisation colore l'onglet actif, le bouton +, les icones
+  /// des modules, les intitules de section. Constate en production le 17/09 :
+  /// Syitech Group a pour accent #eff0f0, un gris presque blanc — en theme
+  /// clair, tous ces elements disparaissaient sur le fond blanc (en sombre,
+  /// ils restaient visibles). Quand l'accent ne se detache pas assez de la
+  /// surface, on prend la couleur principale de l'organisation (le chrome, ici
+  /// le marine #02142c), qui reste sa couleur ; a defaut, l'accent est
+  /// assombri ou eclairci jusqu'au seuil.
+  ///
+  /// Seuil a 2:1 et non 3:1 : l'emeraude par defaut de Sytium fait 2,6:1 sur
+  /// blanc, et le relever aurait change l'apparence de toutes les
+  /// organisations sans accent problematique.
+  Branding legibleOn(Color surface) {
+    if (contrastRatio(brand, surface) >= minAccentContrast) return this;
+
+    final remplacement = contrastRatio(chrome, surface) >= minAccentContrast
+        ? chrome
+        : _pushAway(brand, surface);
+
+    return Branding(
+      brand: remplacement,
+      chrome: chrome,
+      onBrand: readableOn(remplacement),
+      onChrome: onChrome,
+    );
+  }
+
+  static const double minAccentContrast = 2;
+
+  /// Assombrit (surface claire) ou eclaircit (surface sombre) jusqu'au seuil.
+  static Color _pushAway(Color color, Color surface) {
+    final sombre = surface.computeLuminance() < 0.5;
+    var hsl = HSLColor.fromColor(color);
+    for (var i = 0; i < 25; i++) {
+      if (contrastRatio(hsl.toColor(), surface) >= minAccentContrast) break;
+      final l = (hsl.lightness + (sombre ? 0.04 : -0.04)).clamp(0.0, 1.0);
+      hsl = hsl.withLightness(l);
+    }
+    return hsl.toColor();
+  }
+}
+
+/// Near-black on light colors, white on dark ones.
+Color readableOn(Color c) => c.computeLuminance() > 0.5
+    ? const Color(0xFF0F172A)
+    : const Color(0xFFFFFFFF);
+
+/// Rapport de contraste WCAG entre deux couleurs (1 a 21).
+double contrastRatio(Color a, Color b) {
+  final la = a.computeLuminance();
+  final lb = b.computeLuminance();
+  final (clair, fonce) = la > lb ? (la, lb) : (lb, la);
+  return (clair + 0.05) / (fonce + 0.05);
 }
 
 /// Parses '#RRGGBB' / 'RRGGBB' / '#AARRGGBB' into a [Color]. Returns null on

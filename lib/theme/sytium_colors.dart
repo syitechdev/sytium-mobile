@@ -27,7 +27,8 @@ class SytiumColors extends ThemeExtension<SytiumColors> {
   });
 
   factory SytiumColors.light([Branding? branding]) {
-    final b = branding ?? Branding.sytium();
+    // L'accent doit se lire sur les cartes blanches (cf. Branding.legibleOn).
+    final b = (branding ?? Branding.sytium()).legibleOn(Tokens.lightCard);
     return SytiumColors(
       background: Tokens.lightBg,
       card: Tokens.lightCard,
@@ -49,7 +50,7 @@ class SytiumColors extends ThemeExtension<SytiumColors> {
   }
 
   factory SytiumColors.dark([Branding? branding]) {
-    final b = branding ?? Branding.sytium();
+    final b = (branding ?? Branding.sytium()).legibleOn(Tokens.darkCard);
     return SytiumColors(
       background: Tokens.darkBg,
       card: Tokens.darkCard,
